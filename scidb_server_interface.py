@@ -114,11 +114,11 @@ def get_attrs(queryplan):
 		types.append(name_type[1])
 	return {'names':names,'types':types}
 
-#options: {'numdims':int, 'chunkdims': {ints}, 'attrs':[strings],'flex':'more'/'less'/'none','afl':True/False}
-#required options: numdims, afl, attrs, attrtypes
+#options: {'numdims':int, 'chunkdims': {ints}, 'attrs':[strings],'flex':'more'/'less'/'none','afl':True/False, 'qpsize':int}
+#required options: numdims, afl, attrs, attrtypes, qpsize
 #NOTE: ASSUMES AVG IS THE AGG FUNCTION!
 #TODO: Fix the avg func assumption
-def aggregate(query,options):
+def daggregate(query,options):
 	final_query = query
 	dimension = options['numdims']
 	chunks = ""
@@ -128,9 +128,10 @@ def aggregate(query,options):
 		for i in range(1,len(chunkdims)-1):
 			chunks += ", "+str(chunkdims[i])
 	elif dimension > 0: # otherwise do default chunks
-		chunks += str(AGGR_CHUNK_DEFAULT)
+		defaultchunkval = math.pow(1.0*options['qpsize']/D3_DATA_THRESHOLD,1.0/dimension) if (1.0*options['qpsize']/D3_DATA_THRESHOLD) > 1 else AGGR_CHUNK_DEFAULT
+		chunks += str(defaultchunkval)
 		for i in range(2,dimension) :
-			chunks += ", "+str(AGGR_CHUNK_DEFAULT)
+			chunks += ", "+str(defaultchunkval)
 	# need to escape apostrophes or the new query will break
 	attrs = options['attrs']
 	final_query = re.sub("(')","\\\1",final_query)
@@ -157,9 +158,10 @@ def aggregate(query,options):
 	else:
 		result = db.executeQuery(final_query,'aql')
 	return result
+
 #options: {'probability':double, 'afl':True/False, 'flex':'more'/'less'/'none','qpsize':int, 'bychunk':True/False }
 #required options: afl, probability OR qpsize
-def sample(query,options):
+def dsample(query,options):
 	final_query = query
 	probability = PROB_DEFAULT # this will change depending on what user specified
 	if 'probability' in options: #probability specified
@@ -170,10 +172,27 @@ def sample(query,options):
 	# need to escape apostrophes or the new query will break
 	final_query = re.sub("(')","\\\1",final_query)
 	if options['afl']:
-
 		final_query = "bernoulli(("+final_query+"), "+probability+")"
 	else:
 		final_query = "select * from bernoulli(("+ final_query +"), "+probability+") "
+	print "final query:",final_query,"\nexecuting query..."
+	result = []
+	if options['afl']:
+		result = db.executeQuery(final_query,'afl')
+	else:
+		result = db.executeQuery(final_query,'aql')
+	return result
+
+#options: {'afl':True/False,'predicate':expression}
+#required options: afl, predicate
+def dfilter(query, options):
+	final_query = query
+	# need to escape apostrophes or the new query will break
+	final_query = re.sub("(')","\\\1",final_query)
+	if options['afl']:
+		final_query = "filter(("+final_query+"), "+options['predicate']+")"
+	else:
+		final_query = "select * from ("+final_query+") where "+options['predicate']
 	print "final query:",final_query,"\nexecuting query..."
 	result = []
 	if options['afl']:
@@ -516,9 +535,9 @@ def getAllAttrArrFromQueryForJSON(query_result,dimnames):
 
 print "start"
 scidbOpenConn()
-query="select * from esmall"
-#query = "scan(earthquake)"
-myafl = False
+#query="select * from esmall"
+query = "scan(esmall)"
+myafl = True
 qpresults = verifyQuery(query,myafl)
 queryresult = executeQuery(query,qpresults,myafl,False,RESTYPE['AGGR'],10) # ignore reduce_type for now
 queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,qpresults['dims'])
@@ -527,9 +546,13 @@ for i in range(len(queryresultarr['data'])):
 	#print "attributes: ",queryresultarr['data'][i]['attributes'],",dimensions: ",queryresultarr['data'][i]['dimensions']
 
 #print qpresults['attrs']['names']
-#options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types']}
-#aggregate(query,options)
+#options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types'], 'qpsize':qpresults['size']}
+#daggregate(query,options)
 
 #options = {'afl':myafl,'qpsize':qpresults['size'], 'probability':.3}
-#sample(query,options)
+#dsample(query,options)
+
+#options = {'afl':myafl,'predicate':"lat > 0"}
+#dfilter(query,options)
+
 scidbCloseConn()
