@@ -7,7 +7,9 @@ import simplejson as json
 LOGICAL_PHYSICAL = "explain_physical"
 RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
 AGGR_CHUNK_DEFAULT = 10
+PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
+D3_DATA_THRESHOLD = 10000 #TODO: tune this to be accurate
 
 db = 0
 
@@ -114,6 +116,8 @@ def get_attrs(queryplan):
 
 #options: {'numdims':int, 'chunkdims': {ints}, 'attrs':[strings],'flex':'more'/'less'/'none','afl':True/False}
 #required options: numdims, afl, attrs, attrtypes
+#NOTE: ASSUMES AVG IS THE AGG FUNCTION!
+#TODO: Fix the avg func assumption
 def aggregate(query,options):
 	final_query = query
 	dimension = options['numdims']
@@ -128,8 +132,8 @@ def aggregate(query,options):
 		for i in range(2,dimension) :
 			chunks += ", "+str(AGGR_CHUNK_DEFAULT)
 	# need to escape apostrophes or the new query will break
-	#final_query = re.sub("(\\')","\\\\\\1",final.query)
 	attrs = options['attrs']
+	final_query = re.sub("(')","\\\1",final_query)
 	if options['afl']:
 		attraggs = ""
 		for i in range(1,len(attrs)-1):
@@ -137,7 +141,6 @@ def aggregate(query,options):
 				if attraggs != "":
 					attraggs += ", "
 				attraggs+= "avg("+str(attrs[i])+")"
-		final_query = re.sub("(')","\\\1",final_query)
 		final_query = "regrid(("+final_query+"), "+chunks+", "+attraggs+")"
 	else:
 		attraggs = ""
@@ -149,10 +152,34 @@ def aggregate(query,options):
 		final_query = "select "+attraggs+" from ("+ final_query +") as scidbapitemptable regrid "+chunks
 	print "final query:",final_query,"\nexecuting query..."
 	result = []
-	#if options['afl']:
-	#	result = db.executeQuery(final_query,'afl')
-	#else:
-	#	result = db.executeQuery(final_query,'aql')
+	if options['afl']:
+		result = db.executeQuery(final_query,'afl')
+	else:
+		result = db.executeQuery(final_query,'aql')
+	return result
+#options: {'probability':double, 'afl':True/False, 'flex':'more'/'less'/'none','qpsize':int, 'bychunk':True/False }
+#required options: afl, probability OR qpsize
+def sample(query,options):
+	final_query = query
+	probability = PROB_DEFAULT # this will change depending on what user specified
+	if 'probability' in options: #probability specified
+		probability = options['probability']
+	else:
+		probability = min([1,D3_DATA_THRESHOLD * 1.0 / options['qpsize']])
+	probability = str(probability);
+	# need to escape apostrophes or the new query will break
+	final_query = re.sub("(')","\\\1",final_query)
+	if options['afl']:
+
+		final_query = "bernoulli(("+final_query+"), "+probability+")"
+	else:
+		final_query = "select * from bernoulli(("+ final_query +"), "+probability+") "
+	print "final query:",final_query,"\nexecuting query..."
+	result = []
+	if options['afl']:
+		result = db.executeQuery(final_query,'afl')
+	else:
+		result = db.executeQuery(final_query,'aql')
 	return result
 
 # function used to build a python "array" out of the given
@@ -489,17 +516,20 @@ def getAllAttrArrFromQueryForJSON(query_result,dimnames):
 
 print "start"
 scidbOpenConn()
-#query="select * from esmall"
-query = "scan(earthquake)"
-myafl = True
+query="select * from esmall"
+#query = "scan(earthquake)"
+myafl = False
 qpresults = verifyQuery(query,myafl)
 queryresult = executeQuery(query,qpresults,myafl,False,RESTYPE['AGGR'],10) # ignore reduce_type for now
 queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,qpresults['dims'])
-#for i in range(len(queryresultarr['data'])):
-#	print queryresultarr['data'][i]
+for i in range(len(queryresultarr['data'])):
+	print queryresultarr['data'][i]
 	#print "attributes: ",queryresultarr['data'][i]['attributes'],",dimensions: ",queryresultarr['data'][i]['dimensions']
 
-print qpresults['attrs']['names']
-options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types']}
-aggregate(query,options)
+#print qpresults['attrs']['names']
+#options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types']}
+#aggregate(query,options)
+
+#options = {'afl':myafl,'qpsize':qpresults['size'], 'probability':.3}
+#sample(query,options)
 scidbCloseConn()
