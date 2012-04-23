@@ -32,35 +32,6 @@ def verifyQuery(query,options):
 
 #function to do the resolution reduction when running queries
 # results from check_query_plan: [size,dims,names]
-def executeQueryOrig(query,qpresults={},afl=False,reduce_res=False,reduce_type='',reduce_val=1):
-	final_query = query
-	if(reduce_res):
-		#assume aggregation for now
-		dimension = qpresults['dims']
-		chunks = ""+user_input
-		while(dimension > 1):
-			chunks = chunks+","+reduce_val
-			dimension -= 1
-		if afl:
-			# need to escape apostrophes or the new query will break
-			#final_query = re.sub("(\\')","\\\\\\1",final.query)
-			final_query = re.sub("(')","\\\1",final_query)
-			#print "substitution to escape apostrophes:",final_query
-			final_query = "regrid(("+query+"),"+chunks+",avg("+get_attrs(queryplan)[0][0]+"))"
-		else:
-			final_query = "select regrid(x,"+chunks+",avg("+get_attrs(queryplan)[0][0]+")) from ("+query+") as x"
-	else:
-		print "running original query."
-	print "final query:",final_query,"\nexecuting query..."
-	result = []
-	if afl:
-		result = db.executeQuery(final_query,'afl')
-	else:
-		result = db.executeQuery(final_query,'aql')
-	return result
-
-#function to do the resolution reduction when running queries
-# results from check_query_plan: [size,dims,names]
 #options:{qpresults:qpresults,'afl':True/False,reduce_res:True/False,reduce_type:RESTYPE,'reduce_options':options}
 #required options: reduce_res, reduce_options if reduce_res is true, afl if reduce_res is false
 def executeQuery(query,options):
