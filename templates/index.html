@@ -1,0 +1,43 @@
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="/static/css/bootstrap.css">	
+	<link rel="stylesheet" type="text/css" href="/static/css/base.css?{{g.tstamp}}">
+
+	<script type="text/javascript" src="/static/js/jquery.js" ></script>
+	<script type="text/javascript" src="/static/js/bootstrap.js" ></script>	
+	<script type="text/javascript" src="/static/js/d3.v2.js" ></script>
+	<script type="text/javascript" src="/static/js/util2.js?{{g.tstamp}}" ></script>
+
+	<script>
+		renderagg = null;
+
+		$(document).ready(function() {
+			var opts = {overlap:-0, r:1.5};
+			renderagg = new render_scatterplot('aggplot', opts);
+			{% if data %}
+				data = {{data|safe}};
+				labels = {{labels|safe}};
+				types = {{types|safe}};
+				renderagg.render_scatterplot(data, labels,types);
+			{% endif %}
+		});
+	</script>
+</head>
+
+
+<body style="margin: 20px;">
+	<form action="{{ url_for('get_data') }}" id="sql-query-form" method="post">
+		<textarea id="sql-query-text" name="text" placeholder="Write query here." rows="6" cols="100"></textarea>
+		<input type="submit" id="sql-query-submit" value="Submit Query"></input>
+	</form>
+	<h2 class="heading">Some plot<small></small></h2>
+	<div id="aggplot">
+		<div class="legend"></div>
+		<svg></svg>
+		<div name="xlabel" class="xlabel"></div>
+		<div class="ylabel"></div>
+	</div>
+</body>
+
+
+</html>
