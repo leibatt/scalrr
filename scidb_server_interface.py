@@ -1,12 +1,14 @@
 import sys
-sys.path.append('/opt/scidb/11.12/lib')
+sys.path.append('/opt/scidb/12.3/lib')
 import scidbapi as scidb
 import string, re
 import simplejson as json
 
 LOGICAL_PHYSICAL = "explain_physical"
-RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample', 'BSAMPLE': 'biased_sample'}
+RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
+AGGR_CHUNK_DEFAULT = 10
 SIZE_THRESHOLD = 50
+
 db = 0
 
 def scidbOpenConn():
@@ -95,7 +97,7 @@ def check_query_plan(queryplan):
 			rangewidth = int(rangevals[1]) - int(rangevals[0]) + 1
 			size *= rangewidth
 			dims += 1
-	return {'size': size, 'dims': dims, 'names': names}
+	return {'size': size, 'numdims': dims, 'dims': names, 'attrs':get_attrs(queryplan)}
 
 #get all attributes of the result matrix
 def get_attrs(queryplan):
@@ -108,7 +110,50 @@ def get_attrs(queryplan):
 		name_type = (s.split(' ')[0]).split(':') # does this work?
 		names.append(name_type[0])
 		types.append(name_type[1])
-	return [names,types]
+	return {'names':names,'types':types}
+
+#options: {'numdims':int, 'chunkdims': {ints}, 'attrs':[strings],'flex':'more'/'less'/'none','afl':True/False}
+#required options: numdims, afl, attrs, attrtypes
+def aggregate(query,options):
+	final_query = query
+	dimension = options['numdims']
+	chunks = ""
+	if ('chunkdims' in options) and (len(options['chunkdims']) > 0): #chunkdims specified
+		chunkdims = options['chunkdims']
+		chunks += str(chunkdims[0])
+		for i in range(1,len(chunkdims)-1):
+			chunks += ", "+str(chunkdims[i])
+	elif dimension > 0: # otherwise do default chunks
+		chunks += str(AGGR_CHUNK_DEFAULT)
+		for i in range(2,dimension) :
+			chunks += ", "+str(AGGR_CHUNK_DEFAULT)
+	# need to escape apostrophes or the new query will break
+	#final_query = re.sub("(\\')","\\\\\\1",final.query)
+	attrs = options['attrs']
+	if options['afl']:
+		attraggs = ""
+		for i in range(1,len(attrs)-1):
+			if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"):
+				if attraggs != "":
+					attraggs += ", "
+				attraggs+= "avg("+str(attrs[i])+")"
+		final_query = re.sub("(')","\\\1",final_query)
+		final_query = "regrid(("+final_query+"), "+chunks+", "+attraggs+")"
+	else:
+		attraggs = ""
+		for i in range(0,len(attrs)-1):
+			if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
+				if attraggs != "":
+					attraggs += ", "
+				attraggs+= "avg(scidbapitemptable."+str(attrs[i])+")"
+		final_query = "select "+attraggs+" from ("+ final_query +") as scidbapitemptable regrid "+chunks
+	print "final query:",final_query,"\nexecuting query..."
+	result = []
+	#if options['afl']:
+	#	result = db.executeQuery(final_query,'afl')
+	#else:
+	#	result = db.executeQuery(final_query,'aql')
+	return result
 
 # function used to build a python "array" out of the given
 # scidb query result. attrname must be exact attribute 
@@ -444,11 +489,17 @@ def getAllAttrArrFromQueryForJSON(query_result,dimnames):
 
 print "start"
 scidbOpenConn()
-query="select a,x,y from test0"
-qpresults = verifyQuery(query,False)
-queryresult = executeQuery(query,qpresults,False,False,RESTYPE['AGGR'],10) # ignore reduce_type for now
-queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,qpresults['names'])
-scidbCloseConn()
-for i in range(len(queryresultarr['data'])):
-	print queryresultarr['data'][i]
+#query="select * from esmall"
+query = "scan(earthquake)"
+myafl = True
+qpresults = verifyQuery(query,myafl)
+queryresult = executeQuery(query,qpresults,myafl,False,RESTYPE['AGGR'],10) # ignore reduce_type for now
+queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,qpresults['dims'])
+#for i in range(len(queryresultarr['data'])):
+#	print queryresultarr['data'][i]
 	#print "attributes: ",queryresultarr['data'][i]['attributes'],",dimensions: ",queryresultarr['data'][i]['dimensions']
+
+print qpresults['attrs']['names']
+options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types']}
+aggregate(query,options)
+scidbCloseConn()
