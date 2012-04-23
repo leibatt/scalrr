@@ -23,14 +23,16 @@ def scidbCloseConn():
 		db.disconnect()
 		db = 0
 
+#options: {'afl':True/False}
+#required options: afl
 #function to verify query query result size
-def verifyQuery(query,afl=False):
-	queryplan = query_optimizer(query,afl)
+def verifyQuery(query,options):
+	queryplan = query_optimizer(query,options['afl'])
 	return check_query_plan(queryplan) #returns a dictionary
 
 #function to do the resolution reduction when running queries
 # results from check_query_plan: [size,dims,names]
-def executeQuery(query,qpresults={},afl=False,reduce_res=False,reduce_type='',reduce_val=1):
+def executeQueryOrig(query,qpresults={},afl=False,reduce_res=False,reduce_type='',reduce_val=1):
 	final_query = query
 	if(reduce_res):
 		#assume aggregation for now
@@ -56,6 +58,24 @@ def executeQuery(query,qpresults={},afl=False,reduce_res=False,reduce_type='',re
 	else:
 		result = db.executeQuery(final_query,'aql')
 	return result
+
+#function to do the resolution reduction when running queries
+# results from check_query_plan: [size,dims,names]
+#options:{qpresults:qpresults,'afl':True/False,reduce_res:True/False,reduce_type:RESTYPE,'reduce_options':options}
+#required options: reduce_res, reduce_options if reduce_res is true, afl if reduce_res is false
+def executeQuery(query,options):
+	final_query = query
+	if(options['reduce_res']):
+		return reduce_resolution(query,options['reduce_options'])
+	else:
+		print "running original query."
+		print "final query:",final_query,"\nexecuting query..."
+		result = []
+		if options['afl']:
+			result = db.executeQuery(final_query,'afl')
+		else:
+			result = db.executeQuery(final_query,'aql')
+		return result
 
 #function to do the resolution reduction when running queries
 # get the queryplan for the given query and return the line with info about the result matrix
@@ -200,6 +220,20 @@ def dfilter(query, options):
 	else:
 		result = db.executeQuery(final_query,'aql')
 	return result
+
+#options: {'reduce_options':res_options,'reduce_type':RES_TYPE}
+#required options: reduce_options,reduce_type
+#RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
+def reduce_resolution(query,options):
+	reduce_type = options['reduce_type']
+	if reduce_type == RESTYPE['AGGR']:
+		return daggregate(query,options['reduce_options'])
+	elif reduce_type == RESTYPE['SAMPLE']:
+		return dsample(query,options['reduce_options'])
+	elif reduce_type == RESTYPE['FILTER']:
+		return dfilter(query,options['reduce_options'])
+	else:
+		raise Exception('reduce_type not recognized')
 
 # function used to build a python "array" out of the given
 # scidb query result. attrname must be exact attribute 
@@ -441,7 +475,10 @@ def getAllAttrArrFromQuery(query_result):
 #so dimensions are not validated or anything
 #dimnames: a list containing the names of the matrix dimensions
 # MUST BE THE CORRECT LENGTH
-def getAllAttrArrFromQueryForJSON(query_result,dimnames):
+#options: {'dimnames':[]}
+#required options: dimnames
+def getAllAttrArrFromQueryForJSON(query_result,options):
+	dimnames = options['dimnames']
 	desc = query_result.array.getArrayDesc()
 	dims = desc.getDimensions() # list of DimensionDesc objects
 	attrs = desc.getAttributes() # list of AttributeDesc objects
@@ -522,6 +559,105 @@ def getAllAttrArrFromQueryForJSON(query_result,dimnames):
 	return {'data':arr, 'names': namesobj, 'types': typesobj}
 	#return {'data': arr, 'names': {'dimnames': dimnames, 'attrnames': attrnames}}
 	
+#returns items in a nicer/more accurate format for JSON
+#organization is an array of objects, where each object has a dimensions object and attributes object.
+#There is one object per element in the matrix
+#example:
+# [
+#    {
+#      'dimensions': {...},
+#      'attributes': {...},
+#    },
+#    ...
+# ]
+#Note that this is *not* in matrix form, it is in list form essentially
+#so dimensions are not validated or anything
+#dimnames: a list containing the names of the matrix dimensions
+# MUST BE THE CORRECT LENGTH
+#options: {'dimnames':[],'attrnames':[]}
+#required options: dimnames, attrnames
+def getAttrArrFromQueryForJSON(query_result,options):
+	dimnames = options['dimnames']
+	attrnames = options['attrnames']
+	desc = query_result.array.getArrayDesc()
+	dims = desc.getDimensions() # list of DimensionDesc objects
+	attrs = desc.getAttributes() # list of AttributeDesc objects
+	origarrnamelen = len(desc.getName()) - 2
+	#print "orig name length: ",origarrnamelen
+
+	if(dims.size() < 1 or dims.size() != len(dimnames)):
+		return []
+
+	arr = []
+	its = []
+	for i in range(attrs.size()): # find the right attrid
+		for aname in attrnames:
+			if aname == attrs[i].getName():
+				its.append(query_result.array.getConstIterator(i))
+
+	start = True
+	while not its[0].end():
+		#get chunk iterators
+		chunkiters = []
+		#print "start"
+		for itindex in range(len(its)):
+			#print "itindex: ",itindex
+			#mypos = its[itindex].getPosition()
+			#print "position:"
+			#print mypos[0],",",mypos[1]
+			currentchunk =its[itindex].getChunk()
+			chunkiter = currentchunk.getConstIterator((scidb.swig.ConstChunkIterator.IGNORE_EMPTY_CELLS |
+		                                       scidb.swig.ConstChunkIterator.IGNORE_OVERLAPS))
+			chunkiters.append(chunkiter)
+
+		while not chunkiters[0].end():
+			dataobj = {}
+			dimobj= {}
+			currpos = chunkiters[0].getPosition()
+			for dimindex in range(len(currpos)):
+				dname = dimnames[dimindex]
+				dimobj[dname[:len(dname)-origarrnamelen]] = currpos[dimindex] # make sure you take off the array's name from each dimension
+				dataobj["dims."+dname[:len(dname)-origarrnamelen]] = currpos[dimindex]
+			attrobj = {} #empty dictionary for the attribute values
+			#print "start"
+			for chunkiterindex in range(len(chunkiters)):
+				#print "chunkiterindex: ",chunkiterindex
+				dataitem = chunkiters[chunkiterindex].getItem()
+				# look up the value according to its attribute's typestring
+				attrobj[attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType()) # TBD: eliminate 2nd arg, make method on dataitem
+				dataobj["attrs."+attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType())
+				#print "Data: %s" % item
+				#chunkiters[i].increment_to_next()
+				#mypos = chunkiters[chunkiterindex].getPosition()
+				#myposstring = "position: "
+				#for myposi in range(len(mypos)):
+				#	myposstring += str(mypos[myposi])+", "
+				#print myposstring
+				chunkiters[chunkiterindex].increment_to_next() # OMG THIS INCREMENTS ALL THE CHUNK ITERATOR OBJECTS
+			#lastpos = chunkiter.getPosition()
+			#print lastpos[0],",",lastpos[1], ",",lastpos[2]
+			#print attrobj
+			#insert the item
+			arr.append(dataobj)
+			#arr.append({'dimensions':dimobj,'attributes':attrobj})
+			#print "current state of arr: ", str(arr)
+		#its[1].increment_to_next()
+		for itindex in range(len(its)):		
+			its[itindex].increment_to_next()
+	namesobj = []
+	typesobj = {}
+	for attri in range(len(attrnames)):
+		attrname = attrnames[attri]
+		namesobj.append("attrs."+attrname)
+		typesobj["attrs."+attrname] = attrs[attri].getType()
+	for dimname in dimnames:
+		ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
+		namesobj.append(ndimname)
+		typesobj[ndimname] = "int32"
+	#print typesobj
+	#print 	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
+	return {'data':arr, 'names': namesobj, 'types': typesobj}
+	#return {'data': arr, 'names': {'dimnames': dimnames, 'attrnames': attrnames}}
 
 #db = scidb.connect("localhost", 1239)
 #query = "scan(test1)"
@@ -535,12 +671,22 @@ def getAllAttrArrFromQueryForJSON(query_result,dimnames):
 
 print "start"
 scidbOpenConn()
-#query="select * from esmall"
-query = "scan(esmall)"
-myafl = True
-qpresults = verifyQuery(query,myafl)
-queryresult = executeQuery(query,qpresults,myafl,False,RESTYPE['AGGR'],10) # ignore reduce_type for now
-queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,qpresults['dims'])
+query="select * from esmall"
+#query = "scan(esmall)"
+myafl = False
+
+options = {'afl':myafl}
+qpresults = verifyQuery(query,options)
+
+options={'afl':myafl,'reduce_res':False}
+queryresult = executeQuery(query,options) # ignore reduce_type for now
+
+#options={'dimnames':qpresults['dims']}
+#queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,options)
+
+options={'dimnames':qpresults['dims'],'attrnames':qpresults['attrs']['names'][0:4]}
+queryresultarr = getAttrArrFromQueryForJSON(queryresult,options)
+
 for i in range(len(queryresultarr['data'])):
 	print queryresultarr['data'][i]
 	#print "attributes: ",queryresultarr['data'][i]['attributes'],",dimensions: ",queryresultarr['data'][i]['dimensions']
