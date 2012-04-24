@@ -56,10 +56,15 @@ def query_execute(userquery):
 	query = "select * from earthquake3"
 	if userquery != "":
 		query = userquery
-	print query
-	qpresults = sdbi.verifyQuery(query,False)
-	queryresult = sdbi.executeQuery(query,qpresults,False,False,sdbi.RESTYPE['AGGR'],10) # ignore reduce_type for now
-	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresult,qpresults['names'])
+		print query
+	options = {'afl':False}
+	qpresults = sdbi.verifyQuery(query,options)
+
+	options = {'afl':False,'reduce_res':False}
+	queryresult = sdbi.executeQuery(query,options) # ignore reduce_type for now
+
+	options={'dimnames':qpresults['dims']}
+	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresult,options)
 	return queryresultarr
 
 

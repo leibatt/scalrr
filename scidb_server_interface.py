@@ -463,8 +463,9 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	its = []
 	attrnames = []
 	for i in range(attrs.size()): # find the right attrid
-		its.append(query_result.array.getConstIterator(i))
-		attrnames.append(attrs[i].getName())
+		if attrs[i].getName() != "EmptyTag":
+			its.append(query_result.array.getConstIterator(i))
+			attrnames.append(attrs[i].getName())
 
 	start = True
 	while not its[0].end():
