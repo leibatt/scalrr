@@ -8,6 +8,7 @@ import traceback
 import scidb_server_interface as sdbi
 app = Flask(__name__)
 
+saved_qpresults = 0
 
 @app.before_request
 def before_request():
@@ -46,30 +47,83 @@ def get_data2():
 
 @app.route('/json-data', methods=["POST", "GET"])
 def get_data_ajax():
-    print "got json request"
+    print "got json request in init function"
     query = request.args.get('query',"",type=str)
-    queryresultarr = query_execute(query)
-    print json.dumps(queryresultarr)
+    options = {'reduce_res_check':True}
+    queryresultarr = query_execute(query,options)
+    #print queryresultarr
+    #print json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-def query_execute(userquery):
+@app.route('/json-data-noreduction', methods=["POST", "GET"])
+def get_data_ajax_noreduction():
+    print "got json request in noreduce function"
+    query = request.args.get('query',"",type=str)
+    options = {'reduce_res_check':False}
+    queryresultarr = query_execute(query,options)
+    print "result length: ",len(queryresultarr['data'])
+    #print json.dumps(queryresultarr)
+    return json.dumps(queryresultarr)
+
+@app.route('/json-data-reduce', methods=["POST", "GET"])
+def get_data_ajax_reduce():
+    print "got json request in reduce function"
+    query = request.args.get('query',"",type=str)
+    reduce_type = request.args.get('reduce_type',"",type=str)
+    options = {'reduce_res_check':False,'reduce_res':True,'reduce_type':reduce_type}
+    queryresultarr = query_execute(query,options)
+    print "result length: ",len(queryresultarr['data'])
+    #print queryresultarr
+    #print json.dumps(queryresultarr)
+    return json.dumps(queryresultarr)
+
+#options: {reduce_res_check:True/False}
+def query_execute(userquery,options):
+	global saved_qpresults
 	query = "select * from earthquake3"
 	if userquery != "":
 		query = userquery
 		print query
-	options = {'afl':False}
-	qpresults = sdbi.verifyQuery(query,options)
+	sdbioptions = {'afl':False}
+	if saved_qpresults == 0:
+		saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
+		#only do this check for new queries
+		if options['reduce_res_check'] and (saved_qpresults['size'] > sdbi.D3_DATA_THRESHOLD):
+			return {'reduce_res':True}
+	if 'reduce_type' in options: # reduction requested
+		sdbioptions['reduce_res'] = True
+		sdbioptions['reduce_options'] = setup_reduce_type(options['reduce_type'],{'afl':False})
+	else: #return original query
+		sdbioptions = {'afl':False,'reduce_res':False}
+	queryresult = sdbi.executeQuery(query,sdbioptions)
 
-	options = {'afl':False,'reduce_res':False}
-	queryresult = sdbi.executeQuery(query,options) # ignore reduce_type for now
-
-	options={'dimnames':qpresults['dims']}
-	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresult,options)
+	sdbioptions={'dimnames':saved_qpresults['dims']}
+	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresult,sdbioptions)
+	saved_qpresults = 0 # reset so we can use later
 	return queryresultarr
 
-
-
-
+#returns necessary options for reduce type
+#options: {'afl':True/False, 'predicate':"boolean predicate",'probability':double,'chunkdims':[]}
+#required options: afl, predicate (if filter specified)
+#TODO: make these reduce types match the scidb interface api reduce types
+def setup_reduce_type(reduce_type,options):
+	global saved_qpresults
+	returnoptions = {'qpresults':saved_qpresults,'afl':options['afl']}
+	reduce_type = str(reduce_type)
+	if reduce_type == 'agg':
+		if 'chunkdims' in options:
+			returnoptions['chunkdims'] = chunkdims
+		returnoptions['reduce_type'] = sdbi.RESTYPE['AGGR']
+	elif reduce_type == 'sample':
+		if 'probability' in options:
+			returnoptions['probability'] = options['probability']
+		returnoptions['reduce_type'] = sdbi.RESTYPE['SAMPLE']
+	elif reduce_type == 'filter':
+		returnoptions['predicate'] = options['predicate']
+		returnoptions['reduce_type'] = sdbi.RESTYPE['FILTER']
+	else: #unrecognized type
+		raise Exception("Unrecognized reduce type passed to the server.")
+	return returnoptions
 
 
 if __name__ == "__main__":

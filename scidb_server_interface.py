@@ -3,13 +3,14 @@ sys.path.append('/opt/scidb/12.3/lib')
 import scidbapi as scidb
 import string, re
 import simplejson as json
+import math
 
 LOGICAL_PHYSICAL = "explain_physical"
 RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
-D3_DATA_THRESHOLD = 10000 #TODO: tune this to be accurate
+D3_DATA_THRESHOLD = 200 #TODO: tune this to be accurate
 
 db = 0
 
@@ -32,11 +33,11 @@ def verifyQuery(query,options):
 
 #function to do the resolution reduction when running queries
 # results from check_query_plan: [size,dims,names]
-#options:{qpresults:qpresults,'afl':True/False,reduce_res:True/False,reduce_type:RESTYPE,'reduce_options':options}
+#options:{'afl':True/False,reduce_res:True/False,'reduce_options':options}
 #required options: reduce_res, reduce_options if reduce_res is true, afl if reduce_res is false
 def executeQuery(query,options):
 	final_query = query
-	if(options['reduce_res']):
+	if(options['reduce_res']): #reduction requested
 		return reduce_resolution(query,options['reduce_options'])
 	else:
 		print "running original query."
@@ -105,7 +106,7 @@ def get_attrs(queryplan):
 		types.append(name_type[1])
 	return {'names':names,'types':types}
 
-#options: {'numdims':int, 'chunkdims': {ints}, 'attrs':[strings],'flex':'more'/'less'/'none','afl':True/False, 'qpsize':int}
+#options: {'numdims':int, 'chunkdims': [ints], 'attrs':[strings],'flex':'more'/'less'/'none','afl':True/False, 'qpsize':int}
 #required options: numdims, afl, attrs, attrtypes, qpsize
 #NOTE: ASSUMES AVG IS THE AGG FUNCTION!
 #TODO: Fix the avg func assumption
@@ -120,34 +121,25 @@ def daggregate(query,options):
 			chunks += ", "+str(chunkdims[i])
 	elif dimension > 0: # otherwise do default chunks
 		defaultchunkval = math.pow(1.0*options['qpsize']/D3_DATA_THRESHOLD,1.0/dimension) if (1.0*options['qpsize']/D3_DATA_THRESHOLD) > 1 else AGGR_CHUNK_DEFAULT
+		defaultchunkval = int(defaultchunkval)
 		chunks += str(defaultchunkval)
 		for i in range(2,dimension) :
 			chunks += ", "+str(defaultchunkval)
 	# need to escape apostrophes or the new query will break
 	attrs = options['attrs']
 	final_query = re.sub("(')","\\\1",final_query)
-	if options['afl']:
-		attraggs = ""
-		for i in range(1,len(attrs)-1):
-			if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"):
-				if attraggs != "":
-					attraggs += ", "
-				attraggs+= "avg("+str(attrs[i])+")"
-		final_query = "regrid(("+final_query+"), "+chunks+", "+attraggs+")"
-	else:
-		attraggs = ""
-		for i in range(0,len(attrs)-1):
-			if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
-				if attraggs != "":
-					attraggs += ", "
-				attraggs+= "avg(scidbapitemptable."+str(attrs[i])+")"
-		final_query = "select "+attraggs+" from ("+ final_query +") as scidbapitemptable regrid "+chunks
+
+	#make the new query an aql query so we can rename the aggregates easily
+	attraggs = ""
+	for i in range(0,len(attrs)-1):
+		if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
+			if attraggs != "":
+				attraggs += ", "
+			attraggs+= "avg(scidbapitemptable."+str(attrs[i])+") as avg_"+attrs[i]
+	final_query = "select "+attraggs+" from ("+ final_query +") as scidbapitemptable regrid "+chunks
 	print "final query:",final_query,"\nexecuting query..."
 	result = []
-	if options['afl']:
-		result = db.executeQuery(final_query,'afl')
-	else:
-		result = db.executeQuery(final_query,'aql')
+	result = db.executeQuery(final_query,'aql')
 	return result
 
 #options: {'probability':double, 'afl':True/False, 'flex':'more'/'less'/'none','qpsize':int, 'bychunk':True/False }
@@ -174,7 +166,7 @@ def dsample(query,options):
 		result = db.executeQuery(final_query,'aql')
 	return result
 
-#options: {'afl':True/False,'predicate':expression}
+#options: {'afl':True/False,'predicate':"boolean expression"}
 #required options: afl, predicate
 def dfilter(query, options):
 	final_query = query
@@ -192,19 +184,30 @@ def dfilter(query, options):
 		result = db.executeQuery(final_query,'aql')
 	return result
 
-#options: {'reduce_options':res_options,'reduce_type':RES_TYPE}
-#required options: reduce_options,reduce_type
+#options: {'qpresults':qpresults,'afl':afl, 'reduce_type':RES_TYPE,'predicate':"boolean expression"}
+#required options: reduce_type, qpresults, afl, predicate (if RESTYPE['FILTER'] is specified)
 #RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
 def reduce_resolution(query,options):
 	reduce_type = options['reduce_type']
+	qpresults = options['qpresults']
+	#add common reduce function options
+	reduce_options = {'afl':options['afl'],'qpsize':qpresults['size']}
 	if reduce_type == RESTYPE['AGGR']:
-		return daggregate(query,options['reduce_options'])
+		if 'chunkdims' in options: #user specified chunk dims
+			reduce_options['chunkdims'] = options['chunkdims']
+		reduce_options['numdims'] = qpresults['numdims']
+		reduce_options['attrs'] = qpresults['attrs']['names']
+		reduce_options['attrtypes'] = qpresults['attrs']['types']
+		return daggregate(query,reduce_options)
 	elif reduce_type == RESTYPE['SAMPLE']:
-		return dsample(query,options['reduce_options'])
+		if 'probability' in options:
+			reduce_options['probability'] = options['probability']
+		return dsample(query,reduce_options)
 	elif reduce_type == RESTYPE['FILTER']:
-		return dfilter(query,options['reduce_options'])
+		reduce_options['predicate']=options['predicate']
+		return dfilter(query,reduce_options)
 	else:
-		raise Exception('reduce_type not recognized')
+		raise Exception('reduce_type not recognized by scidb interface api')
 
 # function used to build a python "array" out of the given
 # scidb query result. attrname must be exact attribute 
