@@ -70,7 +70,10 @@ def get_data_ajax_reduce():
     print "got json request in reduce function"
     query = request.args.get('query',"",type=str)
     reduce_type = request.args.get('reduce_type',"",type=str)
+    predicate = request.args.get('predicate',"",type=str)
     options = {'reduce_res_check':False,'reduce_res':True,'reduce_type':reduce_type}
+    if predicate != "":
+	options['predicate'] = predicate
     queryresultarr = query_execute(query,options)
     print "result length: ",len(queryresultarr['data'])
     #print queryresultarr
@@ -80,11 +83,12 @@ def get_data_ajax_reduce():
 #options: {reduce_res_check:True/False}
 def query_execute(userquery,options):
 	global saved_qpresults
-	query = "select * from earthquake3"
+	query = "select * from earthquake"
 	if userquery != "":
 		query = userquery
-		print query
+		print "user query: ",query
 	sdbioptions = {'afl':False}
+	print "saved_qpresults",saved_qpresults
 	if saved_qpresults == 0:
 		saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
 		#only do this check for new queries
@@ -92,7 +96,10 @@ def query_execute(userquery,options):
 			return {'reduce_res':True}
 	if 'reduce_type' in options: # reduction requested
 		sdbioptions['reduce_res'] = True
-		sdbioptions['reduce_options'] = setup_reduce_type(options['reduce_type'],{'afl':False})
+		srtoptions = {'afl':False}
+		if 'predicate' in options:
+			srtoptions['predicate'] = options['predicate']
+		sdbioptions['reduce_options'] = setup_reduce_type(options['reduce_type'],srtoptions)
 	else: #return original query
 		sdbioptions = {'afl':False,'reduce_res':False}
 	queryresult = sdbi.executeQuery(query,sdbioptions)

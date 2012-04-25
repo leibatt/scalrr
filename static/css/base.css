@@ -58,6 +58,10 @@ div.xlabel, div.ylabel {
 	display: block;
 }
 
-#reduce-type-form {
+#reduce-type-form, #reduce-type-form-submit {
+	visibility: hidden;
+}
+
+.ui-dialog-titlebar-close {
 	visibility: hidden;
 }

@@ -6,7 +6,7 @@ import simplejson as json
 import math
 
 LOGICAL_PHYSICAL = "explain_physical"
-RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
+RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','FILTER':'filter','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
