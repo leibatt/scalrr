@@ -57,3 +57,7 @@ div.xlabel, div.ylabel {
 #sql-query-text {
 	display: block;
 }
+
+#reduce-type-form {
+	visibility: hidden;
+}

@@ -10,7 +10,7 @@ RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','O
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
-D3_DATA_THRESHOLD = 200 #TODO: tune this to be accurate
+D3_DATA_THRESHOLD = 700 #TODO: tune this to be accurate
 
 db = 0
 
@@ -117,13 +117,13 @@ def daggregate(query,options):
 	if ('chunkdims' in options) and (len(options['chunkdims']) > 0): #chunkdims specified
 		chunkdims = options['chunkdims']
 		chunks += str(chunkdims[0])
-		for i in range(1,len(chunkdims)-1):
+		for i in range(1,len(chunkdims)):
 			chunks += ", "+str(chunkdims[i])
 	elif dimension > 0: # otherwise do default chunks
 		defaultchunkval = math.pow(1.0*options['qpsize']/D3_DATA_THRESHOLD,1.0/dimension) if (1.0*options['qpsize']/D3_DATA_THRESHOLD) > 1 else AGGR_CHUNK_DEFAULT
-		defaultchunkval = int(defaultchunkval)
+		defaultchunkval = int(math.ceil(defaultchunkval)) # round up
 		chunks += str(defaultchunkval)
-		for i in range(2,dimension) :
+		for i in range(1,dimension) :
 			chunks += ", "+str(defaultchunkval)
 	# need to escape apostrophes or the new query will break
 	attrs = options['attrs']
@@ -131,7 +131,9 @@ def daggregate(query,options):
 
 	#make the new query an aql query so we can rename the aggregates easily
 	attraggs = ""
-	for i in range(0,len(attrs)-1):
+	print "options attrtypes: ",options['attrtypes']
+	for i in range(0,len(attrs)):
+		print "attr type: ",options['attrtypes'][i]
 		if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
 			if attraggs != "":
 				attraggs += ", "
@@ -457,7 +459,8 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	dims = desc.getDimensions() # list of DimensionDesc objects
 	attrs = desc.getAttributes() # list of AttributeDesc objects
 	origarrnamelen = len(desc.getName()) - 2
-	#print "orig name length: ",origarrnamelen
+	print "array name: ",desc.getName()
+	print "array name length: ",origarrnamelen
 
 	if(dims.size() < 1 or dims.size() != len(dimnames)):
 		return []

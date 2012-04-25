@@ -2,8 +2,10 @@
 <head>
 	<link rel="stylesheet" type="text/css" href="/static/css/bootstrap.css">	
 	<link rel="stylesheet" type="text/css" href="/static/css/base.css?{{g.tstamp}}">
+	<link rel="stylesheet" type="text/css" href="/static/css/ui-lightness/jquery-ui-1.8.19.custom.css">
 
 	<script type="text/javascript" src="/static/js/jquery.js" ></script>
+	<script type="text/javascript" src="/static/js/jquery-ui-1.8.19.custom.min.js" ></script>
 	<script type="text/javascript" src="/static/js/bootstrap.js" ></script>	
 	<script type="text/javascript" src="/static/js/d3.v2.js" ></script>
 	<script type="text/javascript" src="/static/js/main.js" ></script>
@@ -23,6 +25,18 @@
 		<svg></svg>
 		<div name="xlabel" class="xlabel"></div>
 		<div class="ylabel"></div>
+	</div>
+	<div id="dialog" title="Basic dialog">
+		<form id="reduce-type-form" >
+			<fieldset>
+				<label for="reduce_type">Res Reduction Type</label>
+				<select name="reduce_type" id="reduce-type-menu">
+					<option value="AGGR">aggregate</option>
+					<option value="SAMPLE">sample</option>
+					<option value="FILTER">filter</option>
+				</select>
+			</fieldset>
+		</form>
 	</div>
 </body>
 

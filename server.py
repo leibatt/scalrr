@@ -99,6 +99,7 @@ def query_execute(userquery,options):
 
 	sdbioptions={'dimnames':saved_qpresults['dims']}
 	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresult,sdbioptions)
+	print "setting saved_qpresults to 0"
 	saved_qpresults = 0 # reset so we can use later
 	return queryresultarr
 
@@ -109,20 +110,21 @@ def query_execute(userquery,options):
 def setup_reduce_type(reduce_type,options):
 	global saved_qpresults
 	returnoptions = {'qpresults':saved_qpresults,'afl':options['afl']}
-	reduce_type = str(reduce_type)
-	if reduce_type == 'agg':
-		if 'chunkdims' in options:
-			returnoptions['chunkdims'] = chunkdims
-		returnoptions['reduce_type'] = sdbi.RESTYPE['AGGR']
-	elif reduce_type == 'sample':
-		if 'probability' in options:
-			returnoptions['probability'] = options['probability']
-		returnoptions['reduce_type'] = sdbi.RESTYPE['SAMPLE']
-	elif reduce_type == 'filter':
+	returnoptions['reduce_type'] = sdbi.RESTYPE[reduce_type]
+	#if reduce_type == 'agg':
+	if 'chunkdims' in options:
+		returnoptions['chunkdims'] = chunkdims
+		#returnoptions['reduce_type'] = sdbi.RESTYPE['AGGR']
+	#elif reduce_type == 'sample':
+	if 'probability' in options:
+		returnoptions['probability'] = options['probability']
+		#returnoptions['reduce_type'] = sdbi.RESTYPE['SAMPLE']
+	#elif reduce_type == 'filter':
+	if 'predicate' in options:
 		returnoptions['predicate'] = options['predicate']
-		returnoptions['reduce_type'] = sdbi.RESTYPE['FILTER']
-	else: #unrecognized type
-		raise Exception("Unrecognized reduce type passed to the server.")
+		#returnoptions['reduce_type'] = sdbi.RESTYPE['FILTER']
+	#else: #unrecognized type
+	#	raise Exception("Unrecognized reduce type passed to the server.")
 	return returnoptions
 
 
