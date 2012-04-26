@@ -46,8 +46,8 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 		cscale = d3.scale.category10().domain(labels);  // color scale
 
 	// create x,y axis scales
-	var xscale = this.createScale(_data,_types,x_label,this.w,this.px);
-	var yscale = this.createScale(_data,_types,y_label,this.h,this.py);
+	var xscale = this.createScale(_data,_types,x_label,this.w,this.px,false);
+	var yscale = this.createScale(_data,_types,y_label,this.h,this.py,true);
 
 	//TODO: push the legend and menu features into the graph object
 	// add the legend and color it appropriately
@@ -149,7 +149,7 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 			self.circlecontainer.selectAll('circle')
 					.data(data)
 				.enter().append('circle')
-					.attr('cy', function(d) { return self.h-yscale(self.get_data_obj(d[y_label],_types[y_label]))})
+					.attr('cy', function(d) { return yscale(self.get_data_obj(d[y_label],_types[y_label]))})
 					.attr('cx', function(d) { return xscale(self.get_data_obj(d[x_label],_types[x_label]))})
 					.attr('r', 2)
 					.attr('fill', 'red')

@@ -65,3 +65,12 @@ div.xlabel, div.ylabel {
 .ui-dialog-titlebar-close {
 	visibility: hidden;
 }
+
+g.xaxis path,g.yaxis path {
+	display: none;
+}
+
+.xaxis line, .yaxis line {
+	opacity: .3;
+	stroke: #000;
+}
