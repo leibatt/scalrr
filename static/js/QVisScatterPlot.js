@@ -46,39 +46,10 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 		cscale = d3.scale.category10().domain(labels);  // color scale
 
 	// create x,y axis scales
-	var xscale,yscale;
-	// THIS IS ONLY IN THE CONTEXT OF SCATTERPLOTS!!! MANY ASSUMPTIONS MADE ABOUT THE DATA HERE
-	if(_types[x_label] === 'int32' || _types[x_label] === 'int64' || _types[x_label] === 'double') {
-		minx = d3.min(_data.map(function(d){return d[x_label];}));
-		maxx = d3.max(_data.map(function(d){return d[x_label];}));
-		console.log("ranges: "+minx+","+maxx);
-		xscale = d3.scale.linear().domain([this.get_data_obj(minx,_types[x_label]), this.get_data_obj(maxx,_types[x_label])]).range([this.px,this.w-this.px]);
-	} else if (_types[x_label] === "datetime") {
-		minx = d3.min(_data.map(function(d){return d[x_label];}));
-		maxx = d3.max(_data.map(function(d){return d[x_label];}));
-		console.log("ranges: "+minx+","+maxx);
-		console.log("ranges: "+this.get_data_obj(minx)+","+this.get_data_obj(maxx));
-		xscale = d3.time.scale().domain([this.get_data_obj(minx,_types[x_label]), this.get_data_obj(maxx,_types[x_label])]).range([this.px,this.w-this.px]);
-	} else if (_types[x_label] === 'string') {
-		self.strings = []
-		_data.map(function(d){self.strings.push(d[x_label]);});
-		self.strings = this.remove_dupes(self.strings);
-		xscale = d3.scale.ordinal().domain(self.strings);
-		var steps = (this.w-2*this.px)/(self.strings.length-1);
-		var range = [];
-		for(var i = 0; i < self.strings.length;i++){range.push(this.px+steps*i);}
-		xscale.range(range);
-	} else {
-		console.log("unrecognized type: "+_types[x_label]);
-		console.log("labels: "+x_label+","+y_label);
-	}
+	var xscale = this.createScale(_data,_types,x_label,this.w,this.px);
+	var yscale = this.createScale(_data,_types,y_label,this.h,this.py);
 
-	if(_types[y_label] === 'int32' || _types[y_label] === 'int64' || _types[y_label] === 'double') {
-		miny = d3.min(_data.map(function(d){return d[y_label];}));
-		maxy = d3.max(_data.map(function(d){return d[y_label];}));
-		console.log("ranges: "+miny+","+maxy);
-		yscale = d3.scale.linear().domain([miny,maxy]).range([this.h-this.py, this.py]);
-	}
+	//TODO: push the legend and menu features into the graph object
 	// add the legend and color it appropriately
 	var legend = d3.selectAll(this.jlegend.get()).selectAll('text')
 			.data(labels)
@@ -154,7 +125,7 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 		.attr("width", this.w-this.px)					
 		.attr("height",  this.h-this.py)
 		.attr("x", 0)
-		.attr("y", this.h-this.py);
+		.attr("y", 0);
 
 	
 	//
@@ -164,24 +135,26 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 		//console.log(_data[0]);
 		//console.log(_data.length);
 		// create the container
-		var cellcont = self.circlecontainer.append('g')
-				.attr("id", self.rootid+"_cells")
-				.attr("x", 0)
-				.attr("y", self.h-self.py)
-				.attr("width", self.w-2*self.px)					
-				.attr("height",  self.h-2*self.py)
 
-		cellcont.attr('class', "circleplot");
-
-
-		cellcont.selectAll('circle')
-				.data(_data)
-			.enter().append('circle')
-				.attr('cy', function(d) { return yscale(self.get_data_obj(d[y_label],_types[y_label]))})
-				.attr('cx', function(d) {return xscale(self.get_data_obj(d[x_label],_types[x_label]))})
-				.attr('r', 2)
-				.attr('fill', 'red')
-				.attr('label', x_label);
+		var range = 1000;
+		var steps = _data.length/range+1;
+		for(var drawindex = 0; (drawindex < steps) && (drawindex*range < _data.length); drawindex++) {
+			console.log("drawing range: "+drawindex*range+"-"+(drawindex*range+range));
+			var data;
+			if(drawindex*range+range > _data.length) {
+				data = _data.slice(drawindex*range,_data.length)
+			} else {
+				data = _data.slice(drawindex*range,drawindex*range+range)
+			}
+			self.circlecontainer.selectAll('circle')
+					.data(data)
+				.enter().append('circle')
+					.attr('cy', function(d) { return self.h-yscale(self.get_data_obj(d[y_label],_types[y_label]))})
+					.attr('cx', function(d) { return xscale(self.get_data_obj(d[x_label],_types[x_label]))})
+					.attr('r', 2)
+					.attr('fill', 'red')
+					.attr('label', x_label);
+		}
 	}
 	add_circle();
 

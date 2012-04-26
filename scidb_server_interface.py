@@ -10,7 +10,7 @@ RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','F
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
-D3_DATA_THRESHOLD = 700 #TODO: tune this to be accurate
+D3_DATA_THRESHOLD = 20000 #TODO: tune this to be accurate
 
 db = 0
 
