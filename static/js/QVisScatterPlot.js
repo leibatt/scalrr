@@ -127,35 +127,7 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 		.attr("x", 0)
 		.attr("y", 0);
 
-	
-	//
-	// This code renders the actual points
-	function add_circle () {
-		//console.log("label: "+label);
-		//console.log(_data[0]);
-		//console.log(_data.length);
-		// create the container
-
-		var range = 1000;
-		var steps = _data.length/range+1;
-		for(var drawindex = 0; (drawindex < steps) && (drawindex*range < _data.length); drawindex++) {
-			console.log("drawing range: "+drawindex*range+"-"+(drawindex*range+range));
-			var data;
-			if(drawindex*range+range > _data.length) {
-				data = _data.slice(drawindex*range,_data.length)
-			} else {
-				data = _data.slice(drawindex*range,drawindex*range+range)
-			}
-			self.circlecontainer.selectAll('circle')
-					.data(data)
-				.enter().append('circle')
-					.attr('cy', function(d) { return yscale(self.get_data_obj(d[y_label],_types[y_label]))})
-					.attr('cx', function(d) { return xscale(self.get_data_obj(d[x_label],_types[x_label]))})
-					.attr('r', 2)
-					.attr('fill', 'red')
-					.attr('label', x_label);
-		}
-	}
-	add_circle();
-
+	this.drawCircles(this.circlecontainer,_data,_types,xscale,yscale,x_label,y_label,this.defaultRadius,this.defaultColor);
+	//just testing the rects function
+	//this.drawRects(this.circlecontainer,_data,_types,xscale,yscale,x_label,y_label,this.defaultRadius,this.defaultRadius,this.defaultColor);
 }

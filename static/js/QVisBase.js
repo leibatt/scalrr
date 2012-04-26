@@ -63,6 +63,7 @@ QVis.Graph.prototype.remove_dupes = function(arr) {
 	return out;
 }
 
+//TODO: fix this. it's ugly
 QVis.Graph.prototype.createScale = function(_data,_types,label,axislength,axispadding,invert) {
 	var scale;
 	if(_types[label] === 'int32' || _types[label] === 'int64' || _types[label] === 'double') {
@@ -70,9 +71,13 @@ QVis.Graph.prototype.createScale = function(_data,_types,label,axislength,axispa
 		maxx = d3.max(_data.map(function(d){return d[label];}));
 		console.log("ranges: "+minx+","+maxx);
 		if(invert) {
-			scale = d3.scale.linear().domain([this.get_data_obj(maxx,_types[label]), this.get_data_obj(minx,_types[label])]).range([axispadding,axislength-axispadding]);
+			scale = d3.scale.linear()
+				.domain([this.get_data_obj(maxx,_types[label]), this.get_data_obj(minx,_types[label])])
+				.range([axispadding,axislength-axispadding]);
 		} else {
-			scale = d3.scale.linear().domain([this.get_data_obj(minx,_types[label]), this.get_data_obj(maxx,_types[label])]).range([axispadding,axislength-axispadding]);
+			scale = d3.scale.linear()
+				.domain([this.get_data_obj(minx,_types[label]), this.get_data_obj(maxx,_types[label])])
+				.range([axispadding,axislength-axispadding]);
 		}
 	} else if (_types[label] === "datetime") {
 		minx = d3.min(_data.map(function(d){return d[label];}));
@@ -80,9 +85,13 @@ QVis.Graph.prototype.createScale = function(_data,_types,label,axislength,axispa
 		console.log("ranges: "+minx+","+maxx);
 		console.log("ranges: "+this.get_data_obj(minx)+","+this.get_data_obj(maxx));
 		if(invert) {
-			scale = d3.time.scale().domain([this.get_data_obj(maxx,_types[label]), this.get_data_obj(minx,_types[label])]).range([axispadding,axislength-axispadding]);
+			scale = d3.time.scale()
+				.domain([this.get_data_obj(maxx,_types[label]), this.get_data_obj(minx,_types[label])])
+				.range([axispadding,axislength-axispadding]);
 		} else {
-			scale = d3.time.scale().domain([this.get_data_obj(minx,_types[label]), this.get_data_obj(maxx,_types[label])]).range([axispadding,axislength-axispadding]);
+			scale = d3.time.scale()
+				.domain([this.get_data_obj(minx,_types[label]), this.get_data_obj(maxx,_types[label])])
+				.range([axispadding,axislength-axispadding]);
 		}
 	} else if (_types[label] === 'string') {
 		self.strings = []
@@ -92,9 +101,13 @@ QVis.Graph.prototype.createScale = function(_data,_types,label,axislength,axispa
 		var steps = (axislength-2*axispadding)/(self.strings.length-1);
 		var range = [];
 		if(invert) {
-			for(var i = self.strings.length-1; i >= 0 ;i--){range.push(axispadding+steps*i);}
+			for(var i = self.strings.length-1; i >= 0 ;i--){
+				range.push(axispadding+steps*i);
+			}
 		} else {
-			for(var i = 0; i < self.strings.length;i++){range.push(axispadding+steps*i);}
+			for(var i = 0; i < self.strings.length;i++){
+				range.push(axispadding+steps*i);
+			}
 		}
 		scale.range(range);
 	} else {
@@ -105,7 +118,7 @@ QVis.Graph.prototype.createScale = function(_data,_types,label,axislength,axispa
 
 QVis.Graph.prototype.add_axes = function(xscale,yscale,x_label,y_label,stringticks,_types){
 	var self = this;
-	var xaxis = d3.svg.axis().scale(xscale).orient('bottom').tickPadding(10);
+	var xaxis = d3.svg.axis().scale(xscale).orient('bottom').tickPadding(10);// orient just describes what side of the axis to put the text on
 	var yaxis = d3.svg.axis().scale(yscale).orient('left').tickPadding(10);
 	var df = d3.time.format("%Y-%m-%d");
 	if(_types[x_label] === "datetime") {
@@ -122,8 +135,8 @@ QVis.Graph.prototype.add_axes = function(xscale,yscale,x_label,y_label,stringtic
 	} else {
 		yaxis.ticks(6);
 	}
-	xaxis.tickSize(-this.h+2*this.py);
-	yaxis.tickSize(-this.w+2*this.px);
+	xaxis.tickSize(-this.h+2*this.py); // makes the tick lines
+	yaxis.tickSize(-this.w+2*this.px); // makes the tick lines
 
 	if(_types[x_label] === "datetime") {
 		xaxis.tickFormat(df);
@@ -141,4 +154,66 @@ QVis.Graph.prototype.add_axes = function(xscale,yscale,x_label,y_label,stringtic
 	      .attr("class", "yaxis")
 	      .attr("transform", "translate("+this.px+" 0)")
 	      .call(yaxis);
+}
+
+QVis.Graph.prototype.drawCircles = function(container,_data,_types,xscale,yscale,x_label,y_label,radius,color) {
+	var temp = this;
+	var range = 1000;
+	var steps = _data.length/range+1;
+	for(var drawindex = 0; (drawindex < steps) && (drawindex*range < _data.length); drawindex++) {
+		console.log("drawing range: "+drawindex*range+"-"+(drawindex*range+range));
+		var data;
+		if(drawindex*range+range > _data.length) {
+			data = _data.slice(drawindex*range,_data.length)
+		} else {
+			data = _data.slice(drawindex*range,drawindex*range+range)
+		}
+		container.selectAll('circle')
+				.data(data)
+			.enter().append('circle')
+				.attr('cy', function(d) { return yscale(temp.get_data_obj(d[y_label],_types[y_label]))})
+				.attr('cx', function(d) { return xscale(temp.get_data_obj(d[x_label],_types[x_label]))})
+				.attr('r', function(d) { return radius(temp.get_data_obj(d[x_label],_types[x_label]))})
+				.attr('fill', function(d) { return color(temp.get_data_obj(d[x_label],_types[x_label]))})
+				.attr('label', x_label);
+	}
+}
+
+// just spits out a radius of 2
+QVis.Graph.prototype.defaultRadius = function(d) {
+	return 2;
+}
+
+// just spits out blue
+QVis.Graph.prototype.defaultColor = function(d) {
+	return 'blue';
+}
+
+QVis.Graph.prototype.drawRects = function(container,_data,_types,xscale,yscale,x_label,y_label,width,height,color) {
+	var temp = this;
+	var range = 1000;
+	var steps = _data.length/range+1;
+	for(var drawindex = 0; (drawindex < steps) && (drawindex*range < _data.length); drawindex++) {
+		console.log("drawing range: "+drawindex*range+"-"+(drawindex*range+range));
+		var data;
+		if(drawindex*range+range > _data.length) {
+			data = _data.slice(drawindex*range,_data.length)
+		} else {
+			data = _data.slice(drawindex*range,drawindex*range+range)
+		}
+		container.selectAll('rect')
+				.data(data)
+			.enter().append('rect')
+				.attr('y', function(d) { return yscale(temp.get_data_obj(d[y_label],_types[y_label]))})
+				.attr('x', function(d) { return xscale(temp.get_data_obj(d[x_label],_types[x_label]))})
+				.attr('width', function(d) { return width(temp.get_data_obj(d[x_label],_types[x_label]))})
+				.attr('height', function(d) { return height(temp.get_data_obj(d[x_label],_types[x_label]))})
+				.attr('fill', function(d) { return color(temp.get_data_obj(d[x_label],_types[x_label]))})
+				.attr('label', x_label);
+	}
+}
+
+QVis.Graph.prototype.drawLines = function(container,_data,_types,xscale,yscale) {
+
+
 }
