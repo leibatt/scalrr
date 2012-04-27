@@ -637,19 +637,67 @@ def getAttrArrFromQueryForJSON(query_result,options):
 	return {'data':arr, 'names': namesobj, 'types': typesobj}
 	#return {'data': arr, 'names': {'dimnames': dimnames, 'attrnames': attrnames}}
 
-#db = scidb.connect("localhost", 1239)
-#query = "scan(test1)"
-#result = reduce_res(db,query,True,1)
-#newarr = getOneAttrArrFromQuery(result[0],"a")
-#newarr = getAllAttrArrFromQuery(result[0])
-#newarr = getAllAttrArrFromQueryForJSON(result[0],result[1])
-#print "new array: ", str(newarr)
-#db.disconnect()
+#returns items in a nicer/more accurate format for JSON
+#Note that this is *not* in matrix form, it is in list form essentially
+#so dimensions are not validated or anything
+#dimnames: a list containing the names of the matrix dimensions
+# MUST BE THE CORRECT LENGTH
+#options: {'dimnames':[]}
+#required options: dimnames
+def getMultiArrFromQueryForJSON(query_result,options):
+	dimnames = options['dimnames']
+	desc = query_result.array.getArrayDesc()
+	dims = desc.getDimensions() # list of DimensionDesc objects
+	attrs = desc.getAttributes() # list of AttributeDesc objects
 
+	if(dims.size() < 1 or dims.size() != len(dimnames)):
+		return []
 
-print "start"
+	alldata = {}
+	alldims = {}
+	its = []
+	for i in range(attrs.size()-1): # find the right attrid
+		its.append(query_result.array.getConstIterator(i))
+
+	for i in range(len(its)): # find the right attrid
+		it = its[i]
+		data = []
+		dims = []
+		while not it.end():
+			chunk = it.getChunk()
+			chunkiter = chunk.getConstIterator((scidb.swig.ConstChunkIterator.IGNORE_EMPTY_CELLS |
+		                                       scidb.swig.ConstChunkIterator.IGNORE_OVERLAPS))
+			while not chunkiter.end():
+				temp = []
+				pos = chunkiter.getPosition()
+				for dimi in range(len(pos)):
+					temp.append(pos[dimi])
+				dims.append(temp)
+				dataitem = chunkiter.getItem()
+				typeddataitem = scidb.getTypedValue(dataitem, attrs[i].getType())
+				data.append(typeddataitem)
+				chunkiter.increment_to_next()
+			it.increment_to_next()
+		alldata[attrs[i].getName()] = data
+		alldims[attrs[i].getName()] = dims
+
+	namesobj = {'attrs':[],'dims':[]}
+	typesobj = {'attrs':{},'dims':{}}
+	dimmap = {}
+	for attri in range(attrs.size()-1):
+		attrname = attrs[attri].getName()
+		namesobj['attrs'].append(attrname)
+		typesobj['attrs'][attrname] = attrs[attri].getType()
+	for index in range(len(dimnames)):
+		dimname = dimnames[index]
+		namesobj['dims'].append(dimname)
+		typesobj['dims'][dimname] = "int32"
+		dimmap[dimname] = index
+	return {'attrs':alldata,'dims':alldims, 'dimmap':dimmap, 'names': namesobj, 'types': typesobj}
+
 scidbOpenConn()
-query="select * from esmall"
+#query="select * from earthquake"
+query = "select * from bernoulli(random_numbers_big,.01)"
 #query = "scan(esmall)"
 myafl = False
 
@@ -662,12 +710,16 @@ queryresult = executeQuery(query,options) # ignore reduce_type for now
 #options={'dimnames':qpresults['dims']}
 #queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,options)
 
-options={'dimnames':qpresults['dims'],'attrnames':qpresults['attrs']['names'][0:4]}
-queryresultarr = getAttrArrFromQueryForJSON(queryresult,options)
+#options={'dimnames':qpresults['dims'],'attrnames':qpresults['attrs']['names'][0:4]}
+#queryresultarr = getAttrArrFromQueryForJSON(queryresult,options)
 
-for i in range(len(queryresultarr['data'])):
-	print queryresultarr['data'][i]
-	#print "attributes: ",queryresultarr['data'][i]['attributes'],",dimensions: ",queryresultarr['data'][i]['dimensions']
+#for i in range(len(queryresultarr['data'])):
+#	print queryresultarr['data'][i]
+#	#print "attributes: ",queryresultarr['data'][i]['attributes'],",dimensions: ",queryresultarr['data'][i]['dimensions']
+
+options={'dimnames':qpresults['dims']}
+queryresultarr = getMultiArrFromQueryForJSON(queryresult,options)
+#print queryresultarr
 
 #print qpresults['attrs']['names']
 #options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types'], 'qpsize':qpresults['size']}
