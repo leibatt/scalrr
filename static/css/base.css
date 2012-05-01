@@ -74,3 +74,23 @@ g.xaxis path,g.yaxis path {
 	opacity: .3;
 	stroke: #000;
 }
+
+.stations, .stations svg {
+  position: absolute;
+}
+
+.stations svg {
+  width: 60px;
+  height: 20px;
+  padding-right: 100px;
+  font: 10px sans-serif;
+}
+
+.stations circle {
+	opacity: .7;
+/*
+  fill: brown;
+  stroke: black;
+  stroke-width: 1.5px;
+*/
+}

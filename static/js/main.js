@@ -50,11 +50,12 @@ $(document).ready(function() {
 
 	function draw_graph(jsondata) {
 		var opts = {overlap:-0, r:1.5};
-		renderagg = new QVis.ScatterPlot('aggplot', opts);
+		//renderagg = new QVis.ScatterPlot('aggplot', opts);
+		renderagg = new QVis.MapPlot('aggplot', opts);
 		var data = jsondata['data'];
 		var labels={'gbs' : jsondata['names'],
-                   'x' : jsondata['names'][0],
-		   'y' : jsondata['names'][0],
+                   'x' : 'attrs.lat',//jsondata['names'][0],
+		   'y' : 'attrs.lon',//jsondata['names'][0],
                    'aggs' : jsondata['names']};
 		var types = jsondata['types'];
 		renderagg.render(data, labels,types);	

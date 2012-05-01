@@ -10,7 +10,7 @@ RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','F
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
-D3_DATA_THRESHOLD = 20000 #TODO: tune this to be accurate
+D3_DATA_THRESHOLD = 1000#20000 #TODO: tune this to be accurate
 
 db = 0
 
@@ -696,8 +696,8 @@ def getMultiArrFromQueryForJSON(query_result,options):
 	return {'attrs':alldata,'dims':alldims, 'dimmap':dimmap, 'names': namesobj, 'types': typesobj}
 
 scidbOpenConn()
-#query="select * from earthquake"
-query = "select * from bernoulli(random_numbers_big,.01)"
+query="select * from esmall"
+#query = "select * from bernoulli(random_numbers_big,.01)"
 #query = "scan(esmall)"
 myafl = False
 
@@ -719,7 +719,7 @@ queryresult = executeQuery(query,options) # ignore reduce_type for now
 
 options={'dimnames':qpresults['dims']}
 queryresultarr = getMultiArrFromQueryForJSON(queryresult,options)
-#print queryresultarr
+print queryresultarr
 
 #print qpresults['attrs']['names']
 #options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types'], 'qpsize':qpresults['size']}

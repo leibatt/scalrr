@@ -186,7 +186,7 @@ QVis.Graph.prototype.defaultRadius = function(d) {
 
 // just spits out blue
 QVis.Graph.prototype.defaultColor = function(d) {
-	return 'blue';
+	return 'red';
 }
 
 QVis.Graph.prototype.drawRects = function(container,_data,_types,xscale,yscale,x_label,y_label,width,height,color) {
