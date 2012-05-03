@@ -37,9 +37,18 @@
 					<option value="AGGR">aggregate</option>
 					<option value="SAMPLE">sample</option>
 					<option value="FILTER">filter</option>
+					
 				</select>
 			</fieldset>
-			<fieldset id="reduce-type-special"></fieldset>
+			<fieldset id="reduce-type-special">
+				<div id="filter-spec" class="spec filter">
+					<label for="predicate">Predicate Filter</label>
+					<input type="text" id="reduce-type-filter-predicate" name="predicate" placeholder="Write predicate here."></input>
+				</div>
+			</fieldset>
+			
+
+
 			<input type="submit" id="reduce-type-form-submit"></input>
 		</form>
 	</div>

@@ -94,3 +94,11 @@ g.xaxis path,g.yaxis path {
   stroke-width: 1.5px;
 */
 }
+
+#reduce-type-special div {
+	visibility: hidden;
+}
+
+#reduce-type-special.FILTER #filter-spec {
+	visibility: visible;
+}

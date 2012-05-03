@@ -50,12 +50,12 @@ $(document).ready(function() {
 
 	function draw_graph(jsondata) {
 		var opts = {overlap:-0, r:1.5};
-		//renderagg = new QVis.ScatterPlot('aggplot', opts);
-		renderagg = new QVis.MapPlot('aggplot', opts);
+		renderagg = new QVis.ScatterPlot('aggplot', opts);
+		//renderagg = new QVis.MapPlot('aggplot', opts);
 		var data = jsondata['data'];
 		var labels={'gbs' : jsondata['names'],
-                   'x' : 'attrs.lat',//jsondata['names'][0],
-		   'y' : 'attrs.lon',//jsondata['names'][0],
+                   'x' : jsondata['names'][0],
+		   'y' : jsondata['names'][1],
                    'aggs' : jsondata['names']};
 		var types = jsondata['types'];
 		renderagg.render(data, labels,types);	
@@ -67,20 +67,19 @@ $(document).ready(function() {
 			modal: true,
 			autoOpen: false,
 			closeOnEscape:false,
+			open: function() {
+				$("#reduce-type-menu").val('AGGR'); // set first element back to AGGR
+				$('#reduce-type-filter-predicate').val(''); // clear predicate value
+			},
 			create:function(){
 				// set the dialog to be visible
 				$('#reduce-type-form').css('visibility','visible');
-
+				
 				(function() {
 					$("#reduce-type-menu").change(function() { //reduce-type-special
 						var reduce_type = $(this).val();
+						$('#reduce-type-special').attr('class',reduce_type);
 						console.log("inner function reduce type: "+reduce_type);
-						if(reduce_type == 'FILTER') {
-							//add a field for the filter
-							$('#reduce-type-special').append('<label for="predicate">Predicate Filter</label>\
-								<input type="text" id="reduce-type-filter-predicate" name="predicate" placeholder="Write predicate here."></input>')
-								.trigger('create');
-						}
 					});
 				})();
 			},
