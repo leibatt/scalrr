@@ -137,8 +137,8 @@ def daggregate(query,options):
 		if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
 			if attraggs != "":
 				attraggs += ", "
-			attraggs+= "avg(scidbapitemptable."+str(attrs[i])+") as avg_"+attrs[i]
-	final_query = "select "+attraggs+" from ("+ final_query +") as scidbapitemptable regrid "+chunks
+			attraggs+= "avg("+str(attrs[i])+") as avg_"+attrs[i]
+	final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
 	print "final query:",final_query,"\nexecuting query..."
 	result = []
 	result = db.executeQuery(final_query,'aql')
@@ -717,13 +717,16 @@ queryresult = executeQuery(query,options) # ignore reduce_type for now
 #	print queryresultarr['data'][i]
 #	#print "attributes: ",queryresultarr['data'][i]['attributes'],",dimensions: ",queryresultarr['data'][i]['dimensions']
 
-options={'dimnames':qpresults['dims']}
-queryresultarr = getMultiArrFromQueryForJSON(queryresult,options)
-print queryresultarr
+#options={'dimnames':qpresults['dims']}
+#queryresultarr = getMultiArrFromQueryForJSON(queryresult,options)
+#print queryresultarr
 
 #print qpresults['attrs']['names']
-#options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types'], 'qpsize':qpresults['size']}
-#daggregate(query,options)
+options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types'], 'qpsize':qpresults['size']}
+queryresult = daggregate(query,options)
+options={'dimnames':qpresults['dims']}
+queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,options)
+print queryresultarr
 
 #options = {'afl':myafl,'qpsize':qpresults['size'], 'probability':.3}
 #dsample(query,options)
