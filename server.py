@@ -45,6 +45,16 @@ def get_data():
 def get_data2():
     return render_template('index2.html')
 
+#gets dim & attr names, along with num dims, and dim boundaries
+@app.route('/json-queryplan-info', methods=["POST", "GET"])
+def get_queryplan_info():
+    print "got json request in queryplan function"
+    query = request.args.get('query',"",type=str)
+    options = {'reduce_res_check':True}
+    queryplan = queryplan_execute(query,options)
+    print queryplan
+    return json.dumps(queryplan)
+
 @app.route('/json-data', methods=["POST", "GET"])
 def get_data_ajax():
     print "got json request in init function"
@@ -102,13 +112,23 @@ def query_execute(userquery,options):
 		sdbioptions['reduce_options'] = setup_reduce_type(options['reduce_type'],srtoptions)
 	else: #return original query
 		sdbioptions = {'afl':False,'reduce_res':False}
-	queryresult = sdbi.executeQuery(query,sdbioptions)
+	queryresultobj = sdbi.executeQuery(query,sdbioptions)
 
 	sdbioptions={'dimnames':saved_qpresults['dims']}
-	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresult,sdbioptions)
+	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
+	if queryresultobj[1] != 0:
+		saved_qpresults = queryresultobj[1]
+	# get the new dim info
+	queryresultarr['dimnames'] = saved_qpresults['dims'];
+	queryresultarr['dimbases'] = saved_qpresults['dimbases'];
+	queryresultarr['dimwidths'] = saved_qpresults['dimwidths'];
 	print "setting saved_qpresults to 0"
 	saved_qpresults = 0 # reset so we can use later
 	return queryresultarr
+
+def queryplan_execute(userquery,options):
+	sdbioptions = {'afl':False}
+	return sdbi.verifyQuery(userquery,sdbioptions)
 
 #returns necessary options for reduce type
 #options: {'afl':True/False, 'predicate':"boolean predicate",'probability':double,'chunkdims':[]}

@@ -10,24 +10,37 @@
 	<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
 	<script type="text/javascript" src="/static/js/d3.v2.js" ></script>
 	<script type="text/javascript" src="/static/js/main.js" ></script>
+	<script type="text/javascript" src="/static/js/colorbrewer.js" ></script>
 	<script type="text/javascript" src="/static/js/QVisBase.js?{{g.tstamp}}" ></script>
 	<script type="text/javascript" src="/static/js/QVisScatterPlot.js?{{g.tstamp}}" ></script>
 	<script type="text/javascript" src="/static/js/QVisMapPlot.js?{{g.tstamp}}" ></script>
+	<script type="text/javascript" src="/static/js/QVisHeatMap.js?{{g.tstamp}}" ></script>
 </head>
 
 
 <body style="margin: 20px;">
 	<form id="sql-query-form" method="post">
 		<textarea id="sql-query-text" name="text" placeholder="Write query here." rows="6" cols="100"></textarea>
+		<label for="vis-type">Visualizations</label>
+		<select name="vis-type" id="vis-type-menu">
+			<option value="scatterplot">Scatterplot</option>
+			<option value="linechart">Line chart (not currently supported)</option>
+			<option value="mapplot">Map plot</option>
+			<option value="histogram">Histogram (not currently supported)</option>
+			<option value="heatmap">Heat map</option>
+		<select>
 		<input type="submit" id="sql-query-submit" value="Submit Query"></input>
 	</form>
-	<h2 class="heading">Some plot<small></small></h2>
+	<h2 class="heading">Resulting Plot<small></small></h2>
 	<div id="aggplot">
 		<div class="legend"></div>
 		<svg></svg>
-		<div id="map"></div>
+		<div id="map">
+			<div></div>
+		</div>
 		<div name="xlabel" class="xlabel"></div>
 		<div class="ylabel"></div>
+		<div class="zlabel"></div>
 	</div>
 	<div id="dialog" title="Basic dialog">
 		<form id="reduce-type-form" >

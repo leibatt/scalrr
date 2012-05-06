@@ -44,9 +44,10 @@ def executeQuery(query,options):
 		print "final query:",final_query,"\nexecuting query..."
 		result = []
 		if options['afl']:
-			result = db.executeQuery(final_query,'afl')
+			result.append(db.executeQuery(final_query,'afl'))
 		else:
-			result = db.executeQuery(final_query,'aql')
+			result.append(db.executeQuery(final_query,'aql'))
+		result.append(0)
 		return result
 
 #function to do the resolution reduction when running queries
@@ -80,18 +81,37 @@ def check_query_plan(queryplan):
 	#print dim_array
 	dims = 0
 	size = 1
-	names = [];
+	names = []
+	bases= {}
+	widths = {}
 	for i, s in enumerate(dim_array):
 		if (i % 3) == 0:
 			# split on equals, get the range, split on ':'
 			#print "s:",s
 			range = s.split('=')[1]
-			names.append(s.split('=')[0])
-			rangevals = range.split(':')
-			rangewidth = int(rangevals[1]) - int(rangevals[0]) + 1
+			name = s.split('=')[0]
+			if name.find("(") != -1:
+				name = name[:name.find("(")]
+				rangewidth = int(range)
+				bases[name] = 1 #0 by default
+			else:
+				rangevals = range.split(':')
+				rangewidth = int(rangevals[1]) - int(rangevals[0]) + 1
+				bases[name]=rangevals[0];
+			names.append(name)
 			size *= rangewidth
 			dims += 1
-	return {'size': size, 'numdims': dims, 'dims': names, 'attrs':get_attrs(queryplan)}
+			widths[name] =rangewidth;
+	return {'size': size, 'numdims': dims, 'dims': names, 'attrs':get_attrs(queryplan),'dimbases':bases,'dimwidths':widths}
+
+#options: {'afl':True/False}
+#required options: afl
+#function to return the array definition from the query's SciDB query plan
+# to be used with regrid to fill zeroes using the merge function
+def get_arr_def(query,options):
+	queryplan = query_optimizer(query,options['afl'])
+	queryplan = str(queryplan)
+	return queryplan[queryplan.find("<"):queryplan.find("]")+1]
 
 #get all attributes of the result matrix
 def get_attrs(queryplan):
@@ -137,12 +157,17 @@ def daggregate(query,options):
 		if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
 			if attraggs != "":
 				attraggs += ", "
-			attraggs+= "avg("+str(attrs[i])+") as avg_"+attrs[i]
+			attraggs+= "avg("+str(attrs[i])+")"# as avg_"+attrs[i]
 	final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
-	print "final query:",final_query,"\nexecuting query..."
-	result = []
-	result = db.executeQuery(final_query,'aql')
-	return result
+
+	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
+	#	
+	#final_query = "regrid(("+final_query+"),"+chunks+","+attraggs+")" # afl
+	#print "final query:",final_query,"\nexecuting query..."
+	#result = []
+	#result = db.executeQuery(final_query,'aql')
+	#return result
+	return final_query
 
 #options: {'probability':double, 'afl':True/False, 'flex':'more'/'less'/'none','qpsize':int, 'bychunk':True/False }
 #required options: afl, probability OR qpsize
@@ -156,17 +181,17 @@ def dsample(query,options):
 	probability = str(probability);
 	# need to escape apostrophes or the new query will break
 	final_query = re.sub("(')","\\\1",final_query)
-	if options['afl']:
-		final_query = "bernoulli(("+final_query+"), "+probability+")"
-	else:
-		final_query = "select * from bernoulli(("+ final_query +"), "+probability+") "
+	#if options['afl']:
+	#	final_query = "bernoulli(("+final_query+"), "+probability+")"
+	#else:
+	final_query = "select * from bernoulli(("+ final_query +"), "+probability+")"
 	print "final query:",final_query,"\nexecuting query..."
-	result = []
-	if options['afl']:
-		result = db.executeQuery(final_query,'afl')
-	else:
-		result = db.executeQuery(final_query,'aql')
-	return result
+	#if options['afl']:
+	#	result = db.executeQuery(final_query,'afl')
+	#else:
+	#	result = db.executeQuery(final_query,'aql')
+	#return result
+	return final_query
 
 #options: {'afl':True/False,'predicate':"boolean expression"}
 #required options: afl, predicate
@@ -174,17 +199,17 @@ def dfilter(query, options):
 	final_query = query
 	# need to escape apostrophes or the new query will break
 	final_query = re.sub("(')","\\\1",final_query)
-	if options['afl']:
-		final_query = "filter(("+final_query+"), "+options['predicate']+")"
-	else:
-		final_query = "select * from ("+final_query+") where "+options['predicate']
+	#if options['afl']:
+	#	final_query = "filter(("+final_query+"), "+options['predicate']+")"
+	#else:
+	final_query = "select * from ("+final_query+") where "+options['predicate']
 	print "final query:",final_query,"\nexecuting query..."
-	result = []
-	if options['afl']:
-		result = db.executeQuery(final_query,'afl')
-	else:
-		result = db.executeQuery(final_query,'aql')
-	return result
+	#if options['afl']:
+	#	result = db.executeQuery(final_query,'afl')
+	#else:
+	#	result = db.executeQuery(final_query,'aql')
+	#return result
+	return final_query
 
 #options: {'qpresults':qpresults,'afl':afl, 'reduce_type':RES_TYPE,'predicate':"boolean expression"}
 #required options: reduce_type, qpresults, afl, predicate (if RESTYPE['FILTER'] is specified)
@@ -200,16 +225,20 @@ def reduce_resolution(query,options):
 		reduce_options['numdims'] = qpresults['numdims']
 		reduce_options['attrs'] = qpresults['attrs']['names']
 		reduce_options['attrtypes'] = qpresults['attrs']['types']
-		return daggregate(query,reduce_options)
+		newquery = daggregate(query,reduce_options)
 	elif reduce_type == RESTYPE['SAMPLE']:
 		if 'probability' in options:
 			reduce_options['probability'] = options['probability']
-		return dsample(query,reduce_options)
+		newquery = dsample(query,reduce_options)
 	elif reduce_type == RESTYPE['FILTER']:
 		reduce_options['predicate']=options['predicate']
-		return dfilter(query,reduce_options)
+		newquery = dfilter(query,reduce_options)
 	else:
 		raise Exception('reduce_type not recognized by scidb interface api')
+	result =[]
+	result.append(db.executeQuery(newquery,'aql'))
+	result.append(verifyQuery(newquery,{'afl':False}))
+	return result
 
 # function used to build a python "array" out of the given
 # scidb query result. attrname must be exact attribute 
@@ -458,7 +487,7 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	desc = query_result.array.getArrayDesc()
 	dims = desc.getDimensions() # list of DimensionDesc objects
 	attrs = desc.getAttributes() # list of AttributeDesc objects
-	origarrnamelen = len(desc.getName()) - 2
+	origarrnamelen = 0#len(desc.getName()) - 2
 	print "array name: ",desc.getName()
 	print "array name length: ",origarrnamelen
 
@@ -526,12 +555,20 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	typesobj = {}
 	for attri in range(len(attrnames)):
 		attrname = attrnames[attri]
-		namesobj.append("attrs."+attrname)
+		namesobj.append({'name':"attrs."+attrname,'isattr':True})
 		typesobj["attrs."+attrname] = attrs[attri].getType()
 	for dimname in dimnames:
 		ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
-		namesobj.append(ndimname)
+		namesobj.append({'name':ndimname,'isattr':False})
 		typesobj[ndimname] = "int32"
+	#for attri in range(len(attrnames)):
+	#	attrname = attrnames[attri]
+	#	namesobj.append("attrs."+attrname)
+	#	typesobj["attrs."+attrname] = attrs[attri].getType()
+	#for dimname in dimnames:
+	#	ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
+	#	namesobj.append(ndimname)
+	#	typesobj[ndimname] = "int32"
 	#print typesobj
 	#print 	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
 	return {'data':arr, 'names': namesobj, 'types': typesobj}
@@ -626,11 +663,11 @@ def getAttrArrFromQueryForJSON(query_result,options):
 	typesobj = {}
 	for attri in range(len(attrnames)):
 		attrname = attrnames[attri]
-		namesobj.append("attrs."+attrname)
+		namesobj.append({'name':"attrs."+attrname,'isattr':True})
 		typesobj["attrs."+attrname] = attrs[attri].getType()
 	for dimname in dimnames:
 		ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
-		namesobj.append(ndimname)
+		namesobj.append({'name':ndimname,'isattr':False})
 		typesobj[ndimname] = "int32"
 	#print typesobj
 	#print 	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
@@ -722,11 +759,11 @@ queryresult = executeQuery(query,options) # ignore reduce_type for now
 #print queryresultarr
 
 #print qpresults['attrs']['names']
-options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types'], 'qpsize':qpresults['size']}
-queryresult = daggregate(query,options)
-options={'dimnames':qpresults['dims']}
-queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,options)
-print queryresultarr
+#options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types'], 'qpsize':qpresults['size']}
+#queryresult = daggregate(query,options)
+#options={'dimnames':qpresults['dims']}
+#queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,options)
+#print queryresultarr
 
 #options = {'afl':myafl,'qpsize':qpresults['size'], 'probability':.3}
 #dsample(query,options)
