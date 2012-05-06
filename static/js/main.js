@@ -3,8 +3,13 @@ var renderagg = null;
 $(document).ready(function() {
 	$('#sql-query-submit').on('click',user_query_handler);
 	$('#reduce-type-form-submit').on('click',function(){return false;});
+	//$('#vis-type-menu').on('change',);
 	
 	function user_query_handler() {
+		console.log('made it here');
+		if(renderagg) {
+			renderagg.clear();
+		}
 		querytext = $('#sql-query-text').val();
 		dialogue(querytext);
 		//options: {query:'query to execute'}
@@ -49,16 +54,36 @@ $(document).ready(function() {
 	}
 
 	function draw_graph(jsondata) {
+		var menutype = $('#vis-type-menu').val();
 		var opts = {overlap:-0, r:1.5};
-		renderagg = new QVis.ScatterPlot('aggplot', opts);
-		//renderagg = new QVis.MapPlot('aggplot', opts);
+		switch(menutype) {
+			case 'mapplot':
+				renderagg = new QVis.MapPlot('aggplot', opts);
+				break;
+			case 'scatterplot':
+				renderagg = new QVis.ScatterPlot('aggplot', opts);
+				break;
+			case 'heatmap':
+				renderagg = new QVis.HeatMap('aggplot',opts);
+				break;
+			default:
+				console.log('menu type not supported, using scatterplot...');
+				renderagg = new QVis.ScatterPlot('aggplot', opts);
+		}
+		
 		var data = jsondata['data'];
-		var labels={'gbs' : jsondata['names'],
-                   'x' : jsondata['names'][0],
-		   'y' : jsondata['names'][1],
-                   'aggs' : jsondata['names']};
+		var labels={'names' : jsondata['names'],
+                   'x' : jsondata['names'][0]['name'],
+		   'y' : jsondata['names'][1]['name'],
+		   'z' : '',
+		   'dimbases':jsondata['dimbases'],
+		   'dimwidths':jsondata['dimwidths'],
+		   'dimnames':jsondata['dimnames']};
 		var types = jsondata['types'];
-		renderagg.render(data, labels,types);	
+		
+		console.log(jsondata['dimbases']);
+		console.log(jsondata['dimwidths']);
+		renderagg.render(data, labels,types);
 	}
 
 	function dialogue(querytext) {

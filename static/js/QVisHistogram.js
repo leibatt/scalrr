@@ -12,6 +12,9 @@ QVis.Historam.prototype = new QVis.Graph();
 //fix constructor reference
 QVis.Histogram.constructor = QVis.Histogram;
 
+//to get access to the original functions
+QVis.Histogram.base = QVis.Graph.prototype;
+
 //add a new render function
 //data format: {'data':[{},{},...],'names':["","",...],'types':{"":,"":,...}}
 QVis.Historam.prototype.render = function(_data, _labels,_types, opts) {

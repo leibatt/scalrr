@@ -24,11 +24,11 @@ g { border: none; padding:0pxs	; margin:0px; }
 	padding-left: 50;
 	font-family: 'helvetica neue', helvetica, garamond, verdana;
 }
-.legend div {
+.legend span {
 	padding-right: 10px;
 }
 
-div.xlabel, div.ylabel {
+div.xlabel, div.ylabel, div.zlabel {
 	margin: 10px;
 	text-align: center;
 }
@@ -79,13 +79,6 @@ g.xaxis path,g.yaxis path {
   position: absolute;
 }
 
-.stations svg {
-  width: 60px;
-  height: 20px;
-  padding-right: 100px;
-  font: 10px sans-serif;
-}
-
 .stations circle {
 	opacity: .7;
 /*
@@ -95,10 +88,15 @@ g.xaxis path,g.yaxis path {
 */
 }
 
+/* For controlling filter predicate field in reduce res dialogue */
 #reduce-type-special div {
 	visibility: hidden;
 }
 
 #reduce-type-special.FILTER #filter-spec {
 	visibility: visible;
+}
+
+#vis-type-menu {
+	display: block;
 }

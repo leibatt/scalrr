@@ -12,113 +12,35 @@ QVis.ScatterPlot.prototype = new QVis.Graph();
 //fix constructor reference
 QVis.ScatterPlot.constructor = QVis.ScatterPlot;
 
+//to get access to the original functions
+QVis.ScatterPlot.base = QVis.Graph.prototype;
+
 //add a new render function
 //data format: {'data':[{},{},...],'names':["","",...],'types':{"":,"":,...}}
 QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
-	// user wants us to draw something, so we know we have data now
-	//assumption: data is always presented with labels
-	if (!_labels || typeof(_labels) == 'undefined') {
-		QVis.error("Did not get any data to render!")
-		return;
-	}
+	this.selectx = true;
+	this.selecty = true;
+	this.selectz = true;
+	//call the original render function
+	var labelsfrombase = QVis.ScatterPlot.base.render.call(this,_data,_labels,_types,opts);
+	console.log("z_label "+labelsfrombase.z_label);
 
-	this.update_opts(opts); // if new options are passed, update the options
-
-	//clear everything to get them ready for drawing
-	this.jsvg = $("#"+this.rootid + " svg"),
-	this.jlegend = $("#"+this.rootid+" .legend");
-	this.xlabeldiv = $("#"+this.rootid+" .xlabel");	
-	this.ylabeldiv = $("#"+this.rootid+" .ylabel");		
-	this.jsvg.empty(); this.jlegend.empty(); this.xlabeldiv.empty(); this.ylabeldiv.empty();
-
-	// you should know why this is necessary
 	var self = this;
 
-	//console.log("this.rootid: " + this.rootid+", self.rootid: "+self.rootid);
-	//console.log("this == self?" + this === self);
-
-	// _labels.aggs contains the columns that will be plotted on the y-axis
-	// I iterate through each column and consolidate the points that would be rendered
-	// This means that there could be overlapping points from two different columns
-	var labels = _labels.aggs, 
-		x_label = _labels.x,
-		y_label = _labels.y,
-		cscale = d3.scale.category10().domain(labels);  // color scale
-
 	// create x,y axis scales
-	var xscale = this.createScale(_data,_types,x_label,this.w,this.px,false);
-	var yscale = this.createScale(_data,_types,y_label,this.h,this.py,true);
-
-	//TODO: push the legend and menu features into the graph object
-	// add the legend and color it appropriately
-	var legend = d3.selectAll(this.jlegend.get()).selectAll('text')
-			.data(labels)
-		.enter().append('div')
-			.style('float', 'left')
-			.style('color', cscale)
-			.text(String);		
-	
-	//
-	// render x-axis select options
-	var xaxisselect = this.xlabeldiv.append($("<select></select>")).find("select");
-	var xaxislabel = d3.selectAll(xaxisselect.get()).selectAll("option")
-			.data(_labels.gbs)
-		.enter().append("option")
-			.attr("value", String)
-			.text(String);
-	xaxisselect.val(x_label);
-	console.log(_labels.gbs);
-	//
-	// render y-axis select options
-	var yaxisselect = this.ylabeldiv.append($("<select></select>")).find("select");
-	var yaxisattrselect = yaxisselect.append($('<optgroup label="attrs"></optgroup>')).find("optgroup");
-	var yaxislabel = d3.selectAll(yaxisattrselect.get()).selectAll("option")
-			.data(_labels.gbs)
-		.enter().append("option")
-			.attr("value", String)
-			.text(String);
-	yaxisselect.val(y_label);
-	//
-	// I create and execute this anonymous function so
-	// selectedval will be private to and accessible by the .change() callback function
-	// Manually set the new labels and call render_scatterplot again
-	// 
-	// notice that I use "self" instead of "this".
-	//
-	(function() {
-		var selectedval = x_label;
-		$("#"+self.rootid+" .xlabel select").change(function() {
-			var val = $("#"+self.rootid+" .xlabel select").val();
-			var yval = $("#"+self.rootid+" .ylabel select").val(); // should be the same as before
-			console.log(["selected option", selectedval, val])				
-			if (val == selectedval) return;
-			selectedval = val;
-			var newlabels = {"x" : val,"y": yval, "gbs" : _labels.gbs, "aggs" : _labels.aggs};
-
-			self.render(_data, newlabels,_types, opts);
-		});
-	})();
-
-	(function() {
-		var selectedval = y_label;
-		$("#"+self.rootid+" .ylabel select").change(function() {
-			var val = $("#"+self.rootid+" .ylabel select").val();
-			var xval = $("#"+self.rootid+" .xlabel select").val(); // should be the same as before
-			console.log(["selected option", selectedval, val])				
-			if (val == selectedval) return;
-			selectedval = val;
-			var newlabels = {"y" : val,"x": xval, "gbs" : _labels.gbs, "aggs" : _labels.aggs};
-
-			self.render(_data, newlabels,_types, opts);
-		});
-	})();
+	var xscale = this.createScale(_data,_types,labelsfrombase.x_label,this.w,this.px,false,false);
+	var yscale = this.createScale(_data,_types,labelsfrombase.y_label,this.h,this.py,true,false);
+	var zscale = this.createScale(_data,_types,labelsfrombase.z_label,0,0,false,true)
+			.range(colorbrewer.Oranges[9]);
+	console.log("xscale domain: "+xscale.domain());
+	console.log("zscale range: "+zscale.range());
 
 	this.svg = d3.selectAll(this.jsvg.get())
 		.attr('width', this.w)
 		.attr('height', this.h)
 		.attr('class', 'g')
 		.attr('id', 'svg_'+this.rootid);
-	this.add_axes(xscale, yscale,x_label,y_label, self.strings,_types);
+	this.add_axes(xscale, yscale,labelsfrombase.x_label,labelsfrombase.y_label, self.strings,_types);
 				
 	this.circlecontainer = this.svg.append('g')
 		.attr("class", "circlecontainer")
@@ -127,7 +49,8 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 		.attr("x", 0)
 		.attr("y", 0);
 
-	this.drawCircles(this.circlecontainer,_data,_types,xscale,yscale,x_label,y_label,this.defaultRadius,this.defaultColor);
+	this.drawCircles(this.circlecontainer,_data,_types,xscale,yscale,labelsfrombase.x_label,labelsfrombase.y_label,this.defaultRadius,function(d) {return zscale(d[labelsfrombase.z_label]);});
 	//just testing the rects function
-	//this.drawRects(this.circlecontainer,_data,_types,xscale,yscale,x_label,y_label,this.defaultRadius,this.defaultRadius,this.defaultColor);
+	//this.drawRects(this.circlecontainer,_data,_types,xscale,yscale,labelsfrombase.x_label,labelsfrombase.y_label,this.defaultRadius,this.defaultRadius,this.defaultColor);
+
 }
