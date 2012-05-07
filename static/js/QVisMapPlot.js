@@ -32,7 +32,7 @@ QVis.MapPlot.prototype.render = function(_data, _labels,_types, opts) {
 
 	// Create the Google Map…
 	var map = new google.maps.Map(d3.select("#map div").node(), {
-		zoom: 2,
+		zoom: 1,
 		center: new google.maps.LatLng(37.76487, -122.41948),
 		mapTypeId: google.maps.MapTypeId.TERRAIN
 	});

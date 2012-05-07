@@ -26,7 +26,6 @@ $(document).ready(function() {
 				return false;
 			}
 			draw_graph(jsondata);
-
 		});
 		return false;
 	}

@@ -100,3 +100,11 @@ g.xaxis path,g.yaxis path {
 #vis-type-menu {
 	display: block;
 }
+
+#resulting-plot-header {
+	visibility: hidden;
+}
+
+#resulting-plot-header.show {
+	visibility: visible;
+}

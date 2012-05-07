@@ -127,6 +127,7 @@ QVis.Graph.prototype.createScale = function(_data,_types,label,axislength,axispa
 }
 // clear the relevant
 QVis.Graph.prototype.clear = function() {
+	$('#resulting-plot-header').removeClass('show');
 	this.map = $("#"+this.rootid + " #map");
 	this.jsvg = $("#"+this.rootid + " svg");
 	this.jlegend = $("#"+this.rootid+" .legend");
@@ -139,6 +140,11 @@ QVis.Graph.prototype.clear = function() {
 
 // perform basic rendering tasks common to all graphs
 QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
+	//clear everything to get them ready for drawing
+	this.clear();
+
+	$('#resulting-plot-header').addClass('show');
+
 	// user wants us to draw something, so we know we have data now.
 	//assumption: data is always presented with labels
 	if (!_labels || typeof(_labels) == 'undefined') {
@@ -147,9 +153,6 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	}
 
 	this.update_opts(opts); // if new options are passed, update the options
-
-	//clear everything to get them ready for drawing
-	this.clear();
 
 	// you should know why this is necessary
 	var self = this;

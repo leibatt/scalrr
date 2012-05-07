@@ -27,8 +27,8 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	var self = this;
 
 	// create x,y axis scales
-	var xdimname = ""+_labels.dimnames[0];
-	var ydimname = ""+_labels.dimnames[1];
+	var xdimname = ""+_labels.dimnames[1];
+	var ydimname = ""+_labels.dimnames[0];
 	console.log(xdimname+','+ydimname);
 	console.log(_labels.dimbases[xdimname]);
 	console.log(_labels.dimwidths[xdimname]);

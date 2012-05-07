@@ -157,7 +157,7 @@ def daggregate(query,options):
 		if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
 			if attraggs != "":
 				attraggs += ", "
-			attraggs+= "avg("+str(attrs[i])+")"# as avg_"+attrs[i]
+			attraggs+= "avg("+str(attrs[i])+") as avg_"+attrs[i]
 	final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
 
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
