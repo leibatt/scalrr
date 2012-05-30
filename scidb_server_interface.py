@@ -10,13 +10,14 @@ RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','F
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
-D3_DATA_THRESHOLD = 1000#20000 #TODO: tune this to be accurate
+D3_DATA_THRESHOLD = 10000#20000 #TODO: tune this to be accurate
 
 db = 0
 
 def scidbOpenConn():
 	global db
 	db = scidb.connect("localhost",1239)
+	#db = scidb.connect("vise4.csail.mit.edu",1239)
 
 def scidbCloseConn():
 	global db
@@ -238,6 +239,7 @@ def reduce_resolution(query,options):
 	result =[]
 	result.append(db.executeQuery(newquery,'aql'))
 	result.append(verifyQuery(newquery,{'afl':False}))
+	print result[1]
 	return result
 
 # function used to build a python "array" out of the given
@@ -733,19 +735,20 @@ def getMultiArrFromQueryForJSON(query_result,options):
 	return {'attrs':alldata,'dims':alldims, 'dimmap':dimmap, 'names': namesobj, 'types': typesobj}
 
 scidbOpenConn()
-query="select * from esmall"
+query = "select * from test3"
+#query="select * from esmall"
 #query = "select * from bernoulli(random_numbers_big,.01)"
 #query = "scan(esmall)"
 myafl = False
 
 options = {'afl':myafl}
 qpresults = verifyQuery(query,options)
-
+print qpresults
 options={'afl':myafl,'reduce_res':False}
 queryresult = executeQuery(query,options) # ignore reduce_type for now
-
-#options={'dimnames':qpresults['dims']}
-#queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,options)
+print queryresult
+options={'dimnames':qpresults['dims']}
+queryresultarr = getAllAttrArrFromQueryForJSON(queryresult[0],options)
 
 #options={'dimnames':qpresults['dims'],'attrnames':qpresults['attrs']['names'][0:4]}
 #queryresultarr = getAttrArrFromQueryForJSON(queryresult,options)
@@ -756,7 +759,7 @@ queryresult = executeQuery(query,options) # ignore reduce_type for now
 
 #options={'dimnames':qpresults['dims']}
 #queryresultarr = getMultiArrFromQueryForJSON(queryresult,options)
-#print queryresultarr
+print queryresultarr
 
 #print qpresults['attrs']['names']
 #options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types'], 'qpsize':qpresults['size']}

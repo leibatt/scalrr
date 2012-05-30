@@ -27,8 +27,8 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	var self = this;
 
 	// create x,y axis scales
-	var xdimname = ""+_labels.dimnames[1];
-	var ydimname = ""+_labels.dimnames[0];
+	var xdimname = ""+_labels.dimnames[0];
+	var ydimname = ""+_labels.dimnames[1];
 	console.log(xdimname+','+ydimname);
 	console.log(_labels.dimbases[xdimname]);
 	console.log(_labels.dimwidths[xdimname]);
@@ -36,9 +36,9 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	console.log(_labels.dimbases[ydimname]);
 	console.log(_labels.dimwidths[ydimname]);
 	console.log(Number(_labels.dimwidths[ydimname]+_labels.dimbases[ydimname]));
-	var zscale = this.createScale(_data,_types,labelsfrombase.z_label,this.w,this.px,false,true).range(colorbrewer.Oranges[9]);
-	var xscale = d3.scale.linear().domain([_labels.dimbases[xdimname],Number(_labels.dimwidths[xdimname])+Number(_labels.dimbases[xdimname])]).range([this.px,this.w-this.px]);
-	var yscale = d3.scale.linear().domain([_labels.dimbases[ydimname],Number(_labels.dimwidths[ydimname])+Number(_labels.dimbases[ydimname])]).range([this.py,this.h-this.py]);
+	var zscale = this.createScale(_data,_types,labelsfrombase.z_label,this.w,this.px,true,true).range(colorbrewer.GnBu[9]);
+	var xscale = d3.scale.linear().domain([Number(_labels.dimbases[xdimname]),Number(_labels.dimwidths[xdimname])+Number(_labels.dimbases[xdimname])]).range([this.px,this.w-this.px]);
+	var yscale = d3.scale.linear().domain([Number(_labels.dimwidths[ydimname])+Number(_labels.dimbases[ydimname]),Number(_labels.dimbases[ydimname])]).range([this.py,this.h-this.py]);
 	console.log(xscale.domain());
 	console.log(yscale.domain());
 	console.log(xscale.range());

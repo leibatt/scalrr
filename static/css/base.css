@@ -9,14 +9,22 @@ text {
 	stroke: black;
 	shape-rendering: crispEdges;
 }
+
 circle {
 	fill-opacity: 0.8;
 }
+
 .bgcircle{
 	fill: black;
 
 }
-g { border: none; padding:0pxs	; margin:0px; }
+
+g {
+	border: none;
+	padding:0pxs;
+	margin:0px;
+}
+
 .selectionrect {
 	fill: ;
 }
@@ -80,7 +88,7 @@ g.xaxis path,g.yaxis path {
 }
 
 .stations circle {
-	opacity: .7;
+	opacity: .4;
 /*
   fill: brown;
   stroke: black;
@@ -107,4 +115,18 @@ g.xaxis path,g.yaxis path {
 
 #resulting-plot-header.show {
 	visibility: visible;
+}
+
+/*
+This is for the brush
+*/
+rect.extent {
+    fill: #000000;
+    fill-opacity: 0.125;
+    stroke: #FFFFFF;
+}
+rect.frame {
+    fill: #FFFFFF;
+    fill-opacity: 0.7;
+    stroke: #AAAAAA;
 }

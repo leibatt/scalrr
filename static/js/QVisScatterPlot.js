@@ -21,6 +21,8 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 	this.selectx = true;
 	this.selecty = true;
 	this.selectz = true;
+
+	this.draw_obj = "circle";
 	//call the original render function
 	var labelsfrombase = QVis.ScatterPlot.base.render.call(this,_data,_labels,_types,opts);
 	console.log("z_label "+labelsfrombase.z_label);
@@ -52,5 +54,7 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 	this.drawCircles(this.circlecontainer,_data,_types,xscale,yscale,labelsfrombase.x_label,labelsfrombase.y_label,this.defaultRadius,function(d) {return zscale(d[labelsfrombase.z_label]);});
 	//just testing the rects function
 	//this.drawRects(this.circlecontainer,_data,_types,xscale,yscale,labelsfrombase.x_label,labelsfrombase.y_label,this.defaultRadius,this.defaultRadius,this.defaultColor);
+
+	this.add_brush(xscale,yscale,labelsfrombase.x_label,labelsfrombase.y_label,function(d) {return zscale(d[labelsfrombase.z_label]);},this.circlecontainer);
 
 }

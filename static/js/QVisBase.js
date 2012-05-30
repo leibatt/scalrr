@@ -14,7 +14,7 @@ QVis.Graph = function(rootid,opts) {
 	this.svg = null;
 
 	this.h = opts['h'] || 500;
-	this.w = opts['w'] || 800;
+	this.w = opts['w'] || 500;
 	this.px = 40;
 	this.py = 30;
 }
@@ -308,6 +308,48 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	return {'x_label':x_label,'y_label':y_label,'z_label':z_label};
 }
 
+/*
+used to create the brush so user can select objects in the visualization
+the color parameter should be a function returning the correct fill value
+*/
+QVis.Graph.prototype.add_brush = function(xscale,yscale,xlabel,ylabel,color,container) {
+	var draw_obj = this.draw_obj;
+	var svg = this.svg;
+	var default_color = "#CCCCCC";
+
+	// Clear the previously-active brush, if any.
+	function brushstart(p) {
+		if (brush.data !== p) {
+			container.call(brush.clear());
+			brush.x(xscale).y(yscale).data = p;
+		}
+	}
+
+	// Highlight the selected objects.
+	function brush(p) {
+		var e = brush.extent();
+		container.selectAll(draw_obj).attr("fill", function(d) {
+			return e[0][0] <= d[xlabel] && d[xlabel] <= e[1][0] //x
+				&& e[0][1] <= d[ylabel] && d[ylabel] <= e[1][1] //y
+				? color(d) : default_color;
+		});
+	}
+
+	// If the brush is empty, select all circles.
+	function brushend() {
+		if (brush.empty()) {
+			container.selectAll(draw_obj).attr("fill", function(d){return color(d);});
+		}
+	}
+
+	var brush = d3.svg.brush()
+		.on("brushstart", brushstart)
+		.on("brush", brush)
+		.on("brushend", brushend);
+
+	container.call(brush.x(xscale).y(yscale));
+}
+
 QVis.Graph.prototype.add_axes = function(xscale,yscale,x_label,y_label,stringticks,_types){
 	var self = this;
 	var xaxis = d3.svg.axis().scale(xscale).orient('bottom').tickPadding(10);// orient just describes what side of the axis to put the text on
@@ -373,7 +415,8 @@ QVis.Graph.prototype.drawCircles = function(container,_data,_types,xscale,yscale
 			.attr('label', function(d,i){return drawindex*range+i;});
 	}
 	*/
-
+/*
+	// if I end up using this, I need a way to track the points when using the brush
 	for(var drawindex = 0; drawindex < _data.length; drawindex++) {
 		container.append('circle')
 			.attr('cy', yscale(temp.get_data_obj(_data[drawindex][y_label],_types[y_label])))
@@ -382,6 +425,17 @@ QVis.Graph.prototype.drawCircles = function(container,_data,_types,xscale,yscale
 			.attr('fill', color(_data[drawindex]))
 			.attr('label', drawindex);
 	}
+*/
+
+	var circles = d3.select("#"+this.rootid + " svg g.circlecontainer").selectAll('circle')
+		.data(_data)
+			
+	circles.enter().append('circle')
+		.attr('cy', function(d) { return yscale(temp.get_data_obj(d[y_label],_types[y_label]));})
+		.attr('cx', function(d) { return xscale(temp.get_data_obj(d[x_label],_types[x_label]));})
+		.attr('r', function(d) { return radius(temp.get_data_obj(d[x_label],_types[x_label]));})
+		.attr('fill', function(d){return color(d);})
+		.attr('label', function(d,i){return i;});
 }
 
 // just spits out a radius of 2
@@ -439,3 +493,4 @@ QVis.Graph.prototype.drawLines = function(container,_data,_types,xscale,yscale) 
 	//draw then draw the lines
 
 }
+
