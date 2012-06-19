@@ -20,6 +20,8 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	this.selectx = false;
 	this.selecty = false;
 	this.selectz = true;
+	
+	this.draw_obj = "rect";
 	//call the original render function
 	var labelsfrombase = QVis.HeatMap.base.render.call(this,_data,_labels,_types,opts);
 
@@ -63,5 +65,7 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	this.drawRects(this.rectcontainer,_data,_types,xscale,yscale,'dims.'+xdimname,'dims.'+ydimname,function(d){return Math.max(1,(self.w-2*self.px)/_labels.dimwidths[xdimname])},
 		function(d){return Math.max(1,(self.h-2*self.py)/_labels.dimwidths[ydimname]);},
 		function(d) {return zscale(d[labelsfrombase.z_label]);});
+
+	this.add_brush(xscale,yscale,'dims.'+xdimname,'dims.'+ydimname,function(d) {return zscale(d[labelsfrombase.z_label]);},this.rectcontainer);
 
 }

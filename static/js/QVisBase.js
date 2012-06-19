@@ -14,7 +14,7 @@ QVis.Graph = function(rootid,opts) {
 	this.svg = null;
 
 	this.h = opts['h'] || 500;
-	this.w = opts['w'] || 500;
+	this.w = opts['w'] || 700;
 	this.px = 40;
 	this.py = 30;
 }
@@ -136,6 +136,7 @@ QVis.Graph.prototype.clear = function() {
 	this.zlabeldiv = $("#"+this.rootid+" .zlabel");	
 	this.jsvg.empty(); this.jlegend.empty(); this.xlabeldiv.empty(); this.ylabeldiv.empty(); this.zlabeldiv.empty(); this.map.empty();
 	this.map.append('<div></div>');
+	this.brush = null;
 }
 
 // perform basic rendering tasks common to all graphs
@@ -317,6 +318,9 @@ QVis.Graph.prototype.add_brush = function(xscale,yscale,xlabel,ylabel,color,cont
 	var svg = this.svg;
 	var default_color = "#CCCCCC";
 
+	// I am pretty sure I don't need these p parameters,
+	// they were for the frames in the d3 example I used.
+
 	// Clear the previously-active brush, if any.
 	function brushstart(p) {
 		if (brush.data !== p) {
@@ -342,10 +346,13 @@ QVis.Graph.prototype.add_brush = function(xscale,yscale,xlabel,ylabel,color,cont
 		}
 	}
 
-	var brush = d3.svg.brush()
+	// so I have access to the brush extent for zooms
+	this.brush = d3.svg.brush()
 		.on("brushstart", brushstart)
 		.on("brush", brush)
 		.on("brushend", brushend);
+
+	var brush = this.brush;
 
 	container.call(brush.x(xscale).y(yscale));
 }
@@ -427,15 +434,13 @@ QVis.Graph.prototype.drawCircles = function(container,_data,_types,xscale,yscale
 	}
 */
 
-	var circles = d3.select("#"+this.rootid + " svg g.circlecontainer").selectAll('circle')
-		.data(_data)
-			
-	circles.enter().append('circle')
-		.attr('cy', function(d) { return yscale(temp.get_data_obj(d[y_label],_types[y_label]));})
-		.attr('cx', function(d) { return xscale(temp.get_data_obj(d[x_label],_types[x_label]));})
-		.attr('r', function(d) { return radius(temp.get_data_obj(d[x_label],_types[x_label]));})
-		.attr('fill', function(d){return color(d);})
-		.attr('label', function(d,i){return i;});
+	container.selectAll('circle')
+		.data(_data).enter().append('circle')
+			.attr('cy', function(d) { return yscale(temp.get_data_obj(d[y_label],_types[y_label]));})
+			.attr('cx', function(d) { return xscale(temp.get_data_obj(d[x_label],_types[x_label]));})
+			.attr('r', function(d) { return radius(temp.get_data_obj(d[x_label],_types[x_label]));})
+			.attr('fill', function(d){return color(d);})
+			.attr('label', function(d,i){return i;});
 }
 
 // just spits out a radius of 2
@@ -472,6 +477,7 @@ QVis.Graph.prototype.drawRects = function(container,_data,_types,xscale,yscale,x
 				.attr('label', x_label);
 	}
 	*/
+/*
 	for(var drawindex = 0; drawindex < _data.length; drawindex++) {
 		//console.log(xscale(temp.get_data_obj(_data[drawindex][y_label],_types[x_label])));
 		//console.log(yscale(temp.get_data_obj(_data[drawindex][y_label],_types[y_label])));
@@ -486,6 +492,17 @@ QVis.Graph.prototype.drawRects = function(container,_data,_types,xscale,yscale,x
 			.attr('fill', color(_data[drawindex]))
 			.attr('label', drawindex);
 	}
+*/
+
+	container.selectAll('rect')
+		.data(_data)
+	.enter().append('rect')
+		.attr('y', function(d) { return yscale(temp.get_data_obj(d[y_label],_types[y_label]))})
+		.attr('x', function(d) { return xscale(temp.get_data_obj(d[x_label],_types[x_label]))})
+		.attr('width', function(d) { return width(temp.get_data_obj(d[x_label],_types[x_label]))})
+		.attr('height', function(d) { return height(temp.get_data_obj(d[x_label],_types[x_label]))})
+		.attr('fill', function(d) { return color(d);})
+		.attr('label', function(d,i) {return i;});
 }
 
 QVis.Graph.prototype.drawLines = function(container,_data,_types,xscale,yscale) {
