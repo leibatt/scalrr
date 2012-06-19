@@ -6,6 +6,7 @@ import json
 import md5
 import traceback
 import scidb_server_interface as sdbi
+import mysql_server_interface as mdbi
 app = Flask(__name__)
 
 saved_qpresults = 0
@@ -60,7 +61,8 @@ def get_data_ajax():
     print "got json request in init function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':True}
-    queryresultarr = query_execute(query,options)
+    #queryresultarr = query_execute(query,options)
+    queryresultarr = query_execute_base(query,options)
     #print queryresultarr
     #print json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
@@ -89,6 +91,12 @@ def get_data_ajax_reduce():
     #print queryresultarr
     #print json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
+
+def query_execute_base(userquery,options):
+	query = userquery
+	mdbioptions = {}
+	mdbi.mysqlExecuteQuery(query,mdbioptions)
+	return mdbi.getAllAttrArrFromQueryForJSON(mdbioptions)
 
 #options: {reduce_res_check:True/False}
 def query_execute(userquery,options):
