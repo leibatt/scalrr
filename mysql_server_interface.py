@@ -1,7 +1,8 @@
 import string, re
-import simplejson as json
+#import simplejson as json
+import json
 import math
-import MySQLdb
+import MySQLdb as mysqldb
 
 LOGICAL_PHYSICAL = "explain_physical"
 RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','FILTER':'filter','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
@@ -9,9 +10,10 @@ AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
 D3_DATA_THRESHOLD = 10000#20000 #TODO: tune this to be accurate
-DBUSERNAME = "scidb"
-DBPASSWD = "scidb"
-DBNAME = "scidb"
+DBHOST = "localhost"
+DBUSERNAME = "failsafe"
+DBPASSWD = "password"
+DBNAME = "TNDriveToData"
 
 db = 0
 cur = 0
@@ -24,10 +26,10 @@ def mysqlOpenConn():
         #              db="jonhydb") # name of the data base
 	#db = scidb.connect("localhost",1239)
 	#db = scidb.connect("vise4.csail.mit.edu",1239)
-	db = MySQLdb.connect(host="drivedb.byledge.net", # your host, usually localhost
-                     user="remote", # your username
-                      passwd="remote_PASS1", # your password
-                      db="TNDriveToData") # name of the data base
+	db = mysqldb.connect(host=DBHOST, # your host, usually localhost
+                     user=DBUSERNAME, # your username
+                      passwd=DBPASSWD, # your password
+                      db=DBNAME) # name of the data base
 
 def mysqlCloseConn():
 	global db
@@ -36,14 +38,14 @@ def mysqlCloseConn():
 		db = 0
 
 def mysqlExecuteQuery(query,options):
-	db = MySQLdb.connect(host="drivedb.byledge.net", # your host, usually localhost
-                     user="remote", # your username
-                      passwd="remote_PASS1", # your password
-                      db="TNDriveToData") # name of the data base
 	global cur
+	if cur != 0:
+		cur.close()
+		cur = 0
 	cur = db.cursor()
 	cur.execute(query)
 	#return cur.fetchall() # returns an array?
+	return 0
 
 #options: {'afl':True/False}
 #required options: afl
@@ -487,17 +489,51 @@ def getAllAttrArrFromQuery(query_result):
 		its[0].increment_to_next()
 	return arr
 
+#def mysql identify_datatype(int field_type):
+#	#ints
+#	if field_type == mysqldb.constants.FIELD_TYPE.INT24
+#		or mysqldb.constants.FIELD_TYPE.
+#
+#	#doubles
+#
+#	#strings
+#
+#	#dates
 
-def mysqlGetAllAttrArrFromQueryForJSON(query_result,options):
+def mysqlGetAllAttrArrFromQueryForJSON(options):
 	step = 1000
-	attrnames = {}
+	attrnames = []
+	dimnames = []
 	desc = cur.description
-	print "desc [0][0]: ",desc[0][0]
-	#while (rows = cur.fetchmany(step)) is not None:
-	#	for i in range(len(rows)):
-	#		row = rows[i]
-	return 0		
-		
+	print desc
+	for i in range(len(desc)):
+		#print "desc[",i,"][0]:",desc[i][0]
+		attrnames.append(desc[i][0]) # get attr name
+	rows = cur.fetchmany(step)
+	while len(rows) > 0:
+		#print rows
+		for i in range(len(rows)):
+			row = rows[i]
+			print row
+			print type(row[0]).__name__
+			#for j in range(len(row)):
+		rows = cur.fetchmany(step)
+
+	namesobj = []
+	typesobj = {}
+	for attri in range(len(attrnames)):
+		attrname = attrnames[attri]
+		namesobj.append({'name':"attrs."+attrname,'isattr':True})
+		typesobj["attrs."+attrname] = desc[attri][2]
+	#for dimname in dimnames:
+	#	ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
+	#	namesobj.append({'name':ndimname,'isattr':False})
+	#	typesobj[ndimname] = "int32"
+
+	#print typesobj
+	#print 	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
+	#return {'data':arr, 'names': namesobj, 'types': typesobj}
+	return 0	
 
 #does returns items in a nicer/more accurate format for JSON
 #organization is an array of objects, where each object has a dimensions object and attributes object.
@@ -767,10 +803,10 @@ def getMultiArrFromQueryForJSON(query_result,options):
 	return {'attrs':alldata,'dims':alldims, 'dimmap':dimmap, 'names': namesobj, 'types': typesobj}
 
 mysqlOpenConn()
-query = "select * from test02 limit 10"
-mysqlExecuteQuery(query)
+query = "select create_time,recent_stop_id,lat,lon from vis limit 10"
 options={}
-mysqlGetAllAttrArrFromQueryForJson(options);
+mysqlExecuteQuery(query,options)
+mysqlGetAllAttrArrFromQueryForJSON(options);
 
 #query = "select * from test3"
 #query="select * from esmall"
