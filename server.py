@@ -15,11 +15,13 @@ saved_qpresults = 0
 def before_request():
     """Make sure we are connected to the database each request."""
     sdbi.scidbOpenConn()
+    mdbi.mysqlOpenConn()
 
 @app.teardown_request
 def teardown_request(exception):
     """Closes the database again at the end of the request."""
     sdbi.scidbCloseConn()
+    mdbi.mysqlOpenConn()
 
 @app.route('/', methods=["POST", "GET"])
 def index():
@@ -67,6 +69,13 @@ def get_data_ajax():
     #print json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
+#mysql code
+def query_execute_base(userquery,options):
+	query = userquery
+	mdbioptions = {}
+	mdbi.mysqlExecuteQuery(query,mdbioptions)
+	return mdbi.mysqlGetAllAttrArrFromQueryForJSON(mdbioptions)
+
 @app.route('/json-data-noreduction', methods=["POST", "GET"])
 def get_data_ajax_noreduction():
     print "got json request in noreduce function"
@@ -91,12 +100,6 @@ def get_data_ajax_reduce():
     #print queryresultarr
     #print json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
-
-def query_execute_base(userquery,options):
-	query = userquery
-	mdbioptions = {}
-	mdbi.mysqlExecuteQuery(query,mdbioptions)
-	return mdbi.getAllAttrArrFromQueryForJSON(mdbioptions)
 
 #options: {reduce_res_check:True/False}
 def query_execute(userquery,options):

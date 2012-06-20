@@ -759,7 +759,8 @@ queryresultarr = getAllAttrArrFromQueryForJSON(queryresult[0],options)
 
 #options={'dimnames':qpresults['dims']}
 #queryresultarr = getMultiArrFromQueryForJSON(queryresult,options)
-print queryresultarr
+
+#print queryresultarr
 
 #print qpresults['attrs']['names']
 #options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types'], 'qpsize':qpresults['size']}

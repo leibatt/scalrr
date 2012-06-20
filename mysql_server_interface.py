@@ -3,6 +3,9 @@ import string, re
 import json
 import math
 import MySQLdb as mysqldb
+import decimal # to check for decimals, bc they are not serializable
+import datetime # to check for datetimes, bc they are not serializable
+import time # to convert to timestamps
 
 LOGICAL_PHYSICAL = "explain_physical"
 RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','FILTER':'filter','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
@@ -10,13 +13,40 @@ AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
 D3_DATA_THRESHOLD = 10000#20000 #TODO: tune this to be accurate
+#DBHOST = "localhost"
+#DBUSERNAME = "failsafe"
+#DBPASSWD = "password"
+#DBNAME = "TNDriveToData"
+
 DBHOST = "localhost"
-DBUSERNAME = "failsafe"
+DBUSERNAME = "testuser"
 DBPASSWD = "password"
-DBNAME = "TNDriveToData"
+DBNAME = "test"
+
+#converts Python data type strings to scidb data type strings
+#TODO: change server interface code to map to python types?
+DATATYPE = {
+	mysqldb.constants.FIELD_TYPE.CHAR:'string',
+	mysqldb.constants.FIELD_TYPE.DATE:'datetime',
+	mysqldb.constants.FIELD_TYPE.DATETIME:'datetime',
+	mysqldb.constants.FIELD_TYPE.DECIMAL:'double',
+	mysqldb.constants.FIELD_TYPE.FLOAT:'double',
+	mysqldb.constants.FIELD_TYPE.INT24:'int32',
+	mysqldb.constants.FIELD_TYPE.LONG:'int64',
+	mysqldb.constants.FIELD_TYPE.LONGLONG:'int64',
+	mysqldb.constants.FIELD_TYPE.NEWDATE:'datetime',
+	mysqldb.constants.FIELD_TYPE.NEWDECIMAL:'double',
+	mysqldb.constants.FIELD_TYPE.SHORT:'int32',
+	mysqldb.constants.FIELD_TYPE.STRING:'string',
+	mysqldb.constants.FIELD_TYPE.TIMESTAMP:'datetime',
+	mysqldb.constants.FIELD_TYPE.TINY:'int32',
+	mysqldb.constants.FIELD_TYPE.VAR_STRING:'string',
+	mysqldb.constants.FIELD_TYPE.VARCHAR:'string',
+	mysqldb.constants.FIELD_TYPE.YEAR:'int32'
+}
 
 db = 0
-cur = 0
+cur = None
 
 def mysqlOpenConn():
 	global db
@@ -39,9 +69,9 @@ def mysqlCloseConn():
 
 def mysqlExecuteQuery(query,options):
 	global cur
-	if cur != 0:
+	if cur is not None:
 		cur.close()
-		cur = 0
+		cur = None
 	cur = db.cursor()
 	cur.execute(query)
 	#return cur.fetchall() # returns an array?
@@ -505,34 +535,47 @@ def mysqlGetAllAttrArrFromQueryForJSON(options):
 	attrnames = []
 	dimnames = []
 	desc = cur.description
-	print desc
+
+	arr = []
+	#print desc
 	for i in range(len(desc)):
 		#print "desc[",i,"][0]:",desc[i][0]
 		attrnames.append(desc[i][0]) # get attr name
 	rows = cur.fetchmany(step)
-	while len(rows) > 0:
-		#print rows
-		for i in range(len(rows)):
-			row = rows[i]
-			print row
-			print type(row[0]).__name__
-			#for j in range(len(row)):
-		rows = cur.fetchmany(step)
+	if len(rows) > 0:
+		typerow = rows[0]
+		while len(rows) > 0:
+			#print rows
+			for i in range(len(rows)):
+				dataobj = {}
+				row = rows[i]
+				#print row
+				for j in range(len(row)):
+					#print type(row[j]).__name__ # use python's translated types
+					if type(row[j]) == decimal.Decimal:
+						dataobj["attrs."+attrnames[j]] = float(row[j])
+					elif type(row[j]) == datetime.datetime:
+						dataobj["attrs."+attrnames[j]] = long(time.mktime(row[j].timetuple()))
+					else:
+						dataobj["attrs."+attrnames[j]] = row[j]
+				arr.append(dataobj)
+			rows = cur.fetchmany(step)
 
 	namesobj = []
 	typesobj = {}
 	for attri in range(len(attrnames)):
 		attrname = attrnames[attri]
 		namesobj.append({'name':"attrs."+attrname,'isattr':True})
-		typesobj["attrs."+attrname] = desc[attri][2]
-	#for dimname in dimnames:
-	#	ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
-	#	namesobj.append({'name':ndimname,'isattr':False})
-	#	typesobj[ndimname] = "int32"
+		typesobj["attrs."+attrname] = DATATYPE[desc[attri][1]]
+		#print desc[attri][1],",",DATATYPE[desc[attri][1]]
+	#currently no dims
+	for dimname in dimnames:
+		namesobj.append({'name':'dims.'+dimname,'isattr':False})
+		typesobj[ndimname] = "int32"
 
 	#print typesobj
-	#print 	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
-	#return {'data':arr, 'names': namesobj, 'types': typesobj}
+	#print 	{'data':arr, 'names': namesobj, 'types': typesobj}
+	return {'data':arr, 'names': namesobj, 'types': typesobj}
 	return 0	
 
 #does returns items in a nicer/more accurate format for JSON
@@ -601,7 +644,7 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 				#print "chunkiterindex: ",chunkiterindex
 				dataitem = chunkiters[chunkiterindex].getItem()
 				# look up the value according to its attribute's typestring
-				attrobj[attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType()) # TBD: eliminate 2nd arg, make method on dataitem
+				#attrobj[attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType()) # TBD: eliminate 2nd arg, make method on dataitem
 				dataobj["attrs."+attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType())
 				#print "Data: %s" % item
 				#chunkiters[i].increment_to_next()
@@ -803,10 +846,11 @@ def getMultiArrFromQueryForJSON(query_result,options):
 	return {'attrs':alldata,'dims':alldims, 'dimmap':dimmap, 'names': namesobj, 'types': typesobj}
 
 mysqlOpenConn()
-query = "select create_time,recent_stop_id,lat,lon from vis limit 10"
+#query = "select create_time,recent_stop_id,lat,lon from vis limit 10"
+query = "select * from earthquake limit 10"
 options={}
 mysqlExecuteQuery(query,options)
-mysqlGetAllAttrArrFromQueryForJSON(options);
+mysqlGetAllAttrArrFromQueryForJSON(options)
 
 #query = "select * from test3"
 #query="select * from esmall"
