@@ -11,17 +11,27 @@ app = Flask(__name__)
 
 saved_qpresults = 0
 
+#databases
+SCIDB = 'scidb'
+MYSQL = 'mysql'
+
+DEFAULT_DB = MYSQL
+
 @app.before_request
 def before_request():
     """Make sure we are connected to the database each request."""
-    sdbi.scidbOpenConn()
-    mdbi.mysqlOpenConn()
+    if DEFAULT_DB == SCIDB:
+    	sdbi.scidbOpenConn()
+    else:
+    	mdbi.mysqlOpenConn()
 
 @app.teardown_request
 def teardown_request(exception):
     """Closes the database again at the end of the request."""
-    sdbi.scidbCloseConn()
-    mdbi.mysqlOpenConn()
+    if DEFAULT_DB == SCIDB:
+    	sdbi.scidbCloseConn()
+    else:
+    	mdbi.mysqlOpenConn()
 
 @app.route('/', methods=["POST", "GET"])
 def index():
@@ -63,8 +73,11 @@ def get_data_ajax():
     print "got json request in init function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':True}
-    #queryresultarr = query_execute(query,options)
-    queryresultarr = query_execute_base(query,options)
+    queryresultarr = None
+    if DEFAULT_DB == SCIDB:
+    	queryresultarr = query_execute(query,options)
+    else:
+    	queryresultarr = query_execute_base(query,options)
     #print queryresultarr
     #print json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
@@ -136,7 +149,7 @@ def query_execute(userquery,options):
 	queryresultarr['dimwidths'] = saved_qpresults['dimwidths'];
 	print "setting saved_qpresults to 0"
 	saved_qpresults = 0 # reset so we can use later
-	return queryresultarr
+	return queryresultarr # note that I don't set reduce_res false. JS code will still handle it properly
 
 def queryplan_execute(userquery,options):
 	sdbioptions = {'afl':False}
