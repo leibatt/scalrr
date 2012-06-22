@@ -1,6 +1,6 @@
 from gevent.pywsgi import WSGIServer # must be pywsgi to support websocket
 from geventwebsocket.handler import WebSocketHandler
-from flask import Flask, request, render_template, g, redirect
+from flask import Flask, request, render_template, g, redirect, send_file
 import random
 import json
 import md5
@@ -57,6 +57,18 @@ def get_data():
 @app.route('/index2/', methods=["POST", "GET"])
 def get_data2():
     return render_template('index2.html')
+
+@app.route('/example/', methods=["POST", "GET"])
+def get_data_example():
+    return render_template('example.html')
+
+@app.route('/example/readme.json', methods=["POST", "GET"])
+def get__example_readme():
+    return send_file("data/readme.json")
+
+@app.route('/example/latlon.csv', methods=["POST", "GET"])
+def get_data_example_latlon():
+    return send_file("data/latlon.csv",mimetype="text/csv")
 
 #gets dim & attr names, along with num dims, and dim boundaries
 @app.route('/json-queryplan-info', methods=["POST", "GET"])
