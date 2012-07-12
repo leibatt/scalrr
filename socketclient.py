@@ -10,11 +10,13 @@ for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
     try:
 	s = socket.socket(af, socktype, proto)
     except socket.error, msg:
+	print msg
 	s = None
 	continue
     try:
 	s.connect(sa)
     except socket.error, msg:
+	print msg
 	s.close()
 	s = None
 	continue

@@ -4,6 +4,7 @@ import scidbapi as scidb
 import string, re
 import simplejson as json
 import math
+from datetime import datetime
 
 LOGICAL_PHYSICAL = "explain_physical"
 RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','FILTER':'filter','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
@@ -16,8 +17,8 @@ db = 0
 
 def scidbOpenConn():
 	global db
-	db = scidb.connect("localhost",1239)
-	#db = scidb.connect("vise4.csail.mit.edu",1239)
+	#db = scidb.connect("localhost",1239)
+	db = scidb.connect("vise4.csail.mit.edu",1239)
 
 def scidbCloseConn():
 	global db
@@ -37,12 +38,13 @@ def verifyQuery(query,options):
 #options:{'afl':True/False,reduce_res:True/False,'reduce_options':options}
 #required options: reduce_res, reduce_options if reduce_res is true, afl if reduce_res is false
 def executeQuery(query,options):
+	print "executing query",datetime.now()
 	final_query = query
 	if(options['reduce_res']): #reduction requested
 		return reduce_resolution(query,options['reduce_options'])
 	else:
 		print "running original query."
-		print "final query:",final_query,"\nexecuting query..."
+		print "final query:",final_query#,"\nexecuting query",datetime.now()
 		result = []
 		if options['afl']:
 			result.append(db.executeQuery(final_query,'afl'))
@@ -485,6 +487,7 @@ def getAllAttrArrFromQuery(query_result):
 #options: {'dimnames':[]}
 #required options: dimnames
 def getAllAttrArrFromQueryForJSON(query_result,options):
+	print "parsing query result and building json dump",datetime.now()
 	dimnames = options['dimnames']
 	desc = query_result.array.getArrayDesc()
 	dims = desc.getDimensions() # list of DimensionDesc objects
@@ -573,6 +576,7 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	#	typesobj[ndimname] = "int32"
 	#print typesobj
 	#print 	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
+	print "done parsing results, returning dump-ready version",datetime.now()
 	return {'data':arr, 'names': namesobj, 'types': typesobj}
 	#return {'data': arr, 'names': {'dimnames': dimnames, 'attrnames': attrnames}}
 	

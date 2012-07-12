@@ -18,10 +18,10 @@ D3_DATA_THRESHOLD = 10000#20000 #TODO: tune this to be accurate
 #DBPASSWD = "password"
 #DBNAME = "TNDriveToData"
 
-DBHOST = "localhost"
-DBUSERNAME = "testuser"
-DBPASSWD = "password"
-DBNAME = "test"
+DBHOST = "drivedb.byledge.net"
+DBUSERNAME = "test1user"
+DBPASSWD = "test1pass"
+DBNAME = "TNDriveData"
 
 #converts Python data type strings to scidb data type strings
 #TODO: change server interface code to map to python types?
@@ -847,10 +847,10 @@ def getMultiArrFromQueryForJSON(query_result,options):
 
 mysqlOpenConn()
 #query = "select create_time,recent_stop_id,lat,lon from vis limit 10"
-query = "select * from earthquake limit 10"
+#query = "select * from earthquake limit 10"
 options={}
-mysqlExecuteQuery(query,options)
-mysqlGetAllAttrArrFromQueryForJSON(options)
+#mysqlExecuteQuery(query,options)
+#mysqlGetAllAttrArrFromQueryForJSON(options)
 
 #query = "select * from test3"
 #query="select * from esmall"

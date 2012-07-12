@@ -13,9 +13,9 @@ QVis.Graph = function(rootid,opts) {
 	this.ylabeldiv = null;
 	this.svg = null;
 
-	this.h = opts['h'] || 500;
-	this.w = opts['w'] || 700;
-	this.px = 40;
+	this.h = opts['h'] || 600;
+	this.w = opts['w'] || 900;
+	this.px = 80;
 	this.py = 30;
 }
 
@@ -32,8 +32,8 @@ QVis.Graph.prototype.update_opts = function (opts) {
 	if (!opts) return;
 	this.overlap = opts['overlap'] || this.overlap || -2;
 	this.r = opts['r'] || this.r || 1.5;
-	this.h = opts['h'] || this.h || 300;
-	this.w = opts['w'] || this.w || 800;		
+	this.h = opts['h'] || this.h || 600;
+	this.w = opts['w'] || this.w || 900;		
 }
 
 //data wrapper function
