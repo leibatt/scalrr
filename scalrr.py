@@ -198,3 +198,4 @@ if __name__ == "__main__":
     http_server = WSGIServer(address, app, handler_class=WebSocketHandler)
     print "server is running now"
     http_server.serve_forever()
+    #app.run()
