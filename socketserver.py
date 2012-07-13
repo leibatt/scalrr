@@ -2,7 +2,7 @@
 import socket
 import sys
 
-HOST = 'localhost'                 # Symbolic name meaning the local host
+HOST = '0.0.0.0'                 # Symbolic name meaning the local host
 PORT = 50007              # Arbitrary non-privileged port
 s = None
 for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
