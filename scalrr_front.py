@@ -15,7 +15,7 @@ HOST = 'modis.csail.mit.edu'    # The remote host
 PORT = 50007              # The same port as used by the server
 s = None
 
-def connect_to_backend()
+def connect_to_backend():
     """Make sure we're connected"""
     for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
         af, socktype, proto, canonname, sa = res
