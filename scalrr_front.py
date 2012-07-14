@@ -3,8 +3,10 @@ from geventwebsocket.handler import WebSocketHandler
 from flask import Flask, request, render_template, g, redirect, send_file
 import random
 import json
-import md5
+#import md5
 import traceback
+import socket
+import sys
 app = Flask(__name__)
 
 saved_qpresults = 0
