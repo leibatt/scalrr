@@ -44,11 +44,12 @@ def close_connection_to_backend():
     s.close()
     s = None
 
-def send_request(mydata):
+def send_request(request):
     global s
-    print >> sys.stderr,"sending request to ",HOST
+    print >> sys.stderr,"sending request \"",json.dumps(request),"\" to ",HOST
     connect_to_backend()
-    s.send(json.dumps(mydata))
+    s.send(json.dumps(request))
+    s.shutdown(socket.SHUT_WR)
     print >> sys.stderr,"retrieving data from ",HOST
     response = ''
     while 1:

@@ -18,7 +18,7 @@ s = None
 SCIDB = 'scidb'
 MYSQL = 'mysql'
 
-DEFAULT_DB = MYSQL
+DEFAULT_DB = SCIDB
 
 def dbconnect():
     """Make sure we are connected to the database each request."""
@@ -159,10 +159,12 @@ while 1:
     print 'Connected by', addr
     request = ''
     while 1:
+        print "got here"
         data = conn.recv(1024)
         request += data
+        print "data: ",data
         if not data: break
-    print "data: \"",request,"\""
+    print "final data: \"",request,"\""
     response = process_request(request)
     send(response)
 conn.close()
