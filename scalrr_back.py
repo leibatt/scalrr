@@ -37,7 +37,7 @@ def dbclose():
 def send(mydata):
     s.send(mydata)
 
-def process_request(inputstring)
+def process_request(inputstring):
     request = json.loads(inputstring) # parse string into json
     response = ''
     dbconnect()
