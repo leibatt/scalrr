@@ -2,7 +2,7 @@
 import socket
 import sys
 
-HOST = 'vise4.csail.mit.edu'    # The remote host
+HOST = 'modis.csail.mit.edu'    # The remote host
 PORT = 50007              # The same port as used by the server
 s = None
 for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
@@ -24,6 +24,7 @@ for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
 if s is None:
     print 'could not open socket'
     sys.exit(1)
+#s.send('Hello, world')
 s.send('Hello, world')
 data = s.recv(1024)
 s.close()
