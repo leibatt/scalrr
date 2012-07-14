@@ -44,7 +44,7 @@ def get_data():
     if request.method == 'POST':
         query = str(request.form['text'])
     queryresultarr = query_execute(query)
-    #print queryresultarr['data']
+    #print >> sys.stderr, queryresultarr['data']
     return render_template('index.html',
                            data=queryresultarr['data'],
                            labels={'gbs' : queryresultarr['names'],
@@ -73,16 +73,16 @@ def get_data_example_latlon():
 #gets dim & attr names, along with num dims, and dim boundaries
 @app.route('/json-queryplan-info', methods=["POST", "GET"])
 def get_queryplan_info():
-    print "got json request in queryplan function"
+    print >> sys.stderr, "got json request in queryplan function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':True}
     queryplan = queryplan_execute(query,options)
-    print queryplan
+    print >> sys.stderr, queryplan
     return json.dumps(queryplan)
 
 @app.route('/json-data', methods=["POST", "GET"])
 def get_data_ajax():
-    print "got json request in init function"
+    print >> sys.stderr, "got json request in init function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':True}
     queryresultarr = None
@@ -90,8 +90,8 @@ def get_data_ajax():
     	queryresultarr = query_execute(query,options)
     else:
     	queryresultarr = query_execute_base(query,options)
-    #print queryresultarr
-    #print json.dumps(queryresultarr)
+    #print >> sys.stderr, queryresultarr
+    #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
 #mysql code
@@ -103,17 +103,17 @@ def query_execute_base(userquery,options):
 
 @app.route('/json-data-noreduction', methods=["POST", "GET"])
 def get_data_ajax_noreduction():
-    print "got json request in noreduce function"
+    print >> sys.stderr, "got json request in noreduce function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':False}
     queryresultarr = query_execute(query,options)
-    print "result length: ",len(queryresultarr['data'])
-    #print json.dumps(queryresultarr)
+    print >> sys.stderr, "result length: ",len(queryresultarr['data'])
+    #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
 @app.route('/json-data-reduce', methods=["POST", "GET"])
 def get_data_ajax_reduce():
-    print "got json request in reduce function"
+    print >> sys.stderr, "got json request in reduce function"
     query = request.args.get('query',"",type=str)
     reduce_type = request.args.get('reduce_type',"",type=str)
     predicate = request.args.get('predicate',"",type=str)
@@ -121,9 +121,9 @@ def get_data_ajax_reduce():
     if predicate != "":
 	options['predicate'] = predicate
     queryresultarr = query_execute(query,options)
-    print "result length: ",len(queryresultarr['data'])
-    #print queryresultarr
-    #print json.dumps(queryresultarr)
+    print >> sys.stderr, "result length: ",len(queryresultarr['data'])
+    #print >> sys.stderr, queryresultarr
+    #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
 #options: {reduce_res_check:True/False}
@@ -132,9 +132,9 @@ def query_execute(userquery,options):
 	query = "select * from earthquake"
 	if userquery != "":
 		query = userquery
-		print "user query: ",query
+		print >> sys.stderr, "user query: ",query
 	sdbioptions = {'afl':False}
-	print "saved_qpresults",saved_qpresults
+	print >> sys.stderr, "saved_qpresults",saved_qpresults
 	if saved_qpresults == 0:
 		saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
 		#only do this check for new queries
@@ -150,7 +150,7 @@ def query_execute(userquery,options):
 		sdbioptions = {'afl':False,'reduce_res':False}
 	queryresultobj = sdbi.executeQuery(query,sdbioptions)
 
-	print "retrieved data from db.\nparsing results..."
+	print >> sys.stderr, "retrieved data from db.\nparsing results..."
 	sdbioptions={'dimnames':saved_qpresults['dims']}
 	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
 	if queryresultobj[1] != 0:
@@ -159,7 +159,7 @@ def query_execute(userquery,options):
 	queryresultarr['dimnames'] = saved_qpresults['dims'];
 	queryresultarr['dimbases'] = saved_qpresults['dimbases'];
 	queryresultarr['dimwidths'] = saved_qpresults['dimwidths'];
-	print "setting saved_qpresults to 0"
+	print >> sys.stderr, "setting saved_qpresults to 0"
 	saved_qpresults = 0 # reset so we can use later
 	return queryresultarr # note that I don't set reduce_res false. JS code will still handle it properly
 

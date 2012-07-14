@@ -38,13 +38,13 @@ def verifyQuery(query,options):
 #options:{'afl':True/False,reduce_res:True/False,'reduce_options':options}
 #required options: reduce_res, reduce_options if reduce_res is true, afl if reduce_res is false
 def executeQuery(query,options):
-	print "executing query",datetime.now()
+	print >> sys.stderr, "executing query",datetime.now()
 	final_query = query
 	if(options['reduce_res']): #reduction requested
 		return reduce_resolution(query,options['reduce_options'])
 	else:
-		print "running original query."
-		print "final query:",final_query#,"\nexecuting query",datetime.now()
+		print >> sys.stderr, "running original query."
+		print >> sys.stderr, "final query:",final_query#,"\nexecuting query",datetime.now()
 		result = []
 		if options['afl']:
 			result.append(db.executeQuery(final_query,'afl'))
@@ -64,10 +64,10 @@ def query_optimizer(query,afl):
 		queryplan_query = LOGICAL_PHYSICAL+"('"+query+"',\'afl\')"
 	else:
 		queryplan_query = LOGICAL_PHYSICAL+"('"+query+"',\'aql\')"
-	print "queryplan query: "
-	print queryplan_query
+	print >> sys.stderr, "queryplan query: "
+	print >> sys.stderr, queryplan_query
 	optimizer_answer = db.executeQuery(queryplan_query,'afl')
-	#print optimizer_answer
+	#print >> sys.stderr, optimizer_answer
 	# flatten the list into one big string, and then split on '\n'
 	optimizer_answer_array = getOneAttrArrFromQuery(optimizer_answer,"")[0].split('\n') #should return array with one item (the query plan)
 	# find the line with the first instance of 'schema' in the front
@@ -81,7 +81,7 @@ def check_query_plan(queryplan):
 	queryplan = str(queryplan)
 	dim_string = queryplan[queryplan.find("[")+1:queryplan.find("]")]
 	dim_array = dim_string.split(',')
-	#print dim_array
+	#print >> sys.stderr, dim_array
 	dims = 0
 	size = 1
 	names = []
@@ -90,7 +90,7 @@ def check_query_plan(queryplan):
 	for i, s in enumerate(dim_array):
 		if (i % 3) == 0:
 			# split on equals, get the range, split on ':'
-			#print "s:",s
+			#print >> sys.stderr, "s:",s
 			range = s.split('=')[1]
 			name = s.split('=')[0]
 			if name.find("(") != -1:
@@ -154,9 +154,9 @@ def daggregate(query,options):
 
 	#make the new query an aql query so we can rename the aggregates easily
 	attraggs = ""
-	print "options attrtypes: ",options['attrtypes']
+	print >> sys.stderr, "options attrtypes: ",options['attrtypes']
 	for i in range(0,len(attrs)):
-		print "attr type: ",options['attrtypes'][i]
+		print >> sys.stderr, "attr type: ",options['attrtypes'][i]
 		if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
 			if attraggs != "":
 				attraggs += ", "
@@ -166,7 +166,7 @@ def daggregate(query,options):
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
 	#	
 	#final_query = "regrid(("+final_query+"),"+chunks+","+attraggs+")" # afl
-	#print "final query:",final_query,"\nexecuting query..."
+	#print >> sys.stderr, "final query:",final_query,"\nexecuting query..."
 	#result = []
 	#result = db.executeQuery(final_query,'aql')
 	#return result
@@ -188,7 +188,7 @@ def dsample(query,options):
 	#	final_query = "bernoulli(("+final_query+"), "+probability+")"
 	#else:
 	final_query = "select * from bernoulli(("+ final_query +"), "+probability+")"
-	print "final query:",final_query,"\nexecuting query..."
+	print >> sys.stderr, "final query:",final_query,"\nexecuting query..."
 	#if options['afl']:
 	#	result = db.executeQuery(final_query,'afl')
 	#else:
@@ -206,7 +206,7 @@ def dfilter(query, options):
 	#	final_query = "filter(("+final_query+"), "+options['predicate']+")"
 	#else:
 	final_query = "select * from ("+final_query+") where "+options['predicate']
-	print "final query:",final_query,"\nexecuting query..."
+	print >> sys.stderr, "final query:",final_query,"\nexecuting query..."
 	#if options['afl']:
 	#	result = db.executeQuery(final_query,'afl')
 	#else:
@@ -241,7 +241,7 @@ def reduce_resolution(query,options):
 	result =[]
 	result.append(db.executeQuery(newquery,'aql'))
 	result.append(verifyQuery(newquery,{'afl':False}))
-	print result[1]
+	print >> sys.stderr, result[1]
 	return result
 
 # function used to build a python "array" out of the given
@@ -270,12 +270,12 @@ def getOneAttrArrFromQuery(query_result,attrname):
 
 	# get arr ready
 	arr = createArray(dimlengths)
-	#print "arr is initialized: ",str(arr)
+	#print >> sys.stderr, "arr is initialized: ",str(arr)
 	attrid = 0
 	for i in range(attrs.size()): # find the right attrid
 		if(attrs[i].getName() == attrname):
 			attrid = i
-			#print "found attribute",attrname, ",id: %d" % attrid 
+			#print >> sys.stderr, "found attribute",attrname, ",id: %d" % attrid 
 			break
 
 	# get the iterator for this attrid
@@ -283,7 +283,7 @@ def getOneAttrArrFromQuery(query_result,attrname):
 
 	start = True
 	while not it.end():
-		#print "iterating over items..."
+		#print >> sys.stderr, "iterating over items..."
 		currentchunk = it.getChunk()
 		# TODO: will have to fix this at some point, can't just ignore empty cells or overlaps
 		chunkiter = currentchunk.getConstIterator((scidb.swig.ConstChunkIterator.IGNORE_EMPTY_CELLS |
@@ -307,23 +307,23 @@ def getOneAttrArrFromQuery(query_result,attrname):
 			dataitem = chunkiter.getItem()
 			# look up the value according to its attribute's typestring
 			item = scidb.getTypedValue(dataitem, attrs[attrid].getType()) # TBD: eliminate 2nd arg, make method on dataitem
-			#print "Data: %s" % item
+			#print >> sys.stderr, "Data: %s" % item
 
 			#insert the item
 			arr = insertItem(arr,item,dimindexes)
 			#update the indexes
 			dimindexes = updateIndexes(dimindexes,dimchunkintervals,dimindexesbase,dimlengths)
 			lastpos = chunkiter.getPosition()
-			#print lastpos[0],",",lastpos[1], ",",lastpos[2]
+			#print >> sys.stderr, lastpos[0],",",lastpos[1], ",",lastpos[2]
 			chunkiter.increment_to_next()
-		#print "current state of arr: ", str(arr)
+		#print >> sys.stderr, "current state of arr: ", str(arr)
 		it.increment_to_next();
 	return arr
 
 # debugging function used to print the given list of indexes
 def printIndexes(dimlist):
 	for i in range(len(dimlist)):
-		print "dim ", str(i), "has index %d" % dimlist[i]
+		print >> sys.stderr, "dim ", str(i), "has index %d" % dimlist[i]
 
 # function that verifies that we are not trying to use indexes
 # that are out of bounds
@@ -367,7 +367,7 @@ def updateBaseIndex(dimindexesbase,dimlengths,dimchunkintervals):
 
 #exterior function to insert the given item in the the array using the given indexes
 def insertItem(arr,item,dimindexes):
-	#print "inserting item %d" % item
+	#print >> sys.stderr, "inserting item %d" % item
 	return insertItemHelper(arr,item,dimindexes,0,len(dimindexes))
 
 #helper function to recursively find the appropriate list to insert the item into in the array
@@ -415,7 +415,7 @@ def getAllAttrArrFromQuery(query_result):
 
 	# get arr ready
 	arr = createArray(dimlengths)
-	#print "arr is initialized: ",str(arr)
+	#print >> sys.stderr, "arr is initialized: ",str(arr)
 
 	its = []
 	attrnames = []
@@ -428,7 +428,7 @@ def getAllAttrArrFromQuery(query_result):
 		#get chunk iterators
 		chunkiters = []
 		for itindex in range(len(its)):
-			#print "itindex: ",itindex
+			#print >> sys.stderr, "itindex: ",itindex
 			currentchunk =its[itindex].getChunk()
 			chunkiter = currentchunk.getConstIterator((scidb.swig.ConstChunkIterator.IGNORE_EMPTY_CELLS |
 		                                       scidb.swig.ConstChunkIterator.IGNORE_OVERLAPS))
@@ -451,21 +451,21 @@ def getAllAttrArrFromQuery(query_result):
 			verifyIndexes(dimindexes,dimlengths)
 			item = {} #empty dictionary for the attribute values
 			for chunkiterindex in range(len(chunkiters)):
-				#print "chunkiterindex: ",chunkiterindex
+				#print >> sys.stderr, "chunkiterindex: ",chunkiterindex
 				dataitem = chunkiters[chunkiterindex].getItem()
 				# look up the value according to its attribute's typestring
 				item[attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType()) # TBD: eliminate 2nd arg, make method on dataitem
-				#print "Data: %s" % item
+				#print >> sys.stderr, "Data: %s" % item
 				#chunkiters[i].increment_to_next()
 			chunkiters[0].increment_to_next() # OMG THIS INCREMENTS ALL THE CHUNK ITERATOR OBJECTS
 			#lastpos = chunkiter.getPosition()
-			#print lastpos[0],",",lastpos[1], ",",lastpos[2]
-			#print item
+			#print >> sys.stderr, lastpos[0],",",lastpos[1], ",",lastpos[2]
+			#print >> sys.stderr, item
 			#insert the item
 			arr = insertItem(arr,item,dimindexes)
 			#update the indexes
 			dimindexes = updateIndexes(dimindexes,dimchunkintervals,dimindexesbase,dimlengths)
-			#print "current state of arr: ", str(arr)
+			#print >> sys.stderr, "current state of arr: ", str(arr)
 		its[0].increment_to_next()
 	return arr
 
@@ -487,14 +487,14 @@ def getAllAttrArrFromQuery(query_result):
 #options: {'dimnames':[]}
 #required options: dimnames
 def getAllAttrArrFromQueryForJSON(query_result,options):
-	print "parsing query result and building json dump",datetime.now()
+	print >> sys.stderr, "parsing query result and building json dump",datetime.now()
 	dimnames = options['dimnames']
 	desc = query_result.array.getArrayDesc()
 	dims = desc.getDimensions() # list of DimensionDesc objects
 	attrs = desc.getAttributes() # list of AttributeDesc objects
 	origarrnamelen = 0#len(desc.getName()) - 2
-	print "array name: ",desc.getName()
-	print "array name length: ",origarrnamelen
+	print >> sys.stderr, "array name: ",desc.getName()
+	print >> sys.stderr, "array name length: ",origarrnamelen
 
 	if(dims.size() < 1 or dims.size() != len(dimnames)):
 		return []
@@ -511,12 +511,12 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	while not its[0].end():
 		#get chunk iterators
 		chunkiters = []
-		#print "start"
+		#print >> sys.stderr, "start"
 		for itindex in range(len(its)):
-			#print "itindex: ",itindex
+			#print >> sys.stderr, "itindex: ",itindex
 			#mypos = its[itindex].getPosition()
-			#print "position:"
-			#print mypos[0],",",mypos[1]
+			#print >> sys.stderr, "position:"
+			#print >> sys.stderr, mypos[0],",",mypos[1]
 			currentchunk =its[itindex].getChunk()
 			chunkiter = currentchunk.getConstIterator((scidb.swig.ConstChunkIterator.IGNORE_EMPTY_CELLS |
 		                                       scidb.swig.ConstChunkIterator.IGNORE_OVERLAPS))
@@ -531,28 +531,28 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 				dimobj[dname[:len(dname)-origarrnamelen]] = currpos[dimindex] # make sure you take off the array's name from each dimension
 				dataobj["dims."+dname[:len(dname)-origarrnamelen]] = currpos[dimindex]
 			attrobj = {} #empty dictionary for the attribute values
-			#print "start"
+			#print >> sys.stderr, "start"
 			for chunkiterindex in range(len(chunkiters)):
-				#print "chunkiterindex: ",chunkiterindex
+				#print >> sys.stderr, "chunkiterindex: ",chunkiterindex
 				dataitem = chunkiters[chunkiterindex].getItem()
 				# look up the value according to its attribute's typestring
 				attrobj[attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType()) # TBD: eliminate 2nd arg, make method on dataitem
 				dataobj["attrs."+attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType())
-				#print "Data: %s" % item
+				#print >> sys.stderr, "Data: %s" % item
 				#chunkiters[i].increment_to_next()
 				#mypos = chunkiters[chunkiterindex].getPosition()
 				#myposstring = "position: "
 				#for myposi in range(len(mypos)):
 				#	myposstring += str(mypos[myposi])+", "
-				#print myposstring
+				#print >> sys.stderr, myposstring
 				chunkiters[chunkiterindex].increment_to_next() # OMG THIS INCREMENTS ALL THE CHUNK ITERATOR OBJECTS
 			#lastpos = chunkiter.getPosition()
-			#print lastpos[0],",",lastpos[1], ",",lastpos[2]
-			#print attrobj
+			#print >> sys.stderr, lastpos[0],",",lastpos[1], ",",lastpos[2]
+			#print >> sys.stderr, attrobj
 			#insert the item
 			arr.append(dataobj)
 			#arr.append({'dimensions':dimobj,'attributes':attrobj})
-			#print "current state of arr: ", str(arr)
+			#print >> sys.stderr, "current state of arr: ", str(arr)
 		#its[1].increment_to_next()
 		for itindex in range(len(its)):		
 			its[itindex].increment_to_next()
@@ -574,9 +574,9 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	#	ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
 	#	namesobj.append(ndimname)
 	#	typesobj[ndimname] = "int32"
-	#print typesobj
-	#print 	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
-	print "done parsing results, returning dump-ready version",datetime.now()
+	#print >> sys.stderr, typesobj
+	#print >> sys.stderr, 	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
+	print >> sys.stderr, "done parsing results, returning dump-ready version",datetime.now()
 	return {'data':arr, 'names': namesobj, 'types': typesobj}
 	#return {'data': arr, 'names': {'dimnames': dimnames, 'attrnames': attrnames}}
 	
@@ -604,7 +604,7 @@ def getAttrArrFromQueryForJSON(query_result,options):
 	dims = desc.getDimensions() # list of DimensionDesc objects
 	attrs = desc.getAttributes() # list of AttributeDesc objects
 	origarrnamelen = len(desc.getName()) - 2
-	#print "orig name length: ",origarrnamelen
+	#print >> sys.stderr, "orig name length: ",origarrnamelen
 
 	if(dims.size() < 1 or dims.size() != len(dimnames)):
 		return []
@@ -620,12 +620,12 @@ def getAttrArrFromQueryForJSON(query_result,options):
 	while not its[0].end():
 		#get chunk iterators
 		chunkiters = []
-		#print "start"
+		#print >> sys.stderr, "start"
 		for itindex in range(len(its)):
-			#print "itindex: ",itindex
+			#print >> sys.stderr, "itindex: ",itindex
 			#mypos = its[itindex].getPosition()
-			#print "position:"
-			#print mypos[0],",",mypos[1]
+			#print >> sys.stderr, "position:"
+			#print >> sys.stderr, mypos[0],",",mypos[1]
 			currentchunk =its[itindex].getChunk()
 			chunkiter = currentchunk.getConstIterator((scidb.swig.ConstChunkIterator.IGNORE_EMPTY_CELLS |
 		                                       scidb.swig.ConstChunkIterator.IGNORE_OVERLAPS))
@@ -640,28 +640,28 @@ def getAttrArrFromQueryForJSON(query_result,options):
 				dimobj[dname[:len(dname)-origarrnamelen]] = currpos[dimindex] # make sure you take off the array's name from each dimension
 				dataobj["dims."+dname[:len(dname)-origarrnamelen]] = currpos[dimindex]
 			attrobj = {} #empty dictionary for the attribute values
-			#print "start"
+			#print >> sys.stderr, "start"
 			for chunkiterindex in range(len(chunkiters)):
-				#print "chunkiterindex: ",chunkiterindex
+				#print >> sys.stderr, "chunkiterindex: ",chunkiterindex
 				dataitem = chunkiters[chunkiterindex].getItem()
 				# look up the value according to its attribute's typestring
 				attrobj[attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType()) # TBD: eliminate 2nd arg, make method on dataitem
 				dataobj["attrs."+attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType())
-				#print "Data: %s" % item
+				#print >> sys.stderr, "Data: %s" % item
 				#chunkiters[i].increment_to_next()
 				#mypos = chunkiters[chunkiterindex].getPosition()
 				#myposstring = "position: "
 				#for myposi in range(len(mypos)):
 				#	myposstring += str(mypos[myposi])+", "
-				#print myposstring
+				#print >> sys.stderr, myposstring
 				chunkiters[chunkiterindex].increment_to_next() # OMG THIS INCREMENTS ALL THE CHUNK ITERATOR OBJECTS
 			#lastpos = chunkiter.getPosition()
-			#print lastpos[0],",",lastpos[1], ",",lastpos[2]
-			#print attrobj
+			#print >> sys.stderr, lastpos[0],",",lastpos[1], ",",lastpos[2]
+			#print >> sys.stderr, attrobj
 			#insert the item
 			arr.append(dataobj)
 			#arr.append({'dimensions':dimobj,'attributes':attrobj})
-			#print "current state of arr: ", str(arr)
+			#print >> sys.stderr, "current state of arr: ", str(arr)
 		#its[1].increment_to_next()
 		for itindex in range(len(its)):		
 			its[itindex].increment_to_next()
@@ -675,8 +675,8 @@ def getAttrArrFromQueryForJSON(query_result,options):
 		ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
 		namesobj.append({'name':ndimname,'isattr':False})
 		typesobj[ndimname] = "int32"
-	#print typesobj
-	#print 	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
+	#print >> sys.stderr, typesobj
+	#print >> sys.stderr, 	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
 	return {'data':arr, 'names': namesobj, 'types': typesobj}
 	#return {'data': arr, 'names': {'dimnames': dimnames, 'attrnames': attrnames}}
 
@@ -747,10 +747,10 @@ myafl = False
 
 options = {'afl':myafl}
 qpresults = verifyQuery(query,options)
-print qpresults
+print >> sys.stderr, qpresults
 options={'afl':myafl,'reduce_res':False}
 queryresult = executeQuery(query,options) # ignore reduce_type for now
-print queryresult
+print >> sys.stderr, queryresult
 options={'dimnames':qpresults['dims']}
 queryresultarr = getAllAttrArrFromQueryForJSON(queryresult[0],options)
 
@@ -758,20 +758,20 @@ queryresultarr = getAllAttrArrFromQueryForJSON(queryresult[0],options)
 #queryresultarr = getAttrArrFromQueryForJSON(queryresult,options)
 
 #for i in range(len(queryresultarr['data'])):
-#	print queryresultarr['data'][i]
-#	#print "attributes: ",queryresultarr['data'][i]['attributes'],",dimensions: ",queryresultarr['data'][i]['dimensions']
+#	print >> sys.stderr, queryresultarr['data'][i]
+#	#print >> sys.stderr, "attributes: ",queryresultarr['data'][i]['attributes'],",dimensions: ",queryresultarr['data'][i]['dimensions']
 
 #options={'dimnames':qpresults['dims']}
 #queryresultarr = getMultiArrFromQueryForJSON(queryresult,options)
 
-#print queryresultarr
+#print >> sys.stderr, queryresultarr
 
-#print qpresults['attrs']['names']
+#print >> sys.stderr, qpresults['attrs']['names']
 #options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types'], 'qpsize':qpresults['size']}
 #queryresult = daggregate(query,options)
 #options={'dimnames':qpresults['dims']}
 #queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,options)
-#print queryresultarr
+#print >> sys.stderr, queryresultarr
 
 #options = {'afl':myafl,'qpsize':qpresults['size'], 'probability':.3}
 #dsample(query,options)

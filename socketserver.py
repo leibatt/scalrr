@@ -2,7 +2,7 @@
 import socket
 import sys
 
-HOST = '0.0.0.0'                 # Symbolic name meaning the local host
+HOST = '0.0.0.0'
 PORT = 50007              # Arbitrary non-privileged port
 s = None
 for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
@@ -25,8 +25,11 @@ if s is None:
     sys.exit(1)
 conn, addr = s.accept()
 print 'Connected by', addr
+alldata = None
 while 1:
     data = conn.recv(1024)
+    alldata += data
     if not data: break
     conn.send(data)
+print "data: ",alldata
 conn.close()
