@@ -154,7 +154,7 @@ if s is None:
 while 1:
     conn, addr = s.accept()
     print 'Connected by', addr
-    request = None
+    request = ''
     while 1:
         data = conn.recv(1024)
         request += data

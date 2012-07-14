@@ -44,14 +44,17 @@ def teardown_request(exception):
     s.close()
 
 def send_request(mydata):
+    print >> sys.stderr,"sending request to ",HOST
     s.send(json.dumps(mydata))
 
 def retrieve_data():
+    print >> sys.stderr,"retrieving data from ",HOST
     response = ''
     while 1:
         data = s.recv(1024)
         response += data
         if not data: break
+    print >> sys.stderr,"received data from ",HOST
     return json.loads(response)
 
 @app.route('/index2/', methods=["POST", "GET"])

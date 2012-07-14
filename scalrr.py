@@ -15,7 +15,7 @@ saved_qpresults = 0
 SCIDB = 'scidb'
 MYSQL = 'mysql'
 
-DEFAULT_DB = MYSQL
+DEFAULT_DB = SCIDB
 
 @app.before_request
 def before_request():
