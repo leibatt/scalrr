@@ -15,8 +15,7 @@ HOST = 'modis.csail.mit.edu'    # The remote host
 PORT = 50007              # The same port as used by the server
 s = None
 
-@app.before_request
-def before_request():
+def connect_to_backend()
     """Make sure we're connected"""
     for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
         af, socktype, proto, canonname, sa = res
@@ -38,16 +37,14 @@ def before_request():
         print 'could not open socket'
 	sys.exit(1)
 
-@app.teardown_request
-def teardown_request(exception):
+def close_connection_to_backend():
     """Make sure we close the connection"""
     s.close()
 
 def send_request(mydata):
     print >> sys.stderr,"sending request to ",HOST
+    connect_to_backend()
     s.send(json.dumps(mydata))
-
-def retrieve_data():
     print >> sys.stderr,"retrieving data from ",HOST
     response = ''
     while 1:
@@ -55,6 +52,7 @@ def retrieve_data():
         response += data
         if not data: break
     print >> sys.stderr,"received data from ",HOST
+    close_connection_to_backend()
     return json.loads(response)
 
 @app.route('/index2/', methods=["POST", "GET"])
@@ -67,8 +65,7 @@ def get_data_ajax():
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':True}
     request = {'query':query,'options':options,'function':'query_execute'}
-    send_request(request)
-    queryresultarr = retrieve_data()
+    queryresultarr = send_request(request)
     #print >> sys.stderr, queryresultarr
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
@@ -79,8 +76,7 @@ def get_data_ajax_noreduction():
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':False}
     request = {'query':query,'options':options,'function':'query_execute'}
-    send_request(request)
-    queryresultarr = retrieve_data()
+    queryresultarr = send_request(request)
     print >> sys.stderr, "result length: ",len(queryresultarr['data'])
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
@@ -95,8 +91,7 @@ def get_data_ajax_reduce():
     if predicate != "":
 	options['predicate'] = predicate
     request = {'query':query,'options':options,'function':'query_execute'}
-    send_request(request)
-    queryresultarr = retrieve_data()
+    queryresultarr = send_request(request)
     print >> sys.stderr, "result length: ",len(queryresultarr['data'])
     #print >> sys.stderr, queryresultarr
     #print >> sys.stderr, json.dumps(queryresultarr)

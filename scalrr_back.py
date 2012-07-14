@@ -159,8 +159,7 @@ while 1:
         data = conn.recv(1024)
         request += data
         if not data: break
-        conn.send(data)
-    print "data: ",request
+    print "data: \"",request,"\""
     response = process_request(request)
     send(response)
 conn.close()
