@@ -16,6 +16,7 @@ PORT = 50007              # The same port as used by the server
 s = None
 
 def connect_to_backend():
+    global s
     """Make sure we're connected"""
     for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
         af, socktype, proto, canonname, sa = res
@@ -38,10 +39,13 @@ def connect_to_backend():
 	sys.exit(1)
 
 def close_connection_to_backend():
+    global s
     """Make sure we close the connection"""
     s.close()
+    s = None
 
 def send_request(mydata):
+    global s
     print >> sys.stderr,"sending request to ",HOST
     connect_to_backend()
     s.send(json.dumps(mydata))

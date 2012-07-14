@@ -55,11 +55,11 @@ def process_request(inputstring):
 
 #gets dim & attr names, along with num dims, and dim boundaries
 def get_queryplan_info():
-    print >> sys.stderr, "got json request in queryplan function"
+    print  "got json request in queryplan function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':True}
     queryplan = queryplan_execute(query,options)
-    print >> sys.stderr, queryplan
+    print  queryplan
     return json.dumps(queryplan)
 
 #mysql code
@@ -75,9 +75,9 @@ def query_execute(userquery,options):
 	query = "select * from earthquake"
 	if userquery != "":
 		query = userquery
-		print >> sys.stderr, "user query: ",query
+		print  "user query: ",query
 	sdbioptions = {'afl':False}
-	print >> sys.stderr, "saved_qpresults",saved_qpresults
+	print  "saved_qpresults",saved_qpresults
 	if saved_qpresults == 0:
 		saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
 		#only do this check for new queries
@@ -93,7 +93,7 @@ def query_execute(userquery,options):
 		sdbioptions = {'afl':False,'reduce_res':False}
 	queryresultobj = sdbi.executeQuery(query,sdbioptions)
 
-	print >> sys.stderr, "retrieved data from db.\nparsing results..."
+	print  "retrieved data from db.\nparsing results..."
 	sdbioptions={'dimnames':saved_qpresults['dims']}
 	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
 	if queryresultobj[1] != 0:
@@ -102,7 +102,7 @@ def query_execute(userquery,options):
 	queryresultarr['dimnames'] = saved_qpresults['dims'];
 	queryresultarr['dimbases'] = saved_qpresults['dimbases'];
 	queryresultarr['dimwidths'] = saved_qpresults['dimwidths'];
-	print >> sys.stderr, "setting saved_qpresults to 0"
+	print  "setting saved_qpresults to 0"
 	saved_qpresults = 0 # reset so we can use later
 	return queryresultarr # note that I don't set reduce_res false. JS code will still handle it properly
 
