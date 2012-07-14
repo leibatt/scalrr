@@ -18,8 +18,8 @@ db = 0
 
 def scidbOpenConn():
 	global db
-	#db = scidb.connect("localhost",1239)
-	db = scidb.connect("vise4.csail.mit.edu",1239)
+	db = scidb.connect("localhost",1239)
+	#db = scidb.connect("vise4.csail.mit.edu",1239)
 
 def scidbCloseConn():
 	global db
