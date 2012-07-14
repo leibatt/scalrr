@@ -38,12 +38,14 @@ def send(mydata):
     s.send(mydata)
 
 def process_request(inputstring):
+    print "received request: \"",inputstring,"\""
     request = json.loads(inputstring) # parse string into json
     response = ''
     dbconnect()
     if request['function'] == "query_execute":
         options = request['options']
         query = request['query']
+        print "executing query:\"",query,"\""
         if DEFAULT_DB == MYSQL:
             response = query_execute_base(query,options)
         elif DEFAULT_DB == SCIDB:
@@ -51,6 +53,7 @@ def process_request(inputstring):
     else:
         raise Exception("unrecognized function passed")
     dbclose()
+    print "returning response"
     return json.dumps(response)
 
 #gets dim & attr names, along with num dims, and dim boundaries
