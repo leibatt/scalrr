@@ -739,21 +739,21 @@ def getMultiArrFromQueryForJSON(query_result,options):
 		dimmap[dimname] = index
 	return {'attrs':alldata,'dims':alldims, 'dimmap':dimmap, 'names': namesobj, 'types': typesobj}
 
-scidbOpenConn()
-query = "select * from test3"
+#scidbOpenConn()
+#query = "select * from test3"
 #query="select * from esmall"
 #query = "select * from bernoulli(random_numbers_big,.01)"
 #query = "scan(esmall)"
-myafl = False
+#myafl = False
 
-options = {'afl':myafl}
-qpresults = verifyQuery(query,options)
-print >> sys.stderr, qpresults
-options={'afl':myafl,'reduce_res':False}
-queryresult = executeQuery(query,options) # ignore reduce_type for now
-print >> sys.stderr, queryresult
-options={'dimnames':qpresults['dims']}
-queryresultarr = getAllAttrArrFromQueryForJSON(queryresult[0],options)
+#options = {'afl':myafl}
+#qpresults = verifyQuery(query,options)
+#print >> sys.stderr, qpresults
+#options={'afl':myafl,'reduce_res':False}
+#queryresult = executeQuery(query,options) # ignore reduce_type for now
+#print >> sys.stderr, queryresult
+#options={'dimnames':qpresults['dims']}
+#queryresultarr = getAllAttrArrFromQueryForJSON(queryresult[0],options)
 
 #options={'dimnames':qpresults['dims'],'attrnames':qpresults['attrs']['names'][0:4]}
 #queryresultarr = getAttrArrFromQueryForJSON(queryresult,options)
@@ -780,4 +780,4 @@ queryresultarr = getAllAttrArrFromQueryForJSON(queryresult[0],options)
 #options = {'afl':myafl,'predicate':"lat > 0"}
 #dfilter(query,options)
 
-scidbCloseConn()
+#scidbCloseConn()
