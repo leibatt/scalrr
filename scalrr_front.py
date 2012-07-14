@@ -64,8 +64,8 @@ def get_data_ajax():
     print >> sys.stderr, "got json request in init function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':True}
-    request = {'query':query,'options':options,'function':'query_execute'}
-    queryresultarr = send_request(request)
+    server_request = {'query':query,'options':options,'function':'query_execute'}
+    queryresultarr = send_request(server_request)
     #print >> sys.stderr, queryresultarr
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
@@ -75,8 +75,8 @@ def get_data_ajax_noreduction():
     print >> sys.stderr, "got json request in noreduce function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':False}
-    request = {'query':query,'options':options,'function':'query_execute'}
-    queryresultarr = send_request(request)
+    server_request = {'query':query,'options':options,'function':'query_execute'}
+    queryresultarr = send_request(server_request)
     print >> sys.stderr, "result length: ",len(queryresultarr['data'])
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
@@ -90,8 +90,8 @@ def get_data_ajax_reduce():
     options = {'reduce_res_check':False,'reduce_res':True,'reduce_type':reduce_type}
     if predicate != "":
 	options['predicate'] = predicate
-    request = {'query':query,'options':options,'function':'query_execute'}
-    queryresultarr = send_request(request)
+    server_request = {'query':query,'options':options,'function':'query_execute'}
+    queryresultarr = send_request(server_request)
     print >> sys.stderr, "result length: ",len(queryresultarr['data'])
     #print >> sys.stderr, queryresultarr
     #print >> sys.stderr, json.dumps(queryresultarr)
