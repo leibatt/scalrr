@@ -845,10 +845,10 @@ def getMultiArrFromQueryForJSON(query_result,options):
 		dimmap[dimname] = index
 	return {'attrs':alldata,'dims':alldims, 'dimmap':dimmap, 'names': namesobj, 'types': typesobj}
 
-mysqlOpenConn()
+#mysqlOpenConn()
 #query = "select create_time,recent_stop_id,lat,lon from vis limit 10"
 #query = "select * from earthquake limit 10"
-options={}
+#options={}
 #mysqlExecuteQuery(query,options)
 #mysqlGetAllAttrArrFromQueryForJSON(options)
 
@@ -891,4 +891,4 @@ options={}
 #options = {'afl':myafl,'predicate':"lat > 0"}
 #dfilter(query,options)
 
-mysqlCloseConn()
+#mysqlCloseConn()
