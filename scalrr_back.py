@@ -1,6 +1,6 @@
 import random
 import json
-import md5
+#import md5
 import traceback
 import scidb_server_interface as sdbi
 import mysql_server_interface as mdbi
