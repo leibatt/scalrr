@@ -44,7 +44,7 @@ def process_request(inputstring):
     dbconnect()
     if request['function'] == "query_execute":
         options = request['options']
-        query = request['query']
+        query = str(request['query'])
         print "executing query:\"",query,"\""
         if DEFAULT_DB == MYSQL:
             response = query_execute_base(query,options)
