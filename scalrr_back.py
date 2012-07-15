@@ -34,9 +34,6 @@ def dbclose():
     else:
     	mdbi.mysqlOpenConn()
 
-def send(mydata):
-    s.send(mydata)
-
 def process_request(inputstring):
     print "received request: \"",inputstring,"\""
     request = json.loads(inputstring) # parse string into json
@@ -166,5 +163,6 @@ while 1:
         if not data: break
     print "final data: \"",request,"\""
     response = process_request(request)
-    send(response)
+    conn.send(response)
+    conn.close()
 conn.close()
