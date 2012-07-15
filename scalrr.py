@@ -7,6 +7,7 @@ import md5
 import traceback
 import scidb_server_interface as sdbi
 import mysql_server_interface as mdbi
+import sys
 app = Flask(__name__)
 
 saved_qpresults = 0

@@ -12,6 +12,7 @@ app = Flask(__name__)
 saved_qpresults = 0
 
 HOST = 'modis.csail.mit.edu'    # The remote host
+#HOST = 'localhost'
 PORT = 50007              # The same port as used by the server
 s = None
 
