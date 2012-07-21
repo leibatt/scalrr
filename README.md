@@ -22,9 +22,8 @@ information in scalrr_back.py).
 There are some necessary python libraries for scalrr_front.py
 and scalrr_back.py:
 
-scalrr_front.py: Flask,simplejson, and mod-wsgi python libraries
-    required to run scalrr as a web app (will compile these later,
-    not necessary for development).
+scalrr_front.py: Flask,simplejson, (mod-wsgi python library
+    required to run scalrr online).
 scalrr_back.py:scidbapi (installed by general SciDB installation),
     simplejson
 
@@ -37,7 +36,7 @@ do the rest.
 
 ***How to interact with scalrr locally***
 After getting scalrr_front.py and scalrr_back.py running, go to
-"http://localhost:8080/index2.html" in your web browser
+"http://localhost:5000/index2.html" in your web browser
 of choice (I did almost all the development using only firefox, so I
 would recommend using that for best results).
 
