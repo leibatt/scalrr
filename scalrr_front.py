@@ -1,5 +1,5 @@
-from gevent.pywsgi import WSGIServer # must be pywsgi to support websocket
-from geventwebsocket.handler import WebSocketHandler
+#from gevent.pywsgi import WSGIServer # must be pywsgi to support websocket
+#from geventwebsocket.handler import WebSocketHandler
 from flask import Flask, request, render_template, g, redirect, send_file
 import random
 import json
@@ -107,7 +107,7 @@ def get_data_ajax_reduce():
 if __name__ == "__main__":
     app.debug = True
     address = ('', 8080)
-    http_server = WSGIServer(address, app, handler_class=WebSocketHandler)
+    #http_server = WSGIServer(address, app, handler_class=WebSocketHandler)
     print "server is running now"
-    http_server.serve_forever()
-    #app.run()
+    #http_server.serve_forever()
+    app.run()
