@@ -1,6 +1,6 @@
 #from gevent.pywsgi import WSGIServer # must be pywsgi to support websocket
 #from geventwebsocket.handler import WebSocketHandler
-from flask import Flask, request, render_template, g, redirect, send_file
+from flask import Flask, session, request, render_template, g, redirect, send_file
 import random
 import json
 #import md5
@@ -8,8 +8,6 @@ import traceback
 import socket
 import sys
 app = Flask(__name__)
-
-saved_qpresults = 0
 
 HOST = 'modis.csail.mit.edu'    # The remote host
 #HOST = 'localhost'
@@ -70,8 +68,14 @@ def get_data_ajax():
     print >> sys.stderr, "got json request in init function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':True}
+    if 'saved_qpresults' in session:
+        options['saved_qpresults'] = session['saved_qpresults']
+    else:
+        options['saved_qpresults'] = None
     server_request = {'query':query,'options':options,'function':'query_execute'}
     queryresultarr = send_request(server_request)
+    if 'saved_qpresults' in queryresultarr:
+        session['saved_qpresults'] = queryresultarr['saved_qpresults']
     #print >> sys.stderr, queryresultarr
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
@@ -81,8 +85,14 @@ def get_data_ajax_noreduction():
     print >> sys.stderr, "got json request in noreduce function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':False}
+    if 'saved_qpresults' in session:
+        options['saved_qpresults'] = session['saved_qpresults']
+    else:
+        options['saved_qpresults'] = None
     server_request = {'query':query,'options':options,'function':'query_execute'}
     queryresultarr = send_request(server_request)
+    if 'saved_qpresults' in queryresultarr:
+        session['saved_qpresults'] = queryresultarr['saved_qpresults']
     print >> sys.stderr, "result length: ",len(queryresultarr['data'])
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
@@ -94,11 +104,17 @@ def get_data_ajax_reduce():
     reduce_type = request.args.get('reduce_type',"",type=str)
     predicate = request.args.get('predicate',"",type=str)
     options = {'reduce_res_check':False,'reduce_res':True,'reduce_type':reduce_type}
+    if 'saved_qpresults' in session:
+        options['saved_qpresults'] = session['saved_qpresults']
+    else:
+        options['saved_qpresults'] = None
     if predicate != "":
 	options['predicate'] = predicate
     server_request = {'query':query,'options':options,'function':'query_execute'}
     queryresultarr = send_request(server_request)
     print >> sys.stderr, "result length: ",len(queryresultarr['data'])
+    if 'saved_qpresults' in queryresultarr:
+        session['saved_qpresults'] = queryresultarr['saved_qpresults']
     #print >> sys.stderr, queryresultarr
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
@@ -106,7 +122,7 @@ def get_data_ajax_reduce():
 
 if __name__ == "__main__":
     app.debug = True
-    address = ('', 8080)
+    #address = ('', 8080)
     #http_server = WSGIServer(address, app, handler_class=WebSocketHandler)
     print "server is running now"
     #http_server.serve_forever()

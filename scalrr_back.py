@@ -8,8 +8,6 @@ import mysql_server_interface as mdbi
 import socket
 import sys
 
-saved_qpresults = 0
-
 HOST = '0.0.0.0'
 PORT = 50007              # Arbitrary non-privileged port
 s = None
@@ -71,18 +69,17 @@ def query_execute_base(userquery,options):
 
 #options: {reduce_res_check:True/False}
 def query_execute(userquery,options):
-	global saved_qpresults
-	query = "select * from earthquake"
-	if userquery != "":
-		query = userquery
-		print  "user query: ",query
+	query = userquery
+	print  "user query: ",query
 	sdbioptions = {'afl':False}
-	print  "saved_qpresults",saved_qpresults
-	if saved_qpresults == 0:
+	saved_qpresults = None
+        if 'saved_qpresults' in options:
+        	saved_qpresults = options['saved_qpresults']
+	if saved_qpresults is None:
 		saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
 		#only do this check for new queries
 		if options['reduce_res_check'] and (saved_qpresults['size'] > sdbi.D3_DATA_THRESHOLD):
-			return {'reduce_res':True}
+			return {'reduce_res':True,'saved_qpresults':saved_qpresults}
 	if 'reduce_type' in options: # reduction requested
 		sdbioptions['reduce_res'] = True
 		srtoptions = {'afl':False}
@@ -102,8 +99,9 @@ def query_execute(userquery,options):
 	queryresultarr['dimnames'] = saved_qpresults['dims'];
 	queryresultarr['dimbases'] = saved_qpresults['dimbases'];
 	queryresultarr['dimwidths'] = saved_qpresults['dimwidths'];
-	print  "setting saved_qpresults to 0"
-	saved_qpresults = 0 # reset so we can use later
+	print  "setting saved_qpresults to None"
+	saved_qpresults = None # reset so we can use later
+	queryresultarr['saved_qpresults'] = saved_qpresults
 	return queryresultarr # note that I don't set reduce_res false. JS code will still handle it properly
 
 
