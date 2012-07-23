@@ -9,10 +9,12 @@ import socket
 import sys
 app = Flask(__name__)
 
-HOST = 'modis.csail.mit.edu'    # The remote host
-#HOST = 'localhost'
+#HOST = 'modis.csail.mit.edu'    # The remote host
+HOST = 'localhost'
 PORT = 50007              # The same port as used by the server
 s = None
+
+app.secret_key = 'L\x05\xb9\xab=\xe8V\x98X)\xb5\xa6\xf3uQB\x1d\x1fz\xb9y\xd7\xfb\xca'
 
 def connect_to_backend():
     global s
@@ -68,7 +70,7 @@ def get_data_ajax():
     print >> sys.stderr, "got json request in init function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':True}
-    if 'saved_qpresults' in session:
+    if 'saved_qpresults' in session and session['saved_qpresults'] is not None:
         options['saved_qpresults'] = session['saved_qpresults']
     else:
         options['saved_qpresults'] = None
@@ -85,7 +87,7 @@ def get_data_ajax_noreduction():
     print >> sys.stderr, "got json request in noreduce function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':False}
-    if 'saved_qpresults' in session:
+    if 'saved_qpresults' in session and session['saved_qpresults'] is not None:
         options['saved_qpresults'] = session['saved_qpresults']
     else:
         options['saved_qpresults'] = None
@@ -104,7 +106,7 @@ def get_data_ajax_reduce():
     reduce_type = request.args.get('reduce_type',"",type=str)
     predicate = request.args.get('predicate',"",type=str)
     options = {'reduce_res_check':False,'reduce_res':True,'reduce_type':reduce_type}
-    if 'saved_qpresults' in session:
+    if 'saved_qpresults' in session and session['saved_qpresults'] is not None:
         options['saved_qpresults'] = session['saved_qpresults']
     else:
         options['saved_qpresults'] = None

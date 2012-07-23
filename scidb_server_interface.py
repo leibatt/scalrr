@@ -12,7 +12,7 @@ RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','F
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
-D3_DATA_THRESHOLD = 10000#20000 #TODO: tune this to be accurate
+D3_DATA_THRESHOLD = 10000
 
 db = 0
 
@@ -163,11 +163,10 @@ def daggregate(query,options):
 				attraggs += ", "
 			attraggs+= "avg("+str(attrs[i])+") as avg_"+attrs[i]
 	final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
-
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
 	#	
 	#final_query = "regrid(("+final_query+"),"+chunks+","+attraggs+")" # afl
-	#print  "final query:",final_query,"\nexecuting query..."
+	#print  "final query:",final_query
 	#result = []
 	#result = db.executeQuery(final_query,'aql')
 	#return result
@@ -240,6 +239,7 @@ def reduce_resolution(query,options):
 	else:
 		raise Exception('reduce_type not recognized by scidb interface api')
 	result =[]
+        newquery = str(newquery)
 	result.append(db.executeQuery(newquery,'aql'))
 	result.append(verifyQuery(newquery,{'afl':False}))
 	print  result[1]

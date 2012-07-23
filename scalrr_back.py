@@ -5,12 +5,14 @@ import traceback
 import scidb_server_interface as sdbi
 import mysql_server_interface as mdbi
 
+import threading
+import select
 import socket
 import sys
 
 HOST = '0.0.0.0'
-PORT = 50007              # Arbitrary non-privileged port
-s = None
+PORT = 50007            # Arbitrary non-privileged port
+PACKET_SIZE = 1024
 
 #databases
 SCIDB = 'scidb'
@@ -51,15 +53,6 @@ def process_request(inputstring):
     print "returning response"
     return json.dumps(response)
 
-#gets dim & attr names, along with num dims, and dim boundaries
-def get_queryplan_info():
-    print  "got json request in queryplan function"
-    query = request.args.get('query',"",type=str)
-    options = {'reduce_res_check':True}
-    queryplan = queryplan_execute(query,options)
-    print  queryplan
-    return json.dumps(queryplan)
-
 #mysql code
 def query_execute_base(userquery,options):
 	query = userquery
@@ -82,7 +75,7 @@ def query_execute(userquery,options):
 			return {'reduce_res':True,'saved_qpresults':saved_qpresults}
 	if 'reduce_type' in options: # reduction requested
 		sdbioptions['reduce_res'] = True
-		srtoptions = {'afl':False}
+		srtoptions = {'afl':False,'saved_qpresults':saved_qpresults}
 		if 'predicate' in options:
 			srtoptions['predicate'] = options['predicate']
 		sdbioptions['reduce_options'] = setup_reduce_type(options['reduce_type'],srtoptions)
@@ -110,7 +103,7 @@ def query_execute(userquery,options):
 #required options: afl, predicate (if filter specified)
 #TODO: make these reduce types match the scidb interface api reduce types
 def setup_reduce_type(reduce_type,options):
-	global saved_qpresults
+        saved_qpresults = options['saved_qpresults']
 	returnoptions = {'qpresults':saved_qpresults,'afl':options['afl']}
 	returnoptions['reduce_type'] = sdbi.RESTYPE[reduce_type]
 	#if reduce_type == 'agg':
@@ -129,38 +122,85 @@ def setup_reduce_type(reduce_type,options):
 	#	raise Exception("Unrecognized reduce type passed to the server.")
 	return returnoptions
 
+class Server:
+    def __init__(self):
+        self.host = HOST
+        self.port = PORT
+        self.backlog = 5
+        self.size = PACKET_SIZE
+        self.server = None
+        self.threads = []
 
-#this will set up the connection, and keep it running
-for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
-    af, socktype, proto, canonname, sa = res
-    try:
-	s = socket.socket(af, socktype, proto)
-    except socket.error, msg:
-	s = None
-	continue
-    try:
-	s.bind(sa)
-	s.listen(1)
-    except socket.error, msg:
-	s.close()
-	s = None
-	continue
-    break
-if s is None:
-    print 'could not open socket'
-    sys.exit(1)
-while 1:
-    conn, addr = s.accept()
-    print 'Connected by', addr
-    request = ''
-    while 1:
-        print "got here"
-        data = conn.recv(1024)
-        request += data
-        print "data: ",data
-        if not data: break
-    print "final data: \"",request,"\""
-    response = process_request(request)
-    conn.send(response)
-    conn.close()
-conn.close()
+    def open_socket(self):
+        for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
+            af, socktype, proto, canonname, sa = res
+            try:
+                self.server = socket.socket(af, socktype, proto)
+            except socket.error, msg:
+                self.server = None
+                continue
+            try:
+                self.server.bind(sa)
+                self.server.listen(1)
+            except socket.error, msg:
+                self.server.close()
+                self.server = None
+                continue
+            break
+        if self.server is None:
+            print 'could not open socket'
+            sys.exit(1)
+
+    def run(self):
+        self.open_socket()
+        input = [self.server,sys.stdin]
+        running = 1
+        while running:
+            inputready,outputready,exceptready = select.select(input,[],[])
+
+            for s in inputready:
+
+                if s == self.server:
+                    # handle the server socket
+                    c = Client(self.server.accept())
+                    c.start()
+                    self.threads.append(c)
+
+                elif s == sys.stdin:
+                    # handle standard input
+                    junk = sys.stdin.readline()
+                    running = 0
+
+        # close all threads
+
+        self.server.close()
+        for c in self.threads:
+            c.join()
+
+class Client(threading.Thread):
+    def __init__(self,(client,address)):
+        threading.Thread.__init__(self)
+        self.client = client
+        self.address = address
+        self.size = PACKET_SIZE
+
+    def run(self):
+        running = 1
+	print 'Connected by', self.address
+	request = ''
+	while running:
+	    print "got here"
+	    data = self.client.recv(PACKET_SIZE)
+	    print "data: ",data
+	    if data: 
+                request += data
+            else:
+                running = 0
+	print "final data: \"",request,"\""
+	response = process_request(request)
+	self.client.send(response)
+	self.client.close()
+
+if __name__ == "__main__":
+    s = Server()
+    s.run() 
