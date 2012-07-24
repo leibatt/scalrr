@@ -40,6 +40,11 @@ After getting scalrr_front.py and scalrr_back.py running, go to
 of choice (I did almost all the development using only firefox, so I
 would recommend using that for best results).
 
+NOTE: scalrr works fine when being accessed by separate browsers.
+However, if you have 2 windows/tabs running scalrr within the same
+browser, scalrr will break. Flask sessions are maintained per browser
+(same cookie is used for the windows/tabs)
+
 ***How to make changes to scalrr and test***
 Just stop whichever part of the system you are modifying (backend
 or frontend, ctrl-c on the command line is fine). Make your changes,

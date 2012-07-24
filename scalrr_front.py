@@ -70,10 +70,7 @@ def get_data_ajax():
     print >> sys.stderr, "got json request in init function"
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':True}
-    if 'saved_qpresults' in session and session['saved_qpresults'] is not None:
-        options['saved_qpresults'] = session['saved_qpresults']
-    else:
-        options['saved_qpresults'] = None
+    options['saved_qpresults'] = None #requests from this url always happen at the beginning of a user session
     server_request = {'query':query,'options':options,'function':'query_execute'}
     queryresultarr = send_request(server_request)
     if 'saved_qpresults' in queryresultarr:

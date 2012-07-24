@@ -1,5 +1,5 @@
 import sys
-#sys.path.append('/opt/scidb/12.3/lib')
+sys.path.append('/opt/scidb/12.3/lib')
 sys.path.append('/opt/scidb/12.7/lib')
 import scidbapi as scidb
 import string, re
@@ -151,7 +151,7 @@ def daggregate(query,options):
 			chunks += ", "+str(defaultchunkval)
 	# need to escape apostrophes or the new query will break
 	attrs = options['attrs']
-	final_query = re.sub("(')","\\\1",final_query)
+	#final_query = re.sub("(')","\\\1",final_query)
 
 	#make the new query an aql query so we can rename the aggregates easily
 	attraggs = ""
@@ -183,7 +183,7 @@ def dsample(query,options):
 		probability = min([1,D3_DATA_THRESHOLD * 1.0 / options['qpsize']])
 	probability = str(probability);
 	# need to escape apostrophes or the new query will break
-	final_query = re.sub("(')","\\\1",final_query)
+	#final_query = re.sub("(')","\\\1",final_query)
 	#if options['afl']:
 	#	final_query = "bernoulli(("+final_query+"), "+probability+")"
 	#else:
@@ -201,7 +201,7 @@ def dsample(query,options):
 def dfilter(query, options):
 	final_query = query
 	# need to escape apostrophes or the new query will break
-	final_query = re.sub("(')","\\\1",final_query)
+	#final_query = re.sub("(')","\\\1",final_query)
 	#if options['afl']:
 	#	final_query = "filter(("+final_query+"), "+options['predicate']+")"
 	#else:
@@ -222,6 +222,7 @@ def reduce_resolution(query,options):
 	qpresults = options['qpresults']
 	#add common reduce function options
 	reduce_options = {'afl':options['afl'],'qpsize':qpresults['size']}
+        query = re.sub("(\'|\")","\\\1",query) #escape single and double quotes
 	if reduce_type == RESTYPE['AGGR']:
 		if 'chunkdims' in options: #user specified chunk dims
 			reduce_options['chunkdims'] = options['chunkdims']
