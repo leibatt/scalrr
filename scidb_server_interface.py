@@ -12,7 +12,7 @@ RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','F
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
-D3_DATA_THRESHOLD = 10000
+D3_DATA_THRESHOLD = 100#00
 
 db = 0
 
@@ -26,6 +26,55 @@ def scidbCloseConn():
 	if db != 0:
 		db.disconnect()
 		db = 0
+
+#orig_query = original user query
+#cx,cy= center
+#l = current zoom level
+#d = resolution difference between zoom levels
+#jxk = maximum dimensions handled by the front-end
+#mxn = original array dimensions
+def getTile(orig_query,cx,cy,l,d,x,xbase,y,ybase,aggregate_options):
+	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	total_tiles = math.pow(d,l)
+	total_tiles_root = math.sqrt(total_tiles)
+	tile_x = x/total_tiles_root # figure out tile dimensions
+	tile_y = y/total_tiles_root
+	lower_x = xbase + int(math.floor(cx - .5*tile_x))
+	lower_y = ybase + int(math.floor(cy - .5*tile_y))
+	upper_x = xbase + int(math.ceil(cx + .5*tile_x))
+	upper_y = ybase + int(math.ceil(cy + .5*tile_y))
+	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
+        newquery = str(newquery)
+	print "newquery: ",newquery
+	result = reduce_resolution(newquery,aggregate_options)
+	return result
+
+#orig_query = original user query
+#cx,cy= center
+#l = current zoom level
+#d = resolution difference between zoom levels
+#jxk = maximum dimensions handled by the front-end
+#mxn = original array dimensions
+def getTileByID(orig_query,tile_id,l,d,x,xbase,y,ybase,aggregate_options): # zero-based indexing
+	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	total_tiles = math.pow(d,l)
+	if tile_id < 0 or tile_id >= total_tiles: #default, get a middle tile
+		tile_id = int(totaltiles/2)
+	total_tiles_root = math.sqrt(total_tiles)
+	tile_x = x/total_tiles_root # figure out tile dimensions
+	tile_y = y/total_tiles_root
+        x_offset = math.floor(tile_id / int(total_tiles_root)) # figure out offsets
+	y_offset = tile_id % int(total_tiles_root)
+	lower_x = xbase + int(x_offset*tile_x)
+	lower_y = ybase + int(y_offset*tile_y)
+	upper_x = xbase + lower_x+int(tile_x)
+	upper_y = ybase + lower_y+int(tile_y)
+	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
+        newquery = str(newquery)
+	print "newquery: ",newquery
+	result = reduce_resolution(newquery,aggregate_options)
+	return result
+	
 
 #options: {'afl':True/False}
 #required options: afl
@@ -222,7 +271,7 @@ def reduce_resolution(query,options):
 	qpresults = options['qpresults']
 	#add common reduce function options
 	reduce_options = {'afl':options['afl'],'qpsize':qpresults['size']}
-        query = re.sub("(\'|\")","\\\1",query) #escape single and double quotes
+        query = re.sub(r"[^\\](\'|\")","\\\1",query) #escape single and double quotes
 	if reduce_type == RESTYPE['AGGR']:
 		if 'chunkdims' in options: #user specified chunk dims
 			reduce_options['chunkdims'] = options['chunkdims']
