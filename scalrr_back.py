@@ -4,7 +4,8 @@ import json
 import traceback
 import scidb_server_interface as sdbi
 import mysql_server_interface as mdbi
-
+import scalrr_back_data as sbdata
+import tile_interface as ti
 import threading
 import select
 import socket
@@ -19,11 +20,6 @@ SCIDB = 'scidb'
 MYSQL = 'mysql'
 
 DEFAULT_DB = SCIDB
-
-backend_metadata = {}
-metadata_lock = threading.Lock()
-default_diff = 3
-default_levels = 2
 
 def dbconnect():
     """Make sure we are connected to the database each request."""
@@ -65,40 +61,6 @@ def query_execute_base(userquery,options):
 	mdbi.mysqlExecuteQuery(query,mdbioptions)
 	return mdbi.mysqlGetAllAttrArrFromQueryForJSON(mdbioptions)
 
-#   y-------->
-#x  0  1  2 ...
-#| 10 11 12 ...
-#| 20 21 22...
-#v
-def getTileByID(tile_id,l,user_id):
-	tile_info = {'type':'id','tile_id':tile_id}
-	return getTileHelper(tile_info,user_id)
-
-#def getTile(orig_query,cx,cy,l,d,x,y,options):
-def getTile(cx,cy,l,user_id):
-	tile_info = {'type':'center','cx':cx,'cy':cy}
-	return getTileHelper(tile_info,user_id)
-
-def getTileHelper(tile_info,user_id):
-	metadata_lock.acquire()
-	orig_query = backend_metadata[user_id]['orig_query']
-	saved_qpresults = backend_metadata[user_id]['saved_qpresults']
-	xbase = 0
-	ybase = 0
-	if len(saved_qpresults['dimbases']) > 0: # adjust bases for array if possible
-		xbase = int(saved_qpresults['dimbases'][saved_qpresults['dims'][0]])
-		ybase = int(saved_qpresults['dimbases'][saved_qpresults['dims'][1]])
-	x = saved_qpresults['dimwidths'][saved_qpresults['dims'][0]]
-	y = saved_qpresults['dimwidths'][saved_qpresults['dims'][1]]
-	k = backend_metadata[user_id]['data_threshold']
-	l = backend_metadata[user_id]['levels']
-	metadata_lock.release()
-	setup_aggr_options = {'afl':False,'saved_qpresults':saved_qpresults}
-	if tile_info['type'] == "center":
-		return sdbi.getTile(orig_query,tile_info['cx'],tile_info['cy'],l,default_diff,x,xbase,y,ybase,setup_reduce_type('AGGR',setup_aggr_options))
-	else:
-		return sdbi.getTileByID(orig_query,tile_info['tile_id'],l,default_diff,x,xbase,y,ybase,setup_reduce_type('AGGR',setup_aggr_options))
-
 #options: {reduce_res_check:True/False}
 def query_execute(userquery,options):
 	query = userquery
@@ -107,24 +69,23 @@ def query_execute(userquery,options):
 	saved_qpresults = None
         if 'saved_qpresults' in options:
         	saved_qpresults = options['saved_qpresults']
-		#tile = getTileByID(2,backend_metadata[options['user_id']]['levels'],options['user_id'])
+		#tile = ti.getTileByID(2,sbdata.backend_metadata[options['user_id']]['levels'],options['user_id'])
 		#print "tile: ",tile
 		#sdbioptions={'dimnames':saved_qpresults['dims']}
 		#print sdbi.getAllAttrArrFromQueryForJSON(tile[0],sdbioptions)
 	if saved_qpresults is None: # first time
 		saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
 		user_id = options['user_id']
-		metadata_lock.acquire()
-		backend_metadata[user_id] = {}
-		backend_metadata[user_id]['orig_query'] = query
-		backend_metadata[user_id]['saved_qpresults'] = saved_qpresults
-		if 'data_threshold' in options:
-			backend_metadata[user_id]['data_threshold'] = options['data_threshold']
-		else: # default
-			backend_metadata[user_id]['data_threshold'] = sdbi.D3_DATA_THRESHOLD
-		backend_metadata[user_id]['levels'] = default_levels #leave at default levels for now
-		#TODO: let # levels vary	
-		metadata_lock.release()
+		with sbdata.metadata_lock:
+			sbdata.backend_metadata[user_id] = {}
+			sbdata.backend_metadata[user_id]['orig_query'] = query
+			sbdata.backend_metadata[user_id]['saved_qpresults'] = saved_qpresults
+			if 'data_threshold' in options:
+				sbdata.backend_metadata[user_id]['data_threshold'] = options['data_threshold']
+			else: # default
+				sbdata.backend_metadata[user_id]['data_threshold'] = sdbi.D3_DATA_THRESHOLD
+			sbdata.backend_metadata[user_id]['levels'] = sbdata.default_levels #leave at default levels for now
+			#TODO: let # levels vary
 		#only do this check for new queries
 		if options['reduce_res_check'] and (saved_qpresults['size'] > sdbi.D3_DATA_THRESHOLD):
 			return {'reduce_res':True,'saved_qpresults':saved_qpresults}
