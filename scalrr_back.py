@@ -11,6 +11,8 @@ import select
 import socket
 import sys
 
+import dumb_expert
+
 HOST = '0.0.0.0'
 PORT = 50007            # Arbitrary non-privileged port
 PACKET_SIZE = 1024
@@ -69,6 +71,7 @@ def query_execute(userquery,options):
 	saved_qpresults = None
         if 'saved_qpresults' in options:
         	saved_qpresults = options['saved_qpresults']
+		#dumb_expert.prefetch(3,options['user_id'])
 		#tile = ti.getTileByID(2,sbdata.backend_metadata[options['user_id']]['levels'],options['user_id'])
 		#print "tile: ",tile
 		#sdbioptions={'dimnames':saved_qpresults['dims']}
