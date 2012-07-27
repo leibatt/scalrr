@@ -107,10 +107,10 @@ def query_execute(userquery,options):
 	saved_qpresults = None
         if 'saved_qpresults' in options:
         	saved_qpresults = options['saved_qpresults']
-		tile = getTileByID(2,backend_metadata[options['user_id']]['levels'],options['user_id'])
-		print "tile: ",tile
-		sdbioptions={'dimnames':saved_qpresults['dims']}
-		print sdbi.getAllAttrArrFromQueryForJSON(tile[0],sdbioptions)
+		#tile = getTileByID(2,backend_metadata[options['user_id']]['levels'],options['user_id'])
+		#print "tile: ",tile
+		#sdbioptions={'dimnames':saved_qpresults['dims']}
+		#print sdbi.getAllAttrArrFromQueryForJSON(tile[0],sdbioptions)
 	if saved_qpresults is None: # first time
 		saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
 		user_id = options['user_id']
