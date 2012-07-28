@@ -12,7 +12,7 @@ RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','F
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
-D3_DATA_THRESHOLD = 100#00
+D3_DATA_THRESHOLD = 10000
 
 #db = 0
 
@@ -34,9 +34,9 @@ def scidbCloseConn(db):
 #d = resolution difference between zoom levels
 #jxk = maximum dimensions handled by the front-end
 #mxn = original array dimensions
-def getTile(orig_query,cx,cy,l,d,x,xbase,y,ybase,aggregate_options):
+def getTile(orig_query,cx,cy,l,d,x,xbase,y,ybase,threshold,aggregate_options):
 	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
-	total_tiles = math.pow(d,l)
+	total_tiles = math.pow(d,2*l)
 	total_tiles_root = math.sqrt(total_tiles)
 	tile_x = x/total_tiles_root # figure out tile dimensions
 	tile_y = y/total_tiles_root
@@ -47,7 +47,13 @@ def getTile(orig_query,cx,cy,l,d,x,xbase,y,ybase,aggregate_options):
 	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
         newquery = str(newquery)
 	print "newquery: ",newquery
-	result = reduce_resolution(newquery,aggregate_options)
+	sdbioptions = {'db':aggregate_options['db'],'afl':False}
+	qpresults = verifyQuery(newquery,sdbioptions)
+	sdbioptions['reduce_res'] = qpresults['size'] > threshold
+	if sdbioptions['reduce_res']:
+		aggregate_options['qpresults'] = qpresults
+		sdbioptions['reduce_options'] = aggregate_options
+	result = executeQuery(newquery,sdbioptions)
 	return result
 
 #orig_query = original user query
@@ -56,9 +62,9 @@ def getTile(orig_query,cx,cy,l,d,x,xbase,y,ybase,aggregate_options):
 #d = resolution difference between zoom levels
 #jxk = maximum dimensions handled by the front-end
 #mxn = original array dimensions
-def getTileByID(orig_query,tile_id,l,d,x,xbase,y,ybase,aggregate_options): # zero-based indexing
+def getTileByID(orig_query,tile_id,l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
 	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
-	total_tiles = math.pow(d,l)
+	total_tiles = math.pow(d,2*l)
 	if tile_id < 0 or tile_id >= total_tiles: #default, get a middle tile
 		tile_id = int(totaltiles/2)
 	total_tiles_root = math.sqrt(total_tiles)
@@ -73,7 +79,14 @@ def getTileByID(orig_query,tile_id,l,d,x,xbase,y,ybase,aggregate_options): # zer
 	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
         newquery = str(newquery)
 	print "newquery: ",newquery
-	result = reduce_resolution(newquery,aggregate_options)
+	sdbioptions = {'db':aggregate_options['db'],'afl':False}
+	qpresults = verifyQuery(newquery,sdbioptions)
+	sdbioptions['reduce_res'] = qpresults['size'] > threshold
+	if sdbioptions['reduce_res']:
+		aggregate_options['qpresults'] = qpresults
+		aggregate_options['threshold'] = threshold
+		sdbioptions['reduce_options'] = aggregate_options
+	result = executeQuery(newquery,sdbioptions)
 	return result
 	
 
@@ -96,14 +109,14 @@ def executeQuery(query,options):
 		options['reduce_options']['db'] = db
 		return reduce_resolution(query,options['reduce_options'])
 	else:
-		#print  "running original query."
+		print  "running original query."
 		#print  "final query:",final_query#,"\nexecuting query",datetime.now()
 		result = []
 		if options['afl']:
 			result.append(db.executeQuery(final_query,'afl'))
 		else:
 			result.append(db.executeQuery(final_query,'aql'))
-		result.append(0)
+		result.append(verifyQuery(final_query,options))
 		return result
 
 #function to do the resolution reduction when running queries
@@ -181,6 +194,7 @@ def get_attrs(queryplan):
 #TODO: Fix the avg func assumption
 def daggregate(query,options):
 	final_query = query
+	threshold = options['threshold']
 	dimension = options['numdims']
 	chunks = ""
 	if ('chunkdims' in options) and (len(options['chunkdims']) > 0): #chunkdims specified
@@ -189,7 +203,7 @@ def daggregate(query,options):
 		for i in range(1,len(chunkdims)):
 			chunks += ", "+str(chunkdims[i])
 	elif dimension > 0: # otherwise do default chunks
-		defaultchunkval = math.pow(1.0*options['qpsize']/D3_DATA_THRESHOLD,1.0/dimension) if (1.0*options['qpsize']/D3_DATA_THRESHOLD) > 1 else AGGR_CHUNK_DEFAULT
+		defaultchunkval = math.pow(1.0*options['qpsize']/threshold,1.0/dimension) if (1.0*options['qpsize']/threshold) > 1 else AGGR_CHUNK_DEFAULT
 		defaultchunkval = int(math.ceil(defaultchunkval)) # round up
 		chunks += str(defaultchunkval)
 		for i in range(1,dimension) :
@@ -211,7 +225,7 @@ def daggregate(query,options):
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
 	#	
 	#final_query = "regrid(("+final_query+"),"+chunks+","+attraggs+")" # afl
-	#print  "final query:",final_query
+	print  "final query:",final_query
 	#result = []
 	#result = db.executeQuery(final_query,'aql')
 	#return result

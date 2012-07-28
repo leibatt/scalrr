@@ -16,14 +16,13 @@ class BasicExpert:
 	def prefetch(self,c,user_id):
 		global prefetched_tiles
 		i = 0
-		with sbdata.metadata_lock: # lock you need to access user metadata
+		with sbdata.metadata_lock: # lock you need to access user metadata, see scalrr_back_data.py
 			levels = sbdata.backend_metadata[user_id]['levels'] # total number of levels, currently the default is 2
-			total_tiles = math.pow(sbdata.default_diff,levels) # default_diff = default difference between tiles (as a multiple, so 3x or 2x for example)
-		shuffled_tiles = range(int(total_tiles))
-		random.shuffle(shuffled_tiles)
-		while i < c and i < total_tiles and not sbdata.stop_prefetch.is_set(): # keep checking to make sure we can still fetch more tiles
+		while i < c and not sbdata.stop_prefetch.is_set(): # keep checking to make sure we can still fetch more tiles
 			level = random.randrange(0,levels)
-			tile = ti.getTileByID(shuffled_tiles[i],level,user_id)
+			total_tiles = math.pow(sbdata.default_diff,2*level) # default_diff = default difference between tiles (as a multiple, so 3x or 2x for example)
+			tile_id = random.randrange(0,total_tiles)
+			tile = ti.getTileByID(tile_id,level,user_id)
 			with self.prefetch_lock: # lock you need to access this expert's prefetched tiles
 				if user_id not in self.prefetched_tiles:
 					self.prefetched_tiles[user_id] = {}
@@ -32,9 +31,12 @@ class BasicExpert:
 				else:
 					self.prefetched_tiles[user_id][level] = [tile]
 			# the next 3 lines are for debugging purposes
-			print "tile",i,":", tile
+			print levels
+			print "tile",tile_id#,":", tile
+			print "total tiles:",total_tiles
+			print "level:",level
 			i += 1
-		if i < c and i < total_tiles and sbdata.stop_prefetch.is_set():
+		if i < c and sbdata.stop_prefetch.is_set():
 			print "dumb expert stopped fetching early"
 		print "dumb expert done prefetching tiles"
 
