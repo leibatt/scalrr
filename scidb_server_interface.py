@@ -14,15 +14,16 @@ PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
 D3_DATA_THRESHOLD = 100#00
 
-db = 0
+#db = 0
 
 def scidbOpenConn():
-	global db
+	#global db
 	db = scidb.connect("localhost",1239)
 	#db = scidb.connect("vise4.csail.mit.edu",1239)
+	return db
 
-def scidbCloseConn():
-	global db
+def scidbCloseConn(db):
+	#global db
 	if db != 0:
 		db.disconnect()
 		db = 0
@@ -80,7 +81,7 @@ def getTileByID(orig_query,tile_id,l,d,x,xbase,y,ybase,aggregate_options): # zer
 #required options: afl
 #function to verify query query result size
 def verifyQuery(query,options):
-	queryplan = query_optimizer(query,options['afl'])
+	queryplan = query_optimizer(query,options)
 	return check_query_plan(queryplan) #returns a dictionary
 
 #function to do the resolution reduction when running queries
@@ -88,13 +89,15 @@ def verifyQuery(query,options):
 #options:{'afl':True/False,reduce_res:True/False,'reduce_options':options}
 #required options: reduce_res, reduce_options if reduce_res is true, afl if reduce_res is false
 def executeQuery(query,options):
+	db = options['db']
 	print  "executing query",datetime.now()
 	final_query = query
 	if(options['reduce_res']): #reduction requested
+		options['reduce_options']['db'] = db
 		return reduce_resolution(query,options['reduce_options'])
 	else:
-		print  "running original query."
-		print  "final query:",final_query#,"\nexecuting query",datetime.now()
+		#print  "running original query."
+		#print  "final query:",final_query#,"\nexecuting query",datetime.now()
 		result = []
 		if options['afl']:
 			result.append(db.executeQuery(final_query,'afl'))
@@ -105,7 +108,9 @@ def executeQuery(query,options):
 
 #function to do the resolution reduction when running queries
 # get the queryplan for the given query and return the line with info about the result matrix
-def query_optimizer(query,afl):
+def query_optimizer(query,options):
+	db = options['db']
+	afl = options['afl']
 	query = re.sub("(\\')","\\\\\\1",query)
 	# eventually want to be able to infer this
 	queryplan_query = ""
@@ -114,8 +119,8 @@ def query_optimizer(query,afl):
 		queryplan_query = LOGICAL_PHYSICAL+"('"+query+"','afl')"
 	else:
 		queryplan_query = LOGICAL_PHYSICAL+"('"+query+"','aql')"
-	print  "queryplan query: "
-	print  queryplan_query
+	#print  "queryplan query: "
+	#print  queryplan_query
 	optimizer_answer = db.executeQuery(queryplan_query,'afl')
 	#print  optimizer_answer
 	# flatten the list into one big string, and then split on '\n'
@@ -157,15 +162,6 @@ def check_query_plan(queryplan):
 			widths[name] =rangewidth;
 	return {'size': size, 'numdims': dims, 'dims': names, 'attrs':get_attrs(queryplan),'dimbases':bases,'dimwidths':widths}
 
-#options: {'afl':True/False}
-#required options: afl
-#function to return the array definition from the query's SciDB query plan
-# to be used with regrid to fill zeroes using the merge function
-def get_arr_def(query,options):
-	queryplan = query_optimizer(query,options['afl'])
-	queryplan = str(queryplan)
-	return queryplan[queryplan.find("<"):queryplan.find("]")+1]
-
 #get all attributes of the result matrix
 def get_attrs(queryplan):
 	# get the text in between the angle brackets
@@ -204,9 +200,9 @@ def daggregate(query,options):
 
 	#make the new query an aql query so we can rename the aggregates easily
 	attraggs = ""
-	print  "options attrtypes: ",options['attrtypes']
+	#print  "options attrtypes: ",options['attrtypes']
 	for i in range(0,len(attrs)):
-		print  "attr type: ",options['attrtypes'][i]
+		#print  "attr type: ",options['attrtypes'][i]
 		if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
 			if attraggs != "":
 				attraggs += ", "
@@ -237,7 +233,7 @@ def dsample(query,options):
 	#	final_query = "bernoulli(("+final_query+"), "+probability+")"
 	#else:
 	final_query = "select * from bernoulli(("+ final_query +"), "+probability+")"
-	print  "final query:",final_query,"\nexecuting query..."
+	#print  "final query:",final_query,"\nexecuting query..."
 	#if options['afl']:
 	#	result = db.executeQuery(final_query,'afl')
 	#else:
@@ -255,7 +251,7 @@ def dfilter(query, options):
 	#	final_query = "filter(("+final_query+"), "+options['predicate']+")"
 	#else:
 	final_query = "select * from ("+final_query+") where "+options['predicate']
-	print  "final query:",final_query,"\nexecuting query..."
+	#print  "final query:",final_query,"\nexecuting query..."
 	#if options['afl']:
 	#	result = db.executeQuery(final_query,'afl')
 	#else:
@@ -267,6 +263,7 @@ def dfilter(query, options):
 #required options: reduce_type, qpresults, afl, predicate (if RESTYPE['FILTER'] is specified)
 #RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
 def reduce_resolution(query,options):
+	db = options['db']
 	reduce_type = options['reduce_type']
 	qpresults = options['qpresults']
 	#add common reduce function options
@@ -291,8 +288,8 @@ def reduce_resolution(query,options):
 	result =[]
         newquery = str(newquery)
 	result.append(db.executeQuery(newquery,'aql'))
-	result.append(verifyQuery(newquery,{'afl':False}))
-	print  result[1]
+	result.append(verifyQuery(newquery,{'afl':False,'db':db}))
+	#print  result[1]
 	return result
 
 # function used to build a python "array" out of the given
@@ -544,8 +541,8 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	dims = desc.getDimensions() # list of DimensionDesc objects
 	attrs = desc.getAttributes() # list of AttributeDesc objects
 	origarrnamelen = 0#len(desc.getName()) - 2
-	print  "array name: ",desc.getName()
-	print  "array name length: ",origarrnamelen
+	#print  "array name: ",desc.getName()
+	#print  "array name length: ",origarrnamelen
 
 	if(dims.size() < 1 or dims.size() != len(dimnames)):
 		return []

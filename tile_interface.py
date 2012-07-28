@@ -16,6 +16,7 @@ def getTile(cx,cy,l,user_id):
 	return getTileHelper(tile_info,user_id)
 
 def getTileHelper(tile_info,user_id):
+	db = sdbi.scidbOpenConn()
 	with sbdata.metadata_lock:
 		orig_query = sbdata.backend_metadata[user_id]['orig_query']
 		saved_qpresults = sbdata.backend_metadata[user_id]['saved_qpresults']
@@ -29,10 +30,22 @@ def getTileHelper(tile_info,user_id):
 		k = sbdata.backend_metadata[user_id]['data_threshold']
 		l = sbdata.backend_metadata[user_id]['levels']
 	setup_aggr_options = {'afl':False,'saved_qpresults':saved_qpresults}
+	aggr_options = setup_reduce_type('AGGR',setup_aggr_options)
+	aggr_options['db'] = db
 	if tile_info['type'] == "center":
-		return sdbi.getTile(orig_query,tile_info['cx'],tile_info['cy'],l,sbdata.default_diff,x,xbase,y,ybase,setup_reduce_type('AGGR',setup_aggr_options))
+		queryresultobj = sdbi.getTile(orig_query,tile_info['cx'],tile_info['cy'],l,sbdata.default_diff,x,xbase,y,ybase,aggr_options)
 	else:
-		return sdbi.getTileByID(orig_query,tile_info['tile_id'],l,sbdata.default_diff,x,xbase,y,ybase,setup_reduce_type('AGGR',setup_aggr_options))
+		queryresultobj = sdbi.getTileByID(orig_query,tile_info['tile_id'],l,sbdata.default_diff,x,xbase,y,ybase,aggr_options)
+	sdbioptions={'dimnames':saved_qpresults['dims']}
+	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
+	saved_qpresults = queryresultobj[1] # don't need local saved_qpresults anymore, so reuse
+	# get the new dim info
+	queryresultarr['dimnames'] = saved_qpresults['dims']
+	queryresultarr['dimbases'] = saved_qpresults['dimbases']
+	queryresultarr['dimwidths'] = saved_qpresults['dimwidths']
+	queryresultarr['saved_qpresults'] = saved_qpresults
+	sdbi.scidbCloseConn(db)
+	return queryresultarr
 
 #returns necessary options for reduce type
 #options: {'afl':True/False, 'predicate':"boolean predicate",'probability':double,'chunkdims':[]}

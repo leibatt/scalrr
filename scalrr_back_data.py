@@ -3,7 +3,18 @@ import threading
 backend_metadata = {}
 metadata_lock = threading.Lock()
 
-stop_prefetch = threading.Event()
+user_tiles = {} # for tracking the tiles this user has visited
+user_tiles_lock = threading.Lock()
 
+#each entry looks like: {'tile_id':id,'level':level}
+user_history = {} # for recording the order in which the tiles were visited
+user_history_lock = threading.Lock()
+
+stop_prefetch = threading.Event() # for telling the experts to stop prefetching
+
+#default number of tiles to prefetch
+max_prefetched = 3
+
+#default number of levels and difference between levels
 default_diff = 3
 default_levels = 2
