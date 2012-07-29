@@ -53,6 +53,11 @@ def process_request(inputstring):
             response = query_execute_base(query,options)
         elif DEFAULT_DB == SCIDB:
             response = query_execute(query,options)
+    elif request['function'] == "fetch_first_tile":
+        options = request['options']
+        query = str(request['query'])
+        print "fetching first tile for:\"",query,"\""
+        response = fetch_first_tile(query,options)
     else:
         raise Exception("unrecognized function passed")
     #dbclose()
@@ -153,6 +158,8 @@ def fetch_first_tile(userquery,options):
 	experts[0] = dumb_expert.BasicExpert()
 	expert_threads[0] = threading.Thread(target=experts[0].prefetch,args=(sbdata.max_prefetched,user_id,))
 	expert_threads[0].start()
+	sdbi.scidbCloseConn(db)
+	return tile
 
 #this is called after original query is run
 def fetch_tile(tile_id,level,options):

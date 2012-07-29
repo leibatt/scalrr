@@ -12,7 +12,7 @@ RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','F
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
-D3_DATA_THRESHOLD = 10000
+D3_DATA_THRESHOLD = 100#00
 
 #db = 0
 
@@ -51,6 +51,7 @@ def getTile(orig_query,cx,cy,l,d,x,xbase,y,ybase,threshold,aggregate_options):
 	qpresults = verifyQuery(newquery,sdbioptions)
 	sdbioptions['reduce_res'] = qpresults['size'] > threshold
 	if sdbioptions['reduce_res']:
+		aggregate_options['threshold'] = threshold
 		aggregate_options['qpresults'] = qpresults
 		sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
@@ -194,7 +195,10 @@ def get_attrs(queryplan):
 #TODO: Fix the avg func assumption
 def daggregate(query,options):
 	final_query = query
-	threshold = options['threshold']
+	if 'threshold' in options:
+		threshold = options['threshold']
+	else:
+		threshold= D3_DATA_THRESHOLD
 	dimension = options['numdims']
 	chunks = ""
 	if ('chunkdims' in options) and (len(options['chunkdims']) > 0): #chunkdims specified
