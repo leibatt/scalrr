@@ -16,6 +16,7 @@ $(document).ready(function() {
 	$('#button-left').on('click',move_left);
 	$('#button-right').on('click',move_left);
 	$('#button-zoom-out').on('click',zoom_out);
+	$('#button-zoom-in').on('click',zoom_in);
 	var buttons = $('.button');
 	console.log(buttons);
 	$('.nav-button').button();
