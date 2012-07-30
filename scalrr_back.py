@@ -58,6 +58,13 @@ def process_request(inputstring):
         query = str(request['query'])
         print "fetching first tile for:\"",query,"\""
         response = fetch_first_tile(query,options)
+    elif request['function'] == "fetch_tile":
+	print "got here"
+        options = request['options']
+        tile_id = int(request['tile_id'])
+	level = int(request['level'])
+        print "fetching tile"
+        response = fetch_tile(tile_id,level,options)
     else:
         raise Exception("unrecognized function passed")
     #dbclose()
@@ -134,6 +141,7 @@ def fetch_first_tile(userquery,options):
 	saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
 	user_id = options['user_id']
 	# setup metadata
+	print "setting up metadata"
 	with sbdata.metadata_lock:
 		sbdata.backend_metadata[user_id] = {}
 		sbdata.backend_metadata[user_id]['orig_query'] = query
@@ -153,6 +161,7 @@ def fetch_first_tile(userquery,options):
 		sbdata.user_tiles[user_id] = {0:{0:tile}}
 		print "added tile to:",sbdata.user_tiles
 	#start prefetching
+	print "setting up prefetching experts"
 	experts = range(1)
 	expert_threads = range(1)
 	experts[0] = dumb_expert.BasicExpert()
@@ -164,9 +173,11 @@ def fetch_first_tile(userquery,options):
 #this is called after original query is run
 def fetch_tile(tile_id,level,options):
 	global expert_threads
+	print "stopping experts"
 	sbdata.stop_prefetch.set() #stop the experts
 	user_id = options['user_id']
 	#check if this a tile the user is revisiting
+	print "checking if user has seen this tile before"
 	tile = None
 	with sbdata.user_tiles_lock:
 		if user_id in sbdata.user_tiles and level in sbdata.user_tiles[user_id] and tile_id in sbdata.user_tiles[user_id][level]:
@@ -174,16 +185,19 @@ def fetch_tile(tile_id,level,options):
 
 	success = range(len(experts))
 	#check if an expert has cached this tile
-	for i in range(len(experts)):
-		temptile = experts[i].find_tile(tile_id,level,user_id)
-		if temptile is not None:
-			success[i] = True
-			if tile is None:
-				tile = temptile
-		else:
-			success[i] = False
+	if tile is None:
+		print "checking to see if this tile was prefetched"
+		for i in range(len(experts)):
+			temptile = experts[i].find_tile(tile_id,level,user_id)
+			if temptile is not None:
+				success[i] = True
+				if tile is None:
+					tile = temptile
+			else:
+				success[i] = False
 	#otherwise go get the tile	
 	if tile is None:
+		print "tile not found, fetching from database"
 		tile = ti.getTileByID(tile_id,level,user_id)
 	with sbdata.user_history_lock: # add tile to history
 		if user_id not in sbdata.user_history:
@@ -197,10 +211,16 @@ def fetch_tile(tile_id,level,options):
 		if tile_id not in sbdata.user_tiles[user_id][level]:
 			sbdata.user_tiles[user_id][level][tile_id] = tile
 	#wait for all experts to stop
+	print "waiting for experts to stop"
 	while len(expert_threads) > 0:
+		print "total expert threads:",len(expert_threads)
+		print expert_threads[0]
 		expert_threads[0].join()
+		if len(expert_threads) > 0:
+			expert_threads.pop(0)
 	#update tile prefetch distribution
 	# restart experts
+	print "restarting experts"
 	sbdata.stop_prefetch.clear()
 	expert_threads = range(len(experts))
 	for i in range(len(experts)):

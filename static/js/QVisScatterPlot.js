@@ -23,16 +23,17 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 	this.selectz = true;
 
 	this.draw_obj = "circle";
-	//call the original render function
-	var labelsfrombase = QVis.ScatterPlot.base.render.call(this,_data,_labels,_types,opts);
-	console.log("z_label "+labelsfrombase.z_label);
 
 	var self = this;
 
+	//call the original render function
+	self.labelsfrombase = QVis.ScatterPlot.base.render.call(this,_data,_labels,_types,opts);
+	console.log("z_label "+self.labelsfrombase.z_label);
+
 	// create x,y axis scales
-	var xscale = this.createScale(_data,_types,labelsfrombase.x_label,this.w,this.px,false,false);
-	var yscale = this.createScale(_data,_types,labelsfrombase.y_label,this.h,this.py,true,false);
-	var zscale = this.createScale(_data,_types,labelsfrombase.z_label,0,0,false,true)
+	var xscale = this.createScale(_data,_types,self.labelsfrombase.x_label,this.w,this.px,false,false);
+	var yscale = this.createScale(_data,_types,self.labelsfrombase.y_label,this.h,this.py,true,false);
+	var zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,0,0,false,true)
 			.range(colorbrewer.Oranges[9]);
 	console.log("xscale domain: "+xscale.domain());
 	console.log("zscale range: "+zscale.range());
@@ -42,7 +43,7 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 		.attr('height', this.h)
 		.attr('class', 'g')
 		.attr('id', 'svg_'+this.rootid);
-	this.add_axes(xscale, yscale,labelsfrombase.x_label,labelsfrombase.y_label, self.strings,_types);
+	this.add_axes(xscale, yscale,self.labelsfrombase.x_label,self.labelsfrombase.y_label, self.strings,_types);
 				
 	this.circlecontainer = this.svg.append('g')
 		.attr("class", "circlecontainer")
@@ -51,10 +52,10 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 		.attr("x", 0)
 		.attr("y", 0);
 
-	this.drawCircles(this.circlecontainer,_data,_types,xscale,yscale,labelsfrombase.x_label,labelsfrombase.y_label,this.defaultRadius,function(d) {return zscale(d[labelsfrombase.z_label]);});
+	this.drawCircles(this.circlecontainer,_data,_types,xscale,yscale,self.labelsfrombase.x_label,self.labelsfrombase.y_label,this.defaultRadius,function(d) {return zscale(d[self.labelsfrombase.z_label]);});
 	//just testing the rects function
-	//this.drawRects(this.circlecontainer,_data,_types,xscale,yscale,labelsfrombase.x_label,labelsfrombase.y_label,this.defaultRadius,this.defaultRadius,this.defaultColor);
+	//this.drawRects(this.circlecontainer,_data,_types,xscale,yscale,self.labelsfrombase.x_label,self.labelsfrombase.y_label,this.defaultRadius,this.defaultRadius,this.defaultColor);
 
-	this.add_brush(xscale,yscale,labelsfrombase.x_label,labelsfrombase.y_label,function(d) {return zscale(d[labelsfrombase.z_label]);},this.circlecontainer);
+	this.add_brush(xscale,yscale,self.labelsfrombase.x_label,self.labelsfrombase.y_label,function(d) {return zscale(d[self.labelsfrombase.z_label]);},this.circlecontainer);
 
 }

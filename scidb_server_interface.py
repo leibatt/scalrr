@@ -55,6 +55,8 @@ def getTile(orig_query,cx,cy,l,d,x,xbase,y,ybase,threshold,aggregate_options):
 		aggregate_options['qpresults'] = qpresults
 		sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
+	result[1]['total_tiles'] = total_tiles
+	result[1]['total_tiles_root'] = total_tiles_root
 	return result
 
 #orig_query = original user query
@@ -88,6 +90,8 @@ def getTileByID(orig_query,tile_id,l,d,x,xbase,y,ybase,threshold,aggregate_optio
 		aggregate_options['threshold'] = threshold
 		sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
+	result[1]['total_tiles'] = total_tiles
+	result[1]['total_tiles_root'] = total_tiles_root
 	return result
 	
 

@@ -28,6 +28,7 @@ def getTileHelper(tile_info,l,user_id):
 		x = saved_qpresults['dimwidths'][saved_qpresults['dims'][0]]
 		y = saved_qpresults['dimwidths'][saved_qpresults['dims'][1]]
 		k = sbdata.backend_metadata[user_id]['data_threshold']
+		levels = sbdata.backend_metadata[user_id]['levels']
 	setup_aggr_options = {'afl':False,'saved_qpresults':saved_qpresults}
 	aggr_options = setup_reduce_type('AGGR',setup_aggr_options)
 	aggr_options['db'] = db
@@ -35,6 +36,9 @@ def getTileHelper(tile_info,l,user_id):
 		queryresultobj = sdbi.getTile(orig_query,tile_info['cx'],tile_info['cy'],l,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
 	else:
 		queryresultobj = sdbi.getTileByID(orig_query,tile_info['tile_id'],l,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
+	total_tiles = queryresultobj[1]['total_tiles']
+	total_tiles_root = queryresultobj[1]['total_tiles_root']
+	print "total_tiles_root:",total_tiles_root
 	sdbioptions={'dimnames':saved_qpresults['dims']}
 	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
 	saved_qpresults = queryresultobj[1] # don't need local saved_qpresults anymore, so reuse
@@ -43,6 +47,9 @@ def getTileHelper(tile_info,l,user_id):
 	queryresultarr['dimbases'] = saved_qpresults['dimbases']
 	queryresultarr['dimwidths'] = saved_qpresults['dimwidths']
 	queryresultarr['saved_qpresults'] = saved_qpresults
+	queryresultarr['max_zoom'] = levels - 1
+	queryresultarr['total_tiles'] = total_tiles
+	queryresultarr['total_tiles_root'] = total_tiles_root
 	sdbi.scidbCloseConn(db)
 	return queryresultarr
 
