@@ -102,7 +102,7 @@ $(document).ready(function() {
 	function zoom_in() {
 		tile = Number($('#zoom-in-text').val());
 		zoom = current_zoom + 1;
-		if(zoom > max_zoom) {
+		if(zoom >= max_zoom) {
 			zoom = max_zoom;
 		}
 		if(tile < 0) {
