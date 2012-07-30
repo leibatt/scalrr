@@ -30,7 +30,7 @@ $(document).ready(function() {
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_tile+","+current_zoom+"-->"+tile+","+zoom);
+		console.log(current_tile+","+current_zoom+"-->"+tile+","+current_zoom);
 		current_tile = tile;
 		return false;
 	}
@@ -44,7 +44,7 @@ $(document).ready(function() {
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_tile+","+current_zoom+"-->"+tile+","+zoom);
+		console.log(current_tile+","+current_zoom+"-->"+tile+","+current_zoom);
 		current_tile = tile;
 		return false;
 	}
@@ -58,7 +58,7 @@ $(document).ready(function() {
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_tile+","+current_zoom+"-->"+tile+","+zoom);
+		console.log(current_tile+","+current_zoom+"-->"+tile+","+current_zoom);
 		current_tile = tile;
 		return false;
 	}
@@ -72,7 +72,7 @@ $(document).ready(function() {
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_tile+","+current_zoom+"-->"+tile+","+zoom);
+		console.log(current_tile+","+current_zoom+"-->"+tile+","+current_zoom);
 		current_tile = tile;
 		return false;
 	}
