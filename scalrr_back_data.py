@@ -6,7 +6,8 @@ metadata_lock = threading.Lock()
 user_tiles = {} # for tracking the tiles this user has visited
 user_tiles_lock = threading.Lock()
 
-#each entry looks like: {'tile_id':id,'level':level}
+#id used to access the tiles: "xid,yid"
+#each entry looks like: {'tile_xid':xid,'tile_yid':yid,'level':level}
 user_history = {} # for recording the order in which the tiles were visited
 user_history_lock = threading.Lock()
 

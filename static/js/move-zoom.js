@@ -1,11 +1,13 @@
 var renderagg = null;
-var current_tile = 0;
+var current_x = 0;
+var current_y = 0;
 var current_zoom = 0;
 
 // get these from backend
 var max_zoom = 1;
 var total_tiles = 1;
 var total_tiles_root = 1;
+var zoom_diff = 3;
 
 var menutype;
 
@@ -23,78 +25,90 @@ $(document).ready(function() {
 	console.log(buttons);	
 
 	function move_up() {
-		var tile = current_tile - total_tiles_root;
-		if(tile< 0){
-			tile= 0;
+		var x = current_x;
+		var y = current_y;
+		var zoom = current_zoom;
+		x = x - 1;
+		if(x< 0){
+			x= 0;
 		}
-		$.getJSON('/fetch-tile',{tile_id: tile,level:current_zoom},function(jsondata){
+		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_tile+","+current_zoom+"-->"+tile+","+current_zoom);
-		current_tile = tile;
+		console.log(current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+		current_x = x;
 		return false;
 	}
 
 	function move_down() {
-		var tile = current_tile + total_tiles_root;
-		if(tile>= total_tiles){
-			tile= total_tiles-1;
+		var x = current_x;
+		var y = current_y;
+		var zoom = current_zoom;
+		x = x + 1;
+		if(x >= total_tiles_root){
+			x = total_tiles_root-1;
 		}
-		$.getJSON('/fetch-tile',{tile_id: tile,level:current_zoom},function(jsondata){
+		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_tile+","+current_zoom+"-->"+tile+","+current_zoom);
-		current_tile = tile;
+		console.log(current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+		current_x = x;
 		return false;
 	}
 
 	function move_left() {
-		var tile = current_tile;
-		if((tile % total_tiles_root) != total_tiles-1){
-			tile = tile + 1;
+		var x = current_x;
+		var y = current_y;
+		var zoom = current_zoom;
+		y = y - 1;
+		if(y< 0){
+			y= 0;
 		}
-		$.getJSON('/fetch-tile',{tile_id: tile,level:current_zoom},function(jsondata){
+		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_tile+","+current_zoom+"-->"+tile+","+current_zoom);
-		current_tile = tile;
+		console.log(current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+		current_y = y;
 		return false;
 	}
 
 	function move_right() {
-		var tile = current_tile;
-		if((tile % total_tiles_root) != 0){
-			tile = tile - 1;
+		var x = current_x;
+		var y = current_y;
+		var zoom = current_zoom;
+		y = y + 1;
+		if(y >= total_tiles_root){
+			y = total_tiles_root-1;
 		}
-		$.getJSON('/fetch-tile',{tile_id: tile,level:current_zoom},function(jsondata){
+		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_tile+","+current_zoom+"-->"+tile+","+current_zoom);
-		current_tile = tile;
+		console.log(current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+		current_y = y;
 		return false;
 	}
 
 	function zoom_out() {
-		var zoom = current_zoom - 1;
-		var tile = 0;
-		if(zoom < 0) {
+		var x = current_x;
+		var y = current_y;
+		var zoom = current_zoom;
+		zoom = zoom - 1;
+		if(zoom < 0){
 			zoom = 0;
-		} else { // compute zoom out index
-			var total_tiles_root_root = Math.sqrt(total_tiles_root);
-			var xind = Math.floor(current_tile/total_tiles_root)/total_tiles_root_root;
-			var yind = Math.floor(current_tile % total_tiles_root)/total_tiles_root_root;
-			tile = xind*total_tiles_root_root+yind;
 		}
-		$.getJSON('/fetch-tile',{tile_id: tile,level:zoom},function(jsondata){
+		x = Math.floor(x/zoom_diff);
+		y = Math.floor(y/zoom_diff);
+		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_tile+","+current_zoom+"-->"+tile+","+zoom);
-		current_tile = tile;
+		console.log(current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+		current_y = y;
+		current_x = x;
 		current_zoom = zoom;
 		return false;
 	}
@@ -103,12 +117,13 @@ $(document).ready(function() {
 		tile = Number($('#zoom-in-text').val());
 		zoom = current_zoom + 1;
 		if(zoom >= max_zoom) {
-			zoom = max_zoom;
+			zoom = max_zoom - 1;
 		}
+		var total_tiles_next = total_tiles*zoom_diff*zoom_diff;
 		if(tile < 0) {
 			tile = 0;
-		} else if (tile >= total_tiles) {
-			tile = total_tiles - 1;
+		} else if (tile >= total_tiles_next) {
+			tile = total_tiles_next - 1;
 		}
 		$.getJSON('/fetch-tile',{tile_id: tile,level:zoom},function(jsondata){
 			console.log(jsondata);
@@ -190,6 +205,7 @@ $(document).ready(function() {
 		console.log(jsondata['dimbases']);
 		console.log(jsondata['dimwidths']);
 
+		zoom_diff = jsondata['zoom_diff'];
 		max_zoom = jsondata['max_zoom'];
 		total_tiles = jsondata['total_tiles'];
 		total_tiles_root = jsondata['total_tiles_root'];

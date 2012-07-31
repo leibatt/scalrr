@@ -1,6 +1,10 @@
 import scalrr_back_data as sbdata
 import scidb_server_interface as sdbi
 
+def getTileByIDXY(tile_xid,tile_yid,l,user_id):
+	tile_info = {'type':'xy','tile_xid':tile_xid,'tile_yid':tile_yid}
+	return getTileHelper(tile_info,l,user_id)
+
 #   y-------->
 #x  0  1  2 ...
 #| 10 11 12 ...
@@ -34,6 +38,8 @@ def getTileHelper(tile_info,l,user_id):
 	aggr_options['db'] = db
 	if tile_info['type'] == "center":
 		queryresultobj = sdbi.getTile(orig_query,tile_info['cx'],tile_info['cy'],l,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
+	elif tile_info['type'] == "xy":
+		queryresultobj = sdbi.getTileByIDXY(orig_query,tile_info['tile_xid'],tile_info['tile_yid'],l,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
 	else:
 		queryresultobj = sdbi.getTileByID(orig_query,tile_info['tile_id'],l,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
 	total_tiles = queryresultobj[1]['total_tiles']
@@ -50,6 +56,7 @@ def getTileHelper(tile_info,l,user_id):
 	queryresultarr['max_zoom'] = levels - 1
 	queryresultarr['total_tiles'] = total_tiles
 	queryresultarr['total_tiles_root'] = total_tiles_root
+	queryresultarr['zoom_diff'] = sbdata.default_diff
 	sdbi.scidbCloseConn(db)
 	return queryresultarr
 

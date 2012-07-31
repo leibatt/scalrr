@@ -93,6 +93,40 @@ def getTileByID(orig_query,tile_id,l,d,x,xbase,y,ybase,threshold,aggregate_optio
 	result[1]['total_tiles'] = total_tiles
 	result[1]['total_tiles_root'] = total_tiles_root
 	return result
+
+#orig_query = original user query
+#cx,cy= center
+#l = current zoom level
+#d = resolution difference between zoom levels
+#jxk = maximum dimensions handled by the front-end
+#mxn = original array dimensions
+def getTileByIDXY(orig_query,tile_xid,tile_yid,l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
+	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	total_tiles = math.pow(d,l)
+	if tile_xid < 0 or tile_xid >= total_tiles: #default, get a middle tile
+		tile_xid = int(totaltiles/2)
+	if tile_yid < 0 or tile_yid >= total_tiles: #default, get a middle tile
+		tile_yid = int(totaltiles/2)
+	tile_xwidth = x/total_tiles # figure out tile dimensions
+	tile_ywidth = y/total_tiles
+	lower_x = xbase + int(tile_xwidth*tile_xid)
+	lower_y = ybase + int(tile_ywidth*tile_yid)
+	upper_x = xbase + lower_x+int(tile_xwidth)
+	upper_y = ybase + lower_y+int(tile_ywidth)
+	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
+        newquery = str(newquery)
+	print "newquery: ",newquery
+	sdbioptions = {'db':aggregate_options['db'],'afl':False}
+	qpresults = verifyQuery(newquery,sdbioptions)
+	sdbioptions['reduce_res'] = qpresults['size'] > threshold
+	if sdbioptions['reduce_res']:
+		aggregate_options['qpresults'] = qpresults
+		aggregate_options['threshold'] = threshold
+		sdbioptions['reduce_options'] = aggregate_options
+	result = executeQuery(newquery,sdbioptions)
+	result[1]['total_tiles'] = total_tiles*total_tiles
+	result[1]['total_tiles_root'] = total_tiles
+	return result
 	
 
 #options: {'afl':True/False}
