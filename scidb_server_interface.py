@@ -12,26 +12,128 @@ RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','F
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
-D3_DATA_THRESHOLD = 10000
+D3_DATA_THRESHOLD = 100#00
 
-db = 0
+#db = 0
 
 def scidbOpenConn():
-	global db
+	#global db
 	db = scidb.connect("localhost",1239)
 	#db = scidb.connect("vise4.csail.mit.edu",1239)
+	return db
 
-def scidbCloseConn():
-	global db
+def scidbCloseConn(db):
+	#global db
 	if db != 0:
 		db.disconnect()
 		db = 0
+
+#orig_query = original user query
+#cx,cy= center
+#l = current zoom level
+#d = resolution difference between zoom levels
+#jxk = maximum dimensions handled by the front-end
+#mxn = original array dimensions
+def getTile(orig_query,cx,cy,l,d,x,xbase,y,ybase,threshold,aggregate_options):
+	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	total_tiles = math.pow(d,2*l)
+	total_tiles_root = math.sqrt(total_tiles)
+	tile_x = x/total_tiles_root # figure out tile dimensions
+	tile_y = y/total_tiles_root
+	lower_x = xbase + int(math.floor(cx - .5*tile_x))
+	lower_y = ybase + int(math.floor(cy - .5*tile_y))
+	upper_x = xbase + int(math.ceil(cx + .5*tile_x))
+	upper_y = ybase + int(math.ceil(cy + .5*tile_y))
+	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
+        newquery = str(newquery)
+	print "newquery: ",newquery
+	sdbioptions = {'db':aggregate_options['db'],'afl':False}
+	qpresults = verifyQuery(newquery,sdbioptions)
+	sdbioptions['reduce_res'] = qpresults['size'] > threshold
+	if sdbioptions['reduce_res']:
+		aggregate_options['threshold'] = threshold
+		aggregate_options['qpresults'] = qpresults
+		sdbioptions['reduce_options'] = aggregate_options
+	result = executeQuery(newquery,sdbioptions)
+	result[1]['total_tiles'] = total_tiles
+	result[1]['total_tiles_root'] = total_tiles_root
+	return result
+
+#orig_query = original user query
+#cx,cy= center
+#l = current zoom level
+#d = resolution difference between zoom levels
+#jxk = maximum dimensions handled by the front-end
+#mxn = original array dimensions
+def getTileByID(orig_query,tile_id,l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
+	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	total_tiles = math.pow(d,2*l)
+	if tile_id < 0 or tile_id >= total_tiles: #default, get a middle tile
+		tile_id = int(totaltiles/2)
+	total_tiles_root = math.sqrt(total_tiles)
+	tile_x = x/total_tiles_root # figure out tile dimensions
+	tile_y = y/total_tiles_root
+        x_offset = math.floor(tile_id / int(total_tiles_root)) # figure out offsets
+	y_offset = tile_id % int(total_tiles_root)
+	lower_x = xbase + int(x_offset*tile_x)
+	lower_y = ybase + int(y_offset*tile_y)
+	upper_x = xbase + lower_x+int(tile_x)
+	upper_y = ybase + lower_y+int(tile_y)
+	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
+        newquery = str(newquery)
+	print "newquery: ",newquery
+	sdbioptions = {'db':aggregate_options['db'],'afl':False}
+	qpresults = verifyQuery(newquery,sdbioptions)
+	sdbioptions['reduce_res'] = qpresults['size'] > threshold
+	if sdbioptions['reduce_res']:
+		aggregate_options['qpresults'] = qpresults
+		aggregate_options['threshold'] = threshold
+		sdbioptions['reduce_options'] = aggregate_options
+	result = executeQuery(newquery,sdbioptions)
+	result[1]['total_tiles'] = total_tiles
+	result[1]['total_tiles_root'] = total_tiles_root
+	return result
+
+#orig_query = original user query
+#cx,cy= center
+#l = current zoom level
+#d = resolution difference between zoom levels
+#jxk = maximum dimensions handled by the front-end
+#mxn = original array dimensions
+def getTileByIDXY(orig_query,tile_xid,tile_yid,l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
+	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	total_tiles = math.pow(d,l)
+	if tile_xid < 0 or tile_xid >= total_tiles: #default, get a middle tile
+		tile_xid = int(totaltiles/2)
+	if tile_yid < 0 or tile_yid >= total_tiles: #default, get a middle tile
+		tile_yid = int(totaltiles/2)
+	tile_xwidth = x/total_tiles # figure out tile dimensions
+	tile_ywidth = y/total_tiles
+	lower_x = xbase + int(tile_xwidth*tile_xid)
+	lower_y = ybase + int(tile_ywidth*tile_yid)
+	upper_x = xbase + lower_x+int(tile_xwidth)
+	upper_y = ybase + lower_y+int(tile_ywidth)
+	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
+        newquery = str(newquery)
+	print "newquery: ",newquery
+	sdbioptions = {'db':aggregate_options['db'],'afl':False}
+	qpresults = verifyQuery(newquery,sdbioptions)
+	sdbioptions['reduce_res'] = qpresults['size'] > threshold
+	if sdbioptions['reduce_res']:
+		aggregate_options['qpresults'] = qpresults
+		aggregate_options['threshold'] = threshold
+		sdbioptions['reduce_options'] = aggregate_options
+	result = executeQuery(newquery,sdbioptions)
+	result[1]['total_tiles'] = total_tiles*total_tiles
+	result[1]['total_tiles_root'] = total_tiles
+	return result
+	
 
 #options: {'afl':True/False}
 #required options: afl
 #function to verify query query result size
 def verifyQuery(query,options):
-	queryplan = query_optimizer(query,options['afl'])
+	queryplan = query_optimizer(query,options)
 	return check_query_plan(queryplan) #returns a dictionary
 
 #function to do the resolution reduction when running queries
@@ -39,24 +141,28 @@ def verifyQuery(query,options):
 #options:{'afl':True/False,reduce_res:True/False,'reduce_options':options}
 #required options: reduce_res, reduce_options if reduce_res is true, afl if reduce_res is false
 def executeQuery(query,options):
+	db = options['db']
 	print  "executing query",datetime.now()
 	final_query = query
 	if(options['reduce_res']): #reduction requested
+		options['reduce_options']['db'] = db
 		return reduce_resolution(query,options['reduce_options'])
 	else:
 		print  "running original query."
-		print  "final query:",final_query#,"\nexecuting query",datetime.now()
+		#print  "final query:",final_query#,"\nexecuting query",datetime.now()
 		result = []
 		if options['afl']:
 			result.append(db.executeQuery(final_query,'afl'))
 		else:
 			result.append(db.executeQuery(final_query,'aql'))
-		result.append(0)
+		result.append(verifyQuery(final_query,options))
 		return result
 
 #function to do the resolution reduction when running queries
 # get the queryplan for the given query and return the line with info about the result matrix
-def query_optimizer(query,afl):
+def query_optimizer(query,options):
+	db = options['db']
+	afl = options['afl']
 	query = re.sub("(\\')","\\\\\\1",query)
 	# eventually want to be able to infer this
 	queryplan_query = ""
@@ -65,8 +171,8 @@ def query_optimizer(query,afl):
 		queryplan_query = LOGICAL_PHYSICAL+"('"+query+"','afl')"
 	else:
 		queryplan_query = LOGICAL_PHYSICAL+"('"+query+"','aql')"
-	print  "queryplan query: "
-	print  queryplan_query
+	#print  "queryplan query: "
+	#print  queryplan_query
 	optimizer_answer = db.executeQuery(queryplan_query,'afl')
 	#print  optimizer_answer
 	# flatten the list into one big string, and then split on '\n'
@@ -108,15 +214,6 @@ def check_query_plan(queryplan):
 			widths[name] =rangewidth;
 	return {'size': size, 'numdims': dims, 'dims': names, 'attrs':get_attrs(queryplan),'dimbases':bases,'dimwidths':widths}
 
-#options: {'afl':True/False}
-#required options: afl
-#function to return the array definition from the query's SciDB query plan
-# to be used with regrid to fill zeroes using the merge function
-def get_arr_def(query,options):
-	queryplan = query_optimizer(query,options['afl'])
-	queryplan = str(queryplan)
-	return queryplan[queryplan.find("<"):queryplan.find("]")+1]
-
 #get all attributes of the result matrix
 def get_attrs(queryplan):
 	# get the text in between the angle brackets
@@ -136,6 +233,10 @@ def get_attrs(queryplan):
 #TODO: Fix the avg func assumption
 def daggregate(query,options):
 	final_query = query
+	if 'threshold' in options:
+		threshold = options['threshold']
+	else:
+		threshold= D3_DATA_THRESHOLD
 	dimension = options['numdims']
 	chunks = ""
 	if ('chunkdims' in options) and (len(options['chunkdims']) > 0): #chunkdims specified
@@ -144,7 +245,7 @@ def daggregate(query,options):
 		for i in range(1,len(chunkdims)):
 			chunks += ", "+str(chunkdims[i])
 	elif dimension > 0: # otherwise do default chunks
-		defaultchunkval = math.pow(1.0*options['qpsize']/D3_DATA_THRESHOLD,1.0/dimension) if (1.0*options['qpsize']/D3_DATA_THRESHOLD) > 1 else AGGR_CHUNK_DEFAULT
+		defaultchunkval = math.pow(1.0*options['qpsize']/threshold,1.0/dimension) if (1.0*options['qpsize']/threshold) > 1 else AGGR_CHUNK_DEFAULT
 		defaultchunkval = int(math.ceil(defaultchunkval)) # round up
 		chunks += str(defaultchunkval)
 		for i in range(1,dimension) :
@@ -155,9 +256,9 @@ def daggregate(query,options):
 
 	#make the new query an aql query so we can rename the aggregates easily
 	attraggs = ""
-	print  "options attrtypes: ",options['attrtypes']
+	#print  "options attrtypes: ",options['attrtypes']
 	for i in range(0,len(attrs)):
-		print  "attr type: ",options['attrtypes'][i]
+		#print  "attr type: ",options['attrtypes'][i]
 		if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
 			if attraggs != "":
 				attraggs += ", "
@@ -166,7 +267,7 @@ def daggregate(query,options):
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
 	#	
 	#final_query = "regrid(("+final_query+"),"+chunks+","+attraggs+")" # afl
-	#print  "final query:",final_query
+	print  "final query:",final_query
 	#result = []
 	#result = db.executeQuery(final_query,'aql')
 	#return result
@@ -188,7 +289,7 @@ def dsample(query,options):
 	#	final_query = "bernoulli(("+final_query+"), "+probability+")"
 	#else:
 	final_query = "select * from bernoulli(("+ final_query +"), "+probability+")"
-	print  "final query:",final_query,"\nexecuting query..."
+	#print  "final query:",final_query,"\nexecuting query..."
 	#if options['afl']:
 	#	result = db.executeQuery(final_query,'afl')
 	#else:
@@ -206,7 +307,7 @@ def dfilter(query, options):
 	#	final_query = "filter(("+final_query+"), "+options['predicate']+")"
 	#else:
 	final_query = "select * from ("+final_query+") where "+options['predicate']
-	print  "final query:",final_query,"\nexecuting query..."
+	#print  "final query:",final_query,"\nexecuting query..."
 	#if options['afl']:
 	#	result = db.executeQuery(final_query,'afl')
 	#else:
@@ -218,11 +319,12 @@ def dfilter(query, options):
 #required options: reduce_type, qpresults, afl, predicate (if RESTYPE['FILTER'] is specified)
 #RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
 def reduce_resolution(query,options):
+	db = options['db']
 	reduce_type = options['reduce_type']
 	qpresults = options['qpresults']
 	#add common reduce function options
 	reduce_options = {'afl':options['afl'],'qpsize':qpresults['size']}
-        query = re.sub("(\'|\")","\\\1",query) #escape single and double quotes
+        query = re.sub(r"[^\\](\'|\")","\\\1",query) #escape single and double quotes
 	if reduce_type == RESTYPE['AGGR']:
 		if 'chunkdims' in options: #user specified chunk dims
 			reduce_options['chunkdims'] = options['chunkdims']
@@ -242,8 +344,8 @@ def reduce_resolution(query,options):
 	result =[]
         newquery = str(newquery)
 	result.append(db.executeQuery(newquery,'aql'))
-	result.append(verifyQuery(newquery,{'afl':False}))
-	print  result[1]
+	result.append(verifyQuery(newquery,{'afl':False,'db':db}))
+	#print  result[1]
 	return result
 
 # function used to build a python "array" out of the given
@@ -495,8 +597,8 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	dims = desc.getDimensions() # list of DimensionDesc objects
 	attrs = desc.getAttributes() # list of AttributeDesc objects
 	origarrnamelen = 0#len(desc.getName()) - 2
-	print  "array name: ",desc.getName()
-	print  "array name length: ",origarrnamelen
+	#print  "array name: ",desc.getName()
+	#print  "array name length: ",origarrnamelen
 
 	if(dims.size() < 1 or dims.size() != len(dimnames)):
 		return []

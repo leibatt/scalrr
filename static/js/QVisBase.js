@@ -1,5 +1,7 @@
 var QVis = {}; // namespace
 
+QVis.DEFAULT_MAX_ZOOM = 1;
+
 //Graph object constructor
 QVis.Graph = function(rootid,opts) {
 	opts = opts || {};
@@ -143,8 +145,6 @@ QVis.Graph.prototype.clear = function() {
 QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	//clear everything to get them ready for drawing
 	this.clear();
-
-	$('#resulting-plot-header').addClass('show');
 
 	// user wants us to draw something, so we know we have data now.
 	//assumption: data is always presented with labels
@@ -307,6 +307,13 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	}
 
 	return {'x_label':x_label,'y_label':y_label,'z_label':z_label};
+}
+
+/*
+used only to change the data view. all other objects should stay the same
+*/
+QVis.Graph.prototype.mini_render = function(_data, _labels,_types, opts) {
+	this.jsvg.empty();
 }
 
 /*

@@ -18,17 +18,17 @@ QVis.MapPlot.base = QVis.Graph.prototype;
 //add a new render function
 //data format: {'data':[{},{},...],'names':["","",...],'types':{"":,"":,...}}
 QVis.MapPlot.prototype.render = function(_data, _labels,_types, opts) {
+	$('#map').addClass('show');
 	this.selectx = true;
 	this.selecty = true;
-	//call the original render function
-	var labelsfrombase = QVis.ScatterPlot.base.render.call(this,_data,_labels,_types,opts);
 
-	// you should know why this is necessary
 	var self = this;
+	//call the original render function
+	self.labelsfrombase = QVis.ScatterPlot.base.render.call(this,_data,_labels,_types,opts);
 
 	// create x,y axis scales
-	var xscale = this.createScale(_data,_types,labelsfrombase.x_label,this.w,this.px,false,false);
-	var yscale = this.createScale(_data,_types,labelsfrombase.y_label,this.h,this.py,true,false);
+	var xscale = this.createScale(_data,_types,self.labelsfrombase.x_label,this.w,this.px,false,false);
+	var yscale = this.createScale(_data,_types,self.labelsfrombase.y_label,this.h,this.py,true,false);
 
 	// Create the Google Map…
 	var map = new google.maps.Map(d3.select("#map div").node(), {
@@ -68,7 +68,7 @@ QVis.MapPlot.prototype.render = function(_data, _labels,_types, opts) {
 
 			function transform(data) {
 				//LatLng(lat,lon)
-				var d = new google.maps.LatLng(data[labelsfrombase.x_label], data[labelsfrombase.y_label]);
+				var d = new google.maps.LatLng(data[self.labelsfrombase.x_label], data[self.labelsfrombase.y_label]);
 				//console.log(d.lat()+","+d.lng());
 				d = projection.fromLatLngToDivPixel(d);
 				return d3.select(this)

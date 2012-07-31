@@ -1,3 +1,19 @@
+/* for commented out nav buttons in move-zoom.html
+.button {
+	display: inline-block;
+	background-position: 5px -45px;
+}
+*/
+.nav-button {
+	display: inline-block;
+	width: 40px;
+	margin: 2.5px;
+}
+
+.nav-button.zoom {
+	display: block;
+	width: 70px;
+}
 
 text {
 	font-family: sans-serif;
@@ -115,6 +131,14 @@ g.xaxis path,g.yaxis path {
 
 #resulting-plot-header.show {
 	visibility: visible;
+}
+
+#aggplot, #map {
+	display: none;
+}
+
+#aggplot.show, #map.show {
+	display: block;
 }
 
 /*
