@@ -53,7 +53,7 @@ def getTileHelper(tile_info,l,user_id):
 	queryresultarr['dimbases'] = saved_qpresults['dimbases']
 	queryresultarr['dimwidths'] = saved_qpresults['dimwidths']
 	queryresultarr['saved_qpresults'] = saved_qpresults
-	queryresultarr['max_zoom'] = levels - 1
+	queryresultarr['max_zoom'] = levels
 	queryresultarr['total_tiles'] = total_tiles
 	queryresultarr['total_tiles_root'] = total_tiles_root
 	queryresultarr['zoom_diff'] = sbdata.default_diff

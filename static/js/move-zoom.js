@@ -16,13 +16,10 @@ $(document).ready(function() {
 	$('#button-up').on('click',move_up);
 	$('#button-down').on('click',move_down);
 	$('#button-left').on('click',move_left);
-	$('#button-right').on('click',move_left);
+	$('#button-right').on('click',move_right);
 	$('#button-zoom-out').on('click',zoom_out);
 	$('#button-zoom-in').on('click',zoom_in);
-	var buttons = $('.button');
-	console.log(buttons);
 	$('.nav-button').button();
-	console.log(buttons);	
 
 	function move_up() {
 		var x = current_x;
@@ -36,7 +33,7 @@ $(document).ready(function() {
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+		console.log("move up:"+current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
 		current_x = x;
 		return false;
 	}
@@ -53,7 +50,7 @@ $(document).ready(function() {
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+		console.log("move down:"+current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
 		current_x = x;
 		return false;
 	}
@@ -70,7 +67,7 @@ $(document).ready(function() {
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+		console.log("move left:"+current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
 		current_y = y;
 		return false;
 	}
@@ -87,7 +84,7 @@ $(document).ready(function() {
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+		console.log("move right: "+current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
 		current_y = y;
 		return false;
 	}
@@ -106,7 +103,7 @@ $(document).ready(function() {
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+		console.log("zoom out: "+current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
 		current_y = y;
 		current_x = x;
 		current_zoom = zoom;
@@ -114,23 +111,32 @@ $(document).ready(function() {
 	}
 
 	function zoom_in() {
-		tile = Number($('#zoom-in-text').val());
+		tile_coords = $('#zoom-in-text').val();
+		xy = tile_coords.split(",");
+		x = Number(xy[0]);
+		y = Number(xy[1]);
 		zoom = current_zoom + 1;
 		if(zoom >= max_zoom) {
 			zoom = max_zoom - 1;
 		}
-		var total_tiles_next = total_tiles*zoom_diff*zoom_diff;
-		if(tile < 0) {
-			tile = 0;
-		} else if (tile >= total_tiles_next) {
-			tile = total_tiles_next - 1;
+		var total_tiles_next = total_tiles_root*zoom_diff;
+		if(x < 0) {
+			x = 0;
+		} else if (x >= total_tiles_next) {
+			x = total_tiles_next - 1;
 		}
-		$.getJSON('/fetch-tile',{tile_id: tile,level:zoom},function(jsondata){
+		if(y < 0) {
+			y = 0;
+		} else if (y >= total_tiles_next) {
+			y = total_tiles_next - 1;
+		}
+		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
-		console.log(current_tile+","+current_zoom+"-->"+tile+","+zoom);
-		current_tile = tile;
+		console.log("zoom in: "+current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+		current_y = y;
+		current_x = x;
 		current_zoom = zoom;
 		return false;
 	}

@@ -43,11 +43,12 @@ class BasicExpert:
 		print "dumb expert done prefetching tiles"
 
 
-	def find_tile(self,tile_id,level,user_id):
+	def find_tile(self,tile_xid,tile_yid,level,user_id):
 		tile = None
+		tile_key =str(tile_xid)+","+str(tile_yid)
 		with self.prefetch_lock:
-			if user_id in self.prefetched_tiles and level in self.prefetched_tiles[user_id] and tile_id in self.prefetched_tiles[user_id][level]:
-				tile = self.prefetched_tiles[user_id][level][tile_id]
+			if user_id in self.prefetched_tiles and level in self.prefetched_tiles[user_id] and tile_key in self.prefetched_tiles[user_id][level]:
+				tile = self.prefetched_tiles[user_id][level][tile_key]
 		return tile
 
 	def remove_all_tiles(self,user_id):

@@ -65,7 +65,7 @@ def process_request(inputstring):
         tile_yid = int(request['tile_yid'])
 	level = int(request['level'])
         print "fetching tile"
-        response = fetch_tile(tile_id,level,options)
+        response = fetch_tile(tile_xid,tile_yid,level,options)
     else:
         raise Exception("unrecognized function passed")
     #dbclose()
