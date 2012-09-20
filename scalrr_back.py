@@ -11,6 +11,8 @@ import select
 import socket
 import sys
 
+from datetime import datetime
+
 import dumb_expert
 
 HOST = '0.0.0.0'
@@ -82,10 +84,14 @@ def query_execute_base(userquery,options):
 #options: {reduce_res_check:True/False}
 def query_execute(userquery,options):
 	user_id = options['user_id']
+	resolution = sdbi.D3_DATA_THRESHOLD
+	if 'resolution' in options and options['resolution'] > 0:
+		print "got resolution"
+        	resolution = options['resolution']
 	db = sdbi.scidbOpenConn()
 	query = userquery
 	#print  "user query: ",query
-	sdbioptions = {'afl':False,'db':db}
+	sdbioptions = {'afl':False,'db':db,'resolution':resolution}
 	saved_qpresults = None
         if 'saved_qpresults' in options:
         	saved_qpresults = options['saved_qpresults']
@@ -94,9 +100,9 @@ def query_execute(userquery,options):
 		#print "tile: ",tile
 		#sdbioptions={'dimnames':saved_qpresults['dims']}
 		#print sdbi.getAllAttrArrFromQueryForJSON(tile[0],sdbioptions)
-		fetch_tile(0,1,{'user_id':user_id})
+		#fetch_tile(0,1,{'user_id':user_id})
 	if saved_qpresults is None: # first time
-		fetch_first_tile(query,{'user_id':user_id})
+		#fetch_first_tile(query,{'user_id':user_id})
 		saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
 		#with sbdata.metadata_lock:
 		#	sbdata.backend_metadata[user_id] = {}
@@ -109,7 +115,7 @@ def query_execute(userquery,options):
 		#	sbdata.backend_metadata[user_id]['levels'] = sbdata.default_levels #leave at default levels for now
 		#	#TODO: let # levels vary
 		#only do this check for new queries
-		if options['reduce_res_check'] and (saved_qpresults['size'] > sdbi.D3_DATA_THRESHOLD):
+		if options['reduce_res_check'] and (saved_qpresults['size'] > resolution):#sdbi.D3_DATA_THRESHOLD):
 			return {'reduce_res':True,'saved_qpresults':saved_qpresults}
 	if 'reduce_type' in options: # reduction requested
 		sdbioptions['reduce_res'] = True
@@ -149,27 +155,27 @@ def fetch_first_tile(userquery,options):
 		sbdata.backend_metadata[user_id]['saved_qpresults'] = saved_qpresults
 		if 'data_threshold' in options:
 			sbdata.backend_metadata[user_id]['data_threshold'] = options['data_threshold']
-		else: # default
+		else: # default is whatever is prescribed in scidb server interface code
 			sbdata.backend_metadata[user_id]['data_threshold'] = sdbi.D3_DATA_THRESHOLD
-		sbdata.backend_metadata[user_id]['levels'] = sbdata.default_levels #leave at default levels for now
+		sbdata.backend_metadata[user_id]['levels'] = 0 #sbdata.default_levels #leave at default levels for now
 		#TODO: let # levels vary
 	#get tile
 	tile = ti.getTileByIDXY(0,0,0,user_id)
 	#save tile info
 	tile_key = "0,0"
 	with sbdata.user_history_lock: # add tile to history
-		sbdata.user_history[user_id] = [{'tile_xid':0,'tile_yid':0,'level':0}]
+		sbdata.user_history[user_id] = [{'tile_xid':0,'tile_yid':0,'level':0,'timestamp':datetime.now()}]
 	with sbdata.user_tiles_lock:# save tile
 		sbdata.user_tiles[user_id] = {0:{tile_key:tile}}
-		print "added tile to:",sbdata.user_tiles
+		print "added tile to sbdata.user_tiles:"#,sbdata.user_tiles
 	#start prefetching
-	print "setting up prefetching experts"
-	experts = range(1)
-	expert_threads = range(1)
-	experts[0] = dumb_expert.BasicExpert()
-	expert_threads[0] = threading.Thread(target=experts[0].prefetch,args=(sbdata.max_prefetched,user_id,))
-	expert_threads[0].start()
-	sdbi.scidbCloseConn(db)
+	#print "setting up prefetching experts"
+	#experts = range(1)
+	#expert_threads = range(1)
+	#experts[0] = dumb_expert.BasicExpert()
+	#expert_threads[0] = threading.Thread(target=experts[0].prefetch,args=(sbdata.max_prefetched,user_id,))
+	#expert_threads[0].start()
+	#sdbi.scidbCloseConn(db)
 	return tile
 
 #this is called after original query is run
@@ -188,16 +194,16 @@ def fetch_tile(tile_xid,tile_yid,level,options):
 
 	success = range(len(experts))
 	#check if an expert has cached this tile
-	if tile is None:
-		print "checking to see if this tile was prefetched"
-		for i in range(len(experts)):
-			temptile = experts[i].find_tile(tile_xid,tile_yid,level,user_id)
-			if temptile is not None:
-				success[i] = True
-				if tile is None:
-					tile = temptile
-			else:
-				success[i] = False
+	#if tile is None:
+	#	print "checking to see if this tile was prefetched"
+	#	for i in range(len(experts)):
+	#		temptile = experts[i].find_tile(tile_xid,tile_yid,level,user_id)
+	#		if temptile is not None:
+	#			success[i] = True
+	#			if tile is None:
+	#				tile = temptile
+	#		else:
+	#			success[i] = False
 	#otherwise go get the tile	
 	if tile is None:
 		print "tile not found, fetching from database"
@@ -205,7 +211,7 @@ def fetch_tile(tile_xid,tile_yid,level,options):
 	with sbdata.user_history_lock: # add tile to history
 		if user_id not in sbdata.user_history:
 			sbdata.user_history[user_id] = []
-		sbdata.user_history[user_id].append({'tile_xid':tile_xid,'tile_yid':tile_yid,'level':level})
+		sbdata.user_history[user_id].append({'tile_xid':tile_xid,'tile_yid':tile_yid,'level':level,'timestamp':datetime.now()})
 		print sbdata.user_history[user_id]
 	with sbdata.user_tiles_lock:# save tile
 		if user_id not in sbdata.user_tiles:
@@ -215,22 +221,23 @@ def fetch_tile(tile_xid,tile_yid,level,options):
 		if tile_key not in sbdata.user_tiles[user_id][level]:
 			sbdata.user_tiles[user_id][level][tile_key] = tile
 	#wait for all experts to stop
-	print "waiting for experts to stop"
-	while len(expert_threads) > 0:
-		print "total expert threads:",len(expert_threads)
-		print expert_threads[0]
-		expert_threads[0].join()
-		if len(expert_threads) > 0:
-			expert_threads.pop(0)
+	#print "waiting for experts to stop"
+	#while len(expert_threads) > 0:
+	#	print "total expert threads:",len(expert_threads)
+	#	print expert_threads[0]
+	#	expert_threads[0].join()
+	#	if len(expert_threads) > 0:
+	#		expert_threads.pop(0)
 	#update tile prefetch distribution
+	#nothing here yet
 	# restart experts
-	print "restarting experts"
-	sbdata.stop_prefetch.clear()
-	expert_threads = range(len(experts))
-	for i in range(len(experts)):
-		experts[i].remove_all_tiles(user_id) # remove prefetched tiles
-		expert_threads[i] = threading.Thread(target=experts[i].prefetch,args=(sbdata.max_prefetched,user_id))
-		expert_threads[i].start()
+	#print "restarting experts"
+	#sbdata.stop_prefetch.clear()
+	#expert_threads = range(len(experts))
+	#for i in range(len(experts)):
+	#	experts[i].remove_all_tiles(user_id) # remove prefetched tiles
+	#	expert_threads[i] = threading.Thread(target=experts[i].prefetch,args=(sbdata.max_prefetched,user_id))
+	#	expert_threads[i].start()
 	return tile
 
 #returns necessary options for reduce type

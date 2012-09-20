@@ -24,11 +24,20 @@
 		<label for="vis-type">Visualizations</label>
 		<select name="vis-type" id="vis-type-menu">
 			<option value="scatterplot">Scatterplot</option>
-			<option value="linechart">Line chart (not currently supported)</option>
+			<!--<option value="linechart">Line chart (not currently supported)</option>-->
 			<option value="mapplot">Map plot</option>
-			<option value="histogram">Histogram (not currently supported)</option>
+			<!--<option value="histogram">Histogram (not currently supported)</option>-->
 			<option value="heatmap">Heat map</option>
-		<select>
+		</select>
+		<label for="resolution-lvl">Resolution</label>
+		<select name="resolution-lvl" id="resolution-lvl-menu">
+			<option value="100">100</option>
+			<option value="1000">1000</option>
+			<option value="4000">4000</option>
+			<option value="10000">10000</option>
+			<option value="40000">40000</option>
+			<option value="100000">100000</option>
+		</select>
 		<input type="submit" id="sql-query-submit" value="Submit Query"></input>
 	</form>
 	<h2 id="resulting-plot-header" class="heading">Resulting Plot<small></small></h2>
@@ -41,6 +50,7 @@
 		<div name="xlabel" class="xlabel"></div>
 		<div class="ylabel"></div>
 		<div class="zlabel"></div>
+		<div class="zoomlabel"></div>
 	</div>
 	<div id="dialog" title="Basic dialog">
 		<form id="reduce-type-form" >

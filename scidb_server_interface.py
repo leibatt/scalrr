@@ -12,7 +12,7 @@ RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','F
 AGGR_CHUNK_DEFAULT = 10
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
-D3_DATA_THRESHOLD = 100#00
+D3_DATA_THRESHOLD = 10000
 
 #db = 0
 
@@ -34,7 +34,7 @@ def scidbCloseConn(db):
 #d = resolution difference between zoom levels
 #jxk = maximum dimensions handled by the front-end
 #mxn = original array dimensions
-def getTile(orig_query,cx,cy,l,d,x,xbase,y,ybase,threshold,aggregate_options):
+def getTile(orig_query,cx,cy,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options):
 	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
 	total_tiles = math.pow(d,2*l)
 	total_tiles_root = math.sqrt(total_tiles)
@@ -65,7 +65,7 @@ def getTile(orig_query,cx,cy,l,d,x,xbase,y,ybase,threshold,aggregate_options):
 #d = resolution difference between zoom levels
 #jxk = maximum dimensions handled by the front-end
 #mxn = original array dimensions
-def getTileByID(orig_query,tile_id,l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
+def getTileByID(orig_query,tile_id,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
 	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
 	total_tiles = math.pow(d,2*l)
 	if tile_id < 0 or tile_id >= total_tiles: #default, get a middle tile
@@ -97,12 +97,77 @@ def getTileByID(orig_query,tile_id,l,d,x,xbase,y,ybase,threshold,aggregate_optio
 #orig_query = original user query
 #cx,cy= center
 #l = current zoom level
-#d = resolution difference between zoom levels
-#jxk = maximum dimensions handled by the front-end
+#d = resolution difference between zoom levels along 1 axis
+#threshold = tile size, used for resolution reduction and tile computation
 #mxn = original array dimensions
-def getTileByIDXY(orig_query,tile_xid,tile_yid,l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
+def getTileByIDXY(orig_query,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
+	root_threshold = math.ceil(math.sqrt(threshold)) # assume the tiles are squares
 	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
-	total_tiles = math.pow(d,l)
+	total_xtiles = math.ceil(x/root_threshold) # number of tiles along x axis on the lowest level
+	total_ytiles = math.ceil(y/root_threshold) # number of tiles along y axis on the lowest level
+	bottomtiles_per_currenttile = math.pow(d,max_l-l)
+	total_xtiles_l = math.ceil(total_xtiles/bottomtiles_per_currenttile) # number of tiles along the x axis on the current level
+	total_ytiles_l = math.ceil(total_xtiles/bottomtiles_per_currenttile) # number of tiles along the y axis on the current level
+	print "level: ",l,", total levels: ",max_l
+	print "total bottomtiles x: ",total_xtiles
+	print "total bottomtiles y: ",total_ytiles
+	print "root_threshold: ",root_threshold
+	total_tiles = total_xtiles_l * total_ytiles_l
+	if tile_xid < 0 or tile_xid >= total_xtiles_l: #default, get a middle tile
+		tile_xid = int(total_xtiles_l/2)
+	if tile_yid < 0 or tile_yid >= total_ytiles_l: #default, get a middle tile
+		tile_yid = int(total_ytiles_l/2)
+	tile_width = root_threshold*math.pow(d,max_l-l) # figure out tile dimensions
+	# get future info about the tile
+	lower_x = int(xbase + tile_width*tile_xid)
+	lower_y = int(ybase + tile_width*tile_yid)
+	upper_x = int(lower_x+tile_width)
+	upper_y = int(lower_y+tile_width)
+	bottomtiles_per_currenttile_plus1level = math.pow(d,max_l-min(l+1,max_l))
+	future_xtiles = d # how many tiles at the next zoom level are in this tile along the x axis
+	future_ytiles = d # how many tiles at the next zoom level are in this tile along the y axis
+	print "bottomtiles_per_currenttile: ",bottomtiles_per_currenttile
+	print "bottomtiles_per_currenttile_plus1level: ",bottomtiles_per_currenttile_plus1level
+	if upper_x > (x + xbase): # if this tile contains less than d tiles at the next zoom level (edge case)
+		total_bottomtiles_x_here = total_xtiles - (total_xtiles_l-1)*bottomtiles_per_currenttile
+		print "total_bottomtiles_x_here: ",total_bottomtiles_x_here
+		future_xtiles = math.ceil(total_bottomtiles_x_here/bottomtiles_per_currenttile_plus1level)
+	if upper_y > (y + ybase): # if this tile contains less than d tiles at the next zoom level (edge case)
+		total_bottomtiles_y_here = total_ytiles - (total_ytiles_l-1)*bottomtiles_per_currenttile
+		print "total_bottomtiles_y_here: ",total_bottomtiles_y_here
+		future_ytiles = math.ceil(total_bottomtiles_y_here/bottomtiles_per_currenttile_plus1level)
+	print "current_xtiles: ",total_xtiles_l
+	print "current_ytiles: ",total_ytiles_l
+	print "future_xtiles: ",future_xtiles
+	print "future_ytiles: ",future_ytiles
+	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
+        newquery = str(newquery)
+	print "newquery: ",newquery
+	sdbioptions = {'db':aggregate_options['db'],'afl':False}
+	qpresults = verifyQuery(newquery,sdbioptions)
+	sdbioptions['reduce_res'] = qpresults['size'] > threshold
+	if sdbioptions['reduce_res']:
+		aggregate_options['qpresults'] = qpresults
+		aggregate_options['threshold'] = threshold
+		sdbioptions['reduce_options'] = aggregate_options
+	result = executeQuery(newquery,sdbioptions)
+	result[1]['total_xtiles'] = total_xtiles_l
+	result[1]['total_ytiles'] = total_ytiles_l
+	result[1]['future_xtiles'] = future_xtiles
+	result[1]['future_ytiles'] = future_ytiles
+	result[1]['total_tiles'] = total_tiles
+	result[1]['total_tiles_root'] = math.sqrt(total_tiles)
+	return result
+
+#orig_query = original user query
+#cx,cy= center
+#l = current zoom level
+#d = resolution difference between zoom levels along 1 axis
+#threshold = tile size, used for resolution reduction and tile computation
+#mxn = original array dimensions
+def oldgetTileByIDXY(orig_query,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
+	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	total_tiles = math.pow(d,l) # number of tiles along 1 axis (square for all tiles at this levels)
 	if tile_xid < 0 or tile_xid >= total_tiles: #default, get a middle tile
 		tile_xid = int(totaltiles/2)
 	if tile_yid < 0 or tile_yid >= total_tiles: #default, get a middle tile
@@ -145,6 +210,9 @@ def executeQuery(query,options):
 	print  "executing query",datetime.now()
 	final_query = query
 	if(options['reduce_res']): #reduction requested
+		if 'resolution' in options:
+			resolution = options['resolution']
+			options['reduce_options']['resolution']=resolution
 		options['reduce_options']['db'] = db
 		return reduce_resolution(query,options['reduce_options'])
 	else:
@@ -263,6 +331,8 @@ def daggregate(query,options):
 			if attraggs != "":
 				attraggs += ", "
 			attraggs+= "avg("+str(attrs[i])+") as avg_"+attrs[i]
+			attraggs+= ", min("+str(attrs[i])+") as min_"+attrs[i] # need for the color scale
+			attraggs+= ", max("+str(attrs[i])+") as max_"+attrs[i] # need for the color scale
 	final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
 	#	
@@ -280,6 +350,9 @@ def dsample(query,options):
 	probability = PROB_DEFAULT # this will change depending on what user specified
 	if 'probability' in options: #probability specified
 		probability = options['probability']
+	elif 'threshold' in options:
+		threshold = options['threshold']
+		probability = min([1,threshold * 1.0 / options['qpsize']])
 	else:
 		probability = min([1,D3_DATA_THRESHOLD * 1.0 / options['qpsize']])
 	probability = str(probability);
@@ -324,6 +397,8 @@ def reduce_resolution(query,options):
 	qpresults = options['qpresults']
 	#add common reduce function options
 	reduce_options = {'afl':options['afl'],'qpsize':qpresults['size']}
+	if 'resolution' in options:
+		reduce_options['threshold'] = options['resolution']
         query = re.sub(r"[^\\](\'|\")","\\\1",query) #escape single and double quotes
 	if reduce_type == RESTYPE['AGGR']:
 		if 'chunkdims' in options: #user specified chunk dims
@@ -606,10 +681,14 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	arr = []
 	its = []
 	attrnames = []
+	minobj = {}
+	maxobj = {}
 	for i in range(attrs.size()): # find the right attrid
 		if attrs[i].getName() != "EmptyTag":
 			its.append(query_result.array.getConstIterator(i))
 			attrnames.append(attrs[i].getName())
+			minobj["attrs."+attrs[i].getName()] = None
+			maxobj["attrs."+attrs[i].getName()] = None
 
 	start = True
 	while not its[0].end():
@@ -629,6 +708,7 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 		while not chunkiters[0].end():
 			dataobj = {}
 			dimobj= {}
+
 			currpos = chunkiters[0].getPosition()
 			for dimindex in range(len(currpos)):
 				dname = dimnames[dimindex]
@@ -636,12 +716,18 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 				dataobj["dims."+dname[:len(dname)-origarrnamelen]] = currpos[dimindex]
 			attrobj = {} #empty dictionary for the attribute values
 			#print  "start"
+			minval = None
 			for chunkiterindex in range(len(chunkiters)):
 				#print  "chunkiterindex: ",chunkiterindex
 				dataitem = chunkiters[chunkiterindex].getItem()
 				# look up the value according to its attribute's typestring
 				attrobj[attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType()) # TBD: eliminate 2nd arg, make method on dataitem
-				dataobj["attrs."+attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType())
+				dataitem_val = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType())
+				dataobj["attrs."+attrnames[chunkiterindex]] = dataitem_val
+				if (minobj["attrs."+attrnames[chunkiterindex]] is None) or (dataitem_val < minobj["attrs."+attrnames[chunkiterindex]]):
+					minobj["attrs."+attrnames[chunkiterindex]] = dataitem_val
+				if (maxobj["attrs."+attrnames[chunkiterindex]] is None) or (dataitem_val > maxobj["attrs."+attrnames[chunkiterindex]]):
+					maxobj["attrs."+attrnames[chunkiterindex]] = dataitem_val
 				#print  "Data: %s" % item
 				#chunkiters[i].increment_to_next()
 				#mypos = chunkiters[chunkiterindex].getPosition()
@@ -650,6 +736,7 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 				#	myposstring += str(mypos[myposi])+", "
 				#print  myposstring
 				chunkiters[chunkiterindex].increment_to_next() # OMG THIS INCREMENTS ALL THE CHUNK ITERATOR OBJECTS
+			
 			#lastpos = chunkiter.getPosition()
 			#print  lastpos[0],",",lastpos[1], ",",lastpos[2]
 			#print  attrobj
@@ -681,7 +768,7 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	#print  typesobj
 	#print  	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
 	print  "done parsing results, returning dump-ready version",datetime.now()
-	return {'data':arr, 'names': namesobj, 'types': typesobj}
+	return {'data':arr, 'names': namesobj, 'types': typesobj,'max':maxobj,'min':minobj}
 	#return {'data': arr, 'names': {'dimnames': dimnames, 'attrnames': attrnames}}
 	
 #returns items in a nicer/more accurate format for JSON

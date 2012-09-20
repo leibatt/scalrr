@@ -37,7 +37,7 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	console.log(_labels.dimbases[ydimname]);
 	console.log(_labels.dimwidths[ydimname]);
 	console.log(Number(_labels.dimwidths[ydimname]+_labels.dimbases[ydimname]));
-	var zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,true,true).range(colorbrewer.GnBu[9]);
+	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,true,true).range(colorbrewer.GnBu[9]);
 	var xscale = d3.scale.linear().domain([Number(_labels.dimbases[xdimname]),Number(_labels.dimwidths[xdimname])+Number(_labels.dimbases[xdimname])]).range([this.px,this.w-this.px]);
 	var yscale = d3.scale.linear().domain([Number(_labels.dimwidths[ydimname])+Number(_labels.dimbases[ydimname]),Number(_labels.dimbases[ydimname])]).range([this.py,this.h-this.py]);
 	console.log(xscale.domain());
@@ -63,9 +63,9 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	//just testing the rects function
 	this.drawRects(this.rectcontainer,_data,_types,xscale,yscale,'dims.'+xdimname,'dims.'+ydimname,function(d){return Math.max(1,(self.w-2*self.px)/_labels.dimwidths[xdimname])},
 		function(d){return Math.max(1,(self.h-2*self.py)/_labels.dimwidths[ydimname]);},
-		function(d) {return zscale(d[self.labelsfrombase.z_label]);});
+		function(d) {return self.zscale(d[self.labelsfrombase.z_label]);});
 
-	this.add_brush(xscale,yscale,'dims.'+xdimname,'dims.'+ydimname,function(d) {return zscale(d[self.labelsfrombase.z_label]);},this.rectcontainer);
+	this.add_brush(xscale,yscale,'dims.'+xdimname,'dims.'+ydimname,function(d) {return self.zscale(d[self.labelsfrombase.z_label]);},this.rectcontainer);
 
 }
 
@@ -84,7 +84,7 @@ QVis.HeatMap.prototype.mini_render = function(_data, _labels,_types, opts) {
 	console.log(_labels.dimbases[ydimname]);
 	console.log(_labels.dimwidths[ydimname]);
 	console.log(Number(_labels.dimwidths[ydimname]+_labels.dimbases[ydimname]));
-	var zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,true,true).range(colorbrewer.GnBu[9]);
+	//var zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,true,true).range(colorbrewer.GnBu[9]);
 	var xscale = d3.scale.linear().domain([Number(_labels.dimbases[xdimname]),Number(_labels.dimwidths[xdimname])+Number(_labels.dimbases[xdimname])]).range([this.px,this.w-this.px]);
 	var yscale = d3.scale.linear().domain([Number(_labels.dimwidths[ydimname])+Number(_labels.dimbases[ydimname]),Number(_labels.dimbases[ydimname])]).range([this.py,this.h-this.py]);
 	console.log(xscale.domain());
@@ -110,8 +110,8 @@ QVis.HeatMap.prototype.mini_render = function(_data, _labels,_types, opts) {
 	//just testing the rects function
 	this.drawRects(this.rectcontainer,_data,_types,xscale,yscale,'dims.'+xdimname,'dims.'+ydimname,function(d){return Math.max(1,(self.w-2*self.px)/_labels.dimwidths[xdimname])},
 		function(d){return Math.max(1,(self.h-2*self.py)/_labels.dimwidths[ydimname]);},
-		function(d) {return zscale(d[self.labelsfrombase.z_label]);});
+		function(d) {return self.zscale(d[self.labelsfrombase.z_label]);});
 
-	this.add_brush(xscale,yscale,'dims.'+xdimname,'dims.'+ydimname,function(d) {return zscale(d[self.labelsfrombase.z_label]);},this.rectcontainer);
+	this.add_brush(xscale,yscale,'dims.'+xdimname,'dims.'+ydimname,function(d) {return self.zscale(d[self.labelsfrombase.z_label]);},this.rectcontainer);
 
 }

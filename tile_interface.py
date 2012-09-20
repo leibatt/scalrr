@@ -1,5 +1,6 @@
 import scalrr_back_data as sbdata
 import scidb_server_interface as sdbi
+import math
 
 def getTileByIDXY(tile_xid,tile_yid,l,user_id):
 	tile_info = {'type':'xy','tile_xid':tile_xid,'tile_yid':tile_yid}
@@ -33,15 +34,22 @@ def getTileHelper(tile_info,l,user_id):
 		y = saved_qpresults['dimwidths'][saved_qpresults['dims'][1]]
 		k = sbdata.backend_metadata[user_id]['data_threshold']
 		levels = sbdata.backend_metadata[user_id]['levels']
+		if levels == 0: # need to compute # of levels
+			tsize = saved_qpresults['size'] # get the size of the result
+			if tsize <= k: # if k happens to be larger than the total results
+				levels = 1
+			else: # round up to include the topmost level
+				levels = math.ceil(math.log(tsize)/math.log(k))+1
+			sbdata.backend_metadata[user_id]['levels'] = levels # store this computed value
 	setup_aggr_options = {'afl':False,'saved_qpresults':saved_qpresults}
 	aggr_options = setup_reduce_type('AGGR',setup_aggr_options)
 	aggr_options['db'] = db
 	if tile_info['type'] == "center":
-		queryresultobj = sdbi.getTile(orig_query,tile_info['cx'],tile_info['cy'],l,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
+		queryresultobj = sdbi.getTile(orig_query,tile_info['cx'],tile_info['cy'],l,levels-1,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
 	elif tile_info['type'] == "xy":
-		queryresultobj = sdbi.getTileByIDXY(orig_query,tile_info['tile_xid'],tile_info['tile_yid'],l,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
+		queryresultobj = sdbi.getTileByIDXY(orig_query,tile_info['tile_xid'],tile_info['tile_yid'],l,levels-1,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
 	else:
-		queryresultobj = sdbi.getTileByID(orig_query,tile_info['tile_id'],l,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
+		queryresultobj = sdbi.getTileByID(orig_query,tile_info['tile_id'],l,levels-1,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
 	total_tiles = queryresultobj[1]['total_tiles']
 	total_tiles_root = queryresultobj[1]['total_tiles_root']
 	print "total_tiles_root:",total_tiles_root

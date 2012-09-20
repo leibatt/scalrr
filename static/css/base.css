@@ -121,7 +121,7 @@ g.xaxis path,g.yaxis path {
 	visibility: visible;
 }
 
-#vis-type-menu {
+#vis-type-menu,#resolution-lvl-menu {
 	display: block;
 }
 

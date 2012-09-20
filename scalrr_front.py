@@ -62,6 +62,14 @@ def send_request(request):
     close_connection_to_backend()
     return json.loads(response)
 
+@app.route('/blah/',methods=["POST", "GET"])
+def blah():
+    return render_template('blah.html')
+
+@app.route('/blah/miserables.json', methods=["POST", "GET"])
+def get__example_readme():
+    return send_file("data/miserables.json")
+
 @app.route('/move-zoom/', methods=["POST", "GET"])
 def get_move_zoom():
     session['user_id'] = str(uuid.uuid4())
@@ -76,7 +84,10 @@ def get_data2():
 def fetch_first_tile():
     print >> sys.stderr, "got fetch first tile request"
     query = request.args.get('query',"",type=str)
+    data_threshold = request.args.get('data_threshold',0,type=int)
     options = {'user_id':session['user_id']}
+    if data_threshold > 0:
+	options['data_threshold'] = data_threshold
     server_request = {'query':query,'options':options,'function':'fetch_first_tile'}
     queryresultarr = send_request(server_request)
     print >> sys.stderr, "result length: ",len(queryresultarr['data'])
@@ -102,7 +113,8 @@ def fetch_tile():
 def get_data_ajax():
     print >> sys.stderr, "got json request in init function"
     query = request.args.get('query',"",type=str)
-    options = {'reduce_res_check':True}
+    resolution = request.args.get('resolution',0,type=int)
+    options = {'reduce_res_check':True,'resolution':resolution}
     #options['saved_qpresults'] = None
     #requests from this url always happen at the beginning of a user session
     options['user_id'] = session['user_id']
@@ -138,7 +150,8 @@ def get_data_ajax_reduce():
     query = request.args.get('query',"",type=str)
     reduce_type = request.args.get('reduce_type',"",type=str)
     predicate = request.args.get('predicate',"",type=str)
-    options = {'reduce_res_check':False,'reduce_res':True,'reduce_type':reduce_type}
+    resolution = request.args.get('resolution',0,type=int)
+    options = {'reduce_res_check':False,'reduce_res':True,'reduce_type':reduce_type,'resolution':resolution}
     options['user_id'] = session['user_id']
     if 'saved_qpresults' in session and session['saved_qpresults'] is not None:
         options['saved_qpresults'] = session['saved_qpresults']

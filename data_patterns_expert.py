@@ -15,6 +15,18 @@ class BasicExpert:
 	#user_id = user_id passed in the request received by scalrr_back
 	def prefetch(self,c,user_id):
 		global prefetched_tiles
+		#each entry looks like: {'tile_xid':xid,'tile_yid':yid,'level':level,'timestamp':timestamp}
+		with user_history.lock():
+			last_tile_index = len(sbdata.user_history['user_id'])-1
+			# get tile index of last move
+			n_minus1_entry = sbdata.user_history[user_id][last_tile_index]
+			# get tile index of 2 moves ago
+			n_minus2_entry = sbdata.user_history[user_id][last_tile_index-1]
+
+		with sbdata.user_tiles_lock():
+			n_minus1_tile = 
+			n_minus2_tile = 
+
 		i = 0
 		with sbdata.metadata_lock: # lock you need to access user metadata, see scalrr_back_data.py
 			levels = sbdata.backend_metadata[user_id]['levels'] # total number of levels, currently the default is 2

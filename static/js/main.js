@@ -11,9 +11,9 @@ $(document).ready(function() {
 			renderagg.clear();
 		}
 		querytext = $('#sql-query-text').val();
+		resolution_lvl = $('#resolution-lvl-menu').val();
 		dialogue(querytext);
-		//options: {query:'query to execute'}
-		$.getJSON('/json-data',{query: querytext},function(jsondata){
+		$.getJSON('/json-data',{query: querytext,resolution:resolution_lvl},function(jsondata){
 			console.log(jsondata);
 			if(jsondata['reduce_res']) { // query met reduce_res requirements
 				var user_reduce_res = confirm('Query result will be large. Reduce resolution?');
@@ -31,8 +31,7 @@ $(document).ready(function() {
 	}
 
 	function reduce(querytext,reduce_type,predicate) {
-		//options: {query:'query to execute'}
-		options = {query: querytext, reduce_type: reduce_type};
+		options = {query: querytext, reduce_type: reduce_type,resolution:resolution_lvl};
 		if(predicate) {
 			options.predicate = predicate;
 		}
@@ -44,7 +43,6 @@ $(document).ready(function() {
 	}
 
 	function noreduce(querytext) {
-		//options: {query:'query to execute'}
 		$.getJSON('/json-data-noreduction',{query: querytext},function(jsondata){
 			console.log(jsondata);
 			draw_graph(jsondata);
@@ -82,6 +80,7 @@ $(document).ready(function() {
 		
 		console.log(jsondata['dimbases']);
 		console.log(jsondata['dimwidths']);
+		$('#aggplot').addClass('show');
 		renderagg.render(data, labels,types);
 	}
 
