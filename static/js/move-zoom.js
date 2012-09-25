@@ -177,7 +177,9 @@ $(document).ready(function() {
 		   'z' : '',
 		   'dimbases':jsondata['dimbases'],
 		   'dimwidths':jsondata['dimwidths'],
-		   'dimnames':jsondata['dimnames']};
+		   'dimnames':jsondata['dimnames'],
+		   'max':jsondata['max'],
+		   'min':jsondata['min']};
 		var types = jsondata['types'];
 		
 		console.log(jsondata['dimbases']);
@@ -217,7 +219,9 @@ $(document).ready(function() {
 		   'z' : '',
 		   'dimbases':jsondata['dimbases'],
 		   'dimwidths':jsondata['dimwidths'],
-		   'dimnames':jsondata['dimnames']};
+		   'dimnames':jsondata['dimnames'],
+		   'max':jsondata['max'],
+		   'min':jsondata['min']};
 		var types = jsondata['types'];
 		
 		console.log(jsondata['dimbases']);

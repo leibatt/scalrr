@@ -136,9 +136,15 @@ QVis.Graph.prototype.clear = function() {
 	this.xlabeldiv = $("#"+this.rootid+" .xlabel");	
 	this.ylabeldiv = $("#"+this.rootid+" .ylabel");	
 	this.zlabeldiv = $("#"+this.rootid+" .zlabel");	
-	this.jsvg.empty(); this.jlegend.empty(); this.xlabeldiv.empty(); this.ylabeldiv.empty(); this.zlabeldiv.empty(); this.map.empty();
+	this.jsvg.empty(); this.jlegend.empty();
+	this.xlabeldiv.find("select").remove();//.empty();
+	this.ylabeldiv.find("select").remove();//.empty();
+	this.zlabeldiv.find("select").remove();//.empty();
+	this.map.empty();
 	this.map.append('<div></div>');
 	this.brush = null;
+	this.max = null;
+	this.min = null;
 }
 
 // perform basic rendering tasks common to all graphs
@@ -158,6 +164,38 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	// you should know why this is necessary
 	var self = this;
 
+	this.max = _labels['max'];
+	this.min = _labels['min'];
+	console.log("max:");
+	console.log(this.max);
+	console.log("min:");
+	console.log(this.min);
+
+	//if x and y axes should be restricted to dimensions only
+	var labelnames = [];
+	var found_xlabel = false;
+	var found_ylabel = false;
+	for(var i = 0; i < _labels.names.length; i++) {
+		if(!this.dimsonly || !_labels.names[i]['isattr']) {
+			labelnames.push(_labels.names[i]);
+			if(_labels.names[i]['name'] === _labels.x){
+				found_xlabel = true;
+			}
+			if(_labels.names[i]['name'] === _labels.y){
+				found_ylabel = true;
+			}
+		}
+	}
+
+	if(this.dimsonly && labelnames.length > 0) { // fixup xlabel and ylabel
+		if(!found_xlabel) {
+			console.log("got here");
+			_labels.x = labelnames[0]['name'];
+		}
+		if(!found_ylabel) {
+			_labels.y = labelnames[0]['name'];
+		}
+	}
 	//console.log("this.rootid: " + this.rootid+", self.rootid: "+self.rootid);
 	//console.log("this == self?" + this === self);
 
@@ -165,8 +203,18 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	// I iterate through each column and consolidate the points that would be rendered
 	// This means that there could be overlapping points from two different columns
 	var x_label = _labels.x,
-		y_label = _labels.y,
+		y_label = _labels.y/*,
 		cscale = d3.scale.category10().domain(_labels.names.map(function(d) {return d['name'];}));  // color scale
+
+	//TODO: push the legend and menu features into the graph object
+	// add the legend and color it appropriately
+	var legend = d3.selectAll(this.jlegend.get()).selectAll('text')
+			.data(_labels.names)
+		.enter().append('span')
+			//.style('float', 'left')
+			.style('color', function(d) {return cscale(d['name']);})
+			.text(function(d) {return d['name'];});
+	*/
 
 	var z_label = '';
 	if(this.selectz) {
@@ -182,26 +230,18 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 		}
 	}
 	console.log('z_label: '+z_label);
-	//TODO: push the legend and menu features into the graph object
-	// add the legend and color it appropriately
-	var legend = d3.selectAll(this.jlegend.get()).selectAll('text')
-			.data(_labels.names)
-		.enter().append('span')
-			//.style('float', 'left')
-			.style('color', function(d) {return cscale(d['name']);})
-			.text(function(d) {return d['name'];});
 	
 	//
 	// render x-axis select options
 	if(this.selectx) {
-		var xaxisselect = this.xlabeldiv.append($("<select></select>")).find("select");
+		var xaxisselect = this.xlabeldiv.prepend($("<select></select>")).find("select");
 		var xaxislabel = d3.selectAll(xaxisselect.get()).selectAll("option")
-				.data(_labels.names)
+				.data(/*_labels.names*/labelnames)
 			.enter().append("option")
 				.attr("value", function(d) { return d['name'];})
 				.text(function(d) { return d['name'];});
 		xaxisselect.val(x_label);
-		console.log(_labels.names);
+		console.log(["label names",/*_labels.names*/labelnames]);
 
 		//
 		// I create and execute this anonymous function so
@@ -225,7 +265,8 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 				console.log(["selected option", selectedval, val])				
 				if (val == selectedval) return;
 				selectedval = val;
-				var newlabels = {"x" : val,"y": yval, "z":zval, "names" : _labels.names,'dimnames':_labels.dimnames,'dimwidths':_labels.dimwidths,'dimbases':_labels.dimbases};
+				var newlabels = {"x" : val,"y": yval, "z":zval, "names" : _labels.names,'dimnames':_labels.dimnames,'dimwidths':_labels.dimwidths,'dimbases':_labels.dimbases,
+					"max":_labels.max,"min":_labels.min};
 
 				self.render(_data, newlabels,_types, opts);
 			});
@@ -235,10 +276,10 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	//
 	// render y-axis select options
 	if(this.selecty) {
-		var yaxisselect = this.ylabeldiv.append($("<select></select>")).find("select");
+		var yaxisselect = this.ylabeldiv.prepend($("<select></select>")).find("select");
 		var yaxisattrselect = yaxisselect.append($('<optgroup label="attrs"></optgroup>')).find("optgroup");
 		var yaxislabel = d3.selectAll(yaxisattrselect.get()).selectAll("option")
-				.data(_labels.names)
+				.data(/*_labels.names*/labelnames)
 			.enter().append("option")
 				.attr("value", function(d) { return d['name'];})
 				.text(function(d) { return d['name'];});
@@ -259,7 +300,8 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 				console.log(["selected option", selectedval, val])				
 				if (val == selectedval) return;
 				selectedval = val;
-				var newlabels = {"y" : val,"x": xval, "z":zval, 'names' : _labels.names,'dimnames':_labels.dimnames,'dimwidths':_labels.dimwidths,'dimbases':_labels.dimbases};
+				var newlabels = {"y" : val,"x": xval, "z":zval, 'names' : _labels.names,'dimnames':_labels.dimnames,'dimwidths':_labels.dimwidths,'dimbases':_labels.dimbases,
+					"max":_labels.max,"min":_labels.min};
 
 				self.render(_data, newlabels,_types, opts);
 			});
@@ -269,7 +311,7 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	//
 	// render z-axis select options
 	if(this.selectz) {
-		var zaxisselect = this.zlabeldiv.append($("<select></select>")).find("select");
+		var zaxisselect = this.zlabeldiv.prepend($("<select></select>")).find("select");
 		var zaxislabel = d3.selectAll(zaxisselect.get()).selectAll("option")
 				.data(_labels.names.filter(function(d){return (_types[d['name']] == 'int32')||(_types[d['name']] == 'int64')||(_types[d['name']] == 'double');}))
 			.enter().append("option")
@@ -299,7 +341,8 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 				console.log(["selected option", selectedval, val])				
 				if (val == selectedval) return;
 				selectedval = val;
-				var newlabels = {"z" : val,"y": yval, "x":xval, "names" : _labels.names,'dimnames':_labels.dimnames,'dimwidths':_labels.dimwidths,'dimbases':_labels.dimbases};
+				var newlabels = {"z" : val,"y": yval, "x":xval, "names" : _labels.names,'dimnames':_labels.dimnames,'dimwidths':_labels.dimwidths,'dimbases':_labels.dimbases,
+					"max":_labels.max,"min":_labels.min};
 
 				self.render(_data, newlabels,_types, opts);
 			});

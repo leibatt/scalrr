@@ -4,6 +4,11 @@
 	background-position: 5px -45px;
 }
 */
+
+#xlabel-radio,#ylabel-radio,#zlabel-radio {
+	display: inline;
+}
+
 .nav-button {
 	display: inline-block;
 	width: 40px;

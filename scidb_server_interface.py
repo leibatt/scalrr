@@ -262,6 +262,7 @@ def check_query_plan(queryplan):
 	names = []
 	bases= {}
 	widths = {}
+	indexes = {}
 	for i, s in enumerate(dim_array):
 		if (i % 3) == 0:
 			# split on equals, get the range, split on ':'
@@ -271,16 +272,17 @@ def check_query_plan(queryplan):
 			if name.find("(") != -1:
 				name = name[:name.find("(")]
 				rangewidth = int(range)
-				bases[name] = 1 #0 by default
+				bases[name] = 1 #1 by default
 			else:
 				rangevals = range.split(':')
 				rangewidth = int(rangevals[1]) - int(rangevals[0]) + 1
 				bases[name]=rangevals[0];
 			names.append(name)
+			indexes[name] = dims
 			size *= rangewidth
 			dims += 1
 			widths[name] =rangewidth;
-	return {'size': size, 'numdims': dims, 'dims': names, 'attrs':get_attrs(queryplan),'dimbases':bases,'dimwidths':widths}
+	return {'size': size, 'numdims': dims, 'dims': names, 'indexes':indexes, 'attrs':get_attrs(queryplan),'dimbases':bases,'dimwidths':widths}
 
 #get all attributes of the result matrix
 def get_attrs(queryplan):
@@ -687,8 +689,10 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 		if attrs[i].getName() != "EmptyTag":
 			its.append(query_result.array.getConstIterator(i))
 			attrnames.append(attrs[i].getName())
-			minobj["attrs."+attrs[i].getName()] = None
-			maxobj["attrs."+attrs[i].getName()] = None
+			currtype = attrs[i].getType()
+			if (currtype == "int32") or (currtype == "int64") or (currtype == "double"):
+				minobj["attrs."+attrs[i].getName()] = None
+				maxobj["attrs."+attrs[i].getName()] = None
 
 	start = True
 	while not its[0].end():
@@ -721,13 +725,16 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 				#print  "chunkiterindex: ",chunkiterindex
 				dataitem = chunkiters[chunkiterindex].getItem()
 				# look up the value according to its attribute's typestring
-				attrobj[attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType()) # TBD: eliminate 2nd arg, make method on dataitem
-				dataitem_val = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType())
+				currtype = attrs[chunkiterindex].getType()
+				dataitem_val = scidb.getTypedValue(dataitem, currtype)
+				attrobj[attrnames[chunkiterindex]] = dataitem_val # TBD: eliminate 2nd arg, make method on dataitem
 				dataobj["attrs."+attrnames[chunkiterindex]] = dataitem_val
-				if (minobj["attrs."+attrnames[chunkiterindex]] is None) or (dataitem_val < minobj["attrs."+attrnames[chunkiterindex]]):
-					minobj["attrs."+attrnames[chunkiterindex]] = dataitem_val
-				if (maxobj["attrs."+attrnames[chunkiterindex]] is None) or (dataitem_val > maxobj["attrs."+attrnames[chunkiterindex]]):
-					maxobj["attrs."+attrnames[chunkiterindex]] = dataitem_val
+				
+				if (currtype == "int32") or (currtype == "int64") or (currtype == "double"):
+					if (minobj["attrs."+attrnames[chunkiterindex]] is None) or (dataitem_val < minobj["attrs."+attrnames[chunkiterindex]]):
+						minobj["attrs."+attrnames[chunkiterindex]] = dataitem_val
+					if (maxobj["attrs."+attrnames[chunkiterindex]] is None) or (dataitem_val > maxobj["attrs."+attrnames[chunkiterindex]]):
+						maxobj["attrs."+attrnames[chunkiterindex]] = dataitem_val
 				#print  "Data: %s" % item
 				#chunkiters[i].increment_to_next()
 				#mypos = chunkiters[chunkiterindex].getPosition()
