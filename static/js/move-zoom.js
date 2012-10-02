@@ -2,6 +2,7 @@ var renderagg = null;
 var current_x = 0;
 var current_y = 0;
 var current_zoom = 0;
+var flip = true; // whether we need to do inverted moves
 
 // get these from backend
 var max_zoom = 1;
@@ -26,6 +27,12 @@ $(document).ready(function() {
 	$('.nav-button').button();
 
 	function move_up() {
+		if(flip && renderagg.inv[1]) {
+			flip = false;
+			return move_down();
+		} else {
+			flip = true;
+		}
 		var x = current_x;
 		var y = current_y;
 		var zoom = current_zoom;
@@ -44,6 +51,12 @@ $(document).ready(function() {
 	}
 
 	function move_down() {
+		if(flip && renderagg.inv[1]) {
+			flip = false;
+			return move_up();
+		} else {
+			flip = true;
+		}
 		var x = current_x;
 		var y = current_y;
 		var zoom = current_zoom;
@@ -62,6 +75,12 @@ $(document).ready(function() {
 	}
 
 	function move_left() {
+		if(flip && renderagg.inv[0]) {
+			flip = false;
+			return move_right();
+		} else {
+			flip = true;
+		}
 		var x = current_x;
 		var y = current_y;
 		var zoom = current_zoom;
@@ -80,6 +99,12 @@ $(document).ready(function() {
 	}
 
 	function move_right() {
+		if(flip && renderagg.inv[0]) {
+			flip = false;
+			return move_left();
+		} else {
+			flip = true;
+		}
 		var x = current_x;
 		var y = current_y;
 		var zoom = current_zoom;
@@ -136,6 +161,13 @@ $(document).ready(function() {
 		} else if (y_offset >= future_ytiles) {
 			y_offset = future_ytiles - 1;
 		}
+		if(renderagg.inv[0]) {
+			x_offset = future_xtiles - x_offset - 1;
+		}
+		if(renderagg.inv[1]) {
+			x_offset = future_ytiles - y_offset - 1;
+		}
+		
 		x = current_x * zoom_diff + x_offset;
 		y = current_y * zoom_diff + y_offset;
 		zoom = current_zoom + 1;
@@ -189,7 +221,8 @@ $(document).ready(function() {
 		   'dimwidths':jsondata['dimwidths'],
 		   'dimnames':jsondata['dimnames'],
 		   'max':jsondata['max'],
-		   'min':jsondata['min']};
+		   'min':jsondata['min'],
+		   'inv':renderagg.inv};
 		var types = jsondata['types'];
 		
 		console.log(jsondata['dimbases']);
@@ -200,8 +233,11 @@ $(document).ready(function() {
 		total_xtiles = jsondata['total_xtiles'];
 		total_ytiles = jsondata['total_ytiles'];
 		total_tiles_root = jsondata['total_tiles_root'];
+		future_xtiles = jsondata['future_xtiles'];
+		future_ytiles = jsondata['future_ytiles'];
 		console.log("max zoom, total tiles, total tiles root: "+max_zoom+","+total_tiles+","+total_tiles_root);
 		console.log("total x/y tiles: ",total_xtiles+","+total_ytiles);
+		console.log("future x/y tiles: ",future_xtiles+","+future_ytiles);
 		renderagg.mini_render(data, labels,types);
 	}
 

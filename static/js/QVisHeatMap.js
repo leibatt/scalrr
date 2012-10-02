@@ -38,15 +38,15 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	console.log(_labels.dimbases[ydimname]);
 	console.log(_labels.dimwidths[ydimname]);
 	console.log(Number(_labels.dimwidths[ydimname]+_labels.dimbases[ydimname]));
-	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,true,true).range(colorbrewer.GnBu[9]);
+	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer.GnBu[9]);
 	if((self.labelsfrombase.z_label in this.min) && (self.labelsfrombase.z_label in this.max)) {
 		self.zscale.domain([this.max[self.labelsfrombase.z_label],this.min[self.labelsfrombase.z_label]]);
 	}
 	//var xscale = d3.scale.linear().domain([Number(_labels.dimbases[xdimname]),Number(_labels.dimwidths[xdimname])+Number(_labels.dimbases[xdimname])]).range([this.px,this.w-this.px]);
 	//var yscale = d3.scale.linear().domain([Number(_labels.dimwidths[ydimname])+Number(_labels.dimbases[ydimname]),Number(_labels.dimbases[ydimname])]).range([this.py,this.h-this.py]);
-	var xscale = this.createScale(_data,_types,self.labelsfrombase.x_label,this.w,this.px,false,false)
+	var xscale = this.createScale(_data,_types,self.labelsfrombase.x_label,this.w,this.px,this.inv[0]/*true*/,false)
 	console.log("true range: "+Number(_labels.dimbases[xdimname])+","+(Number(_labels.dimwidths[xdimname])+Number(_labels.dimbases[xdimname])));
-	var yscale = this.createScale(_data,_types,self.labelsfrombase.y_label,this.h,this.py,false,false)	
+	var yscale = this.createScale(_data,_types,self.labelsfrombase.y_label,this.h,this.py,this.inv[1]/*true*/,false)	
 	console.log(xscale.domain());
 	console.log(yscale.domain());
 	console.log(xscale.range());
@@ -95,15 +95,15 @@ QVis.HeatMap.prototype.mini_render = function(_data, _labels,_types, opts) {
 	console.log(_labels.dimbases[ydimname]);
 	console.log(_labels.dimwidths[ydimname]);
 	console.log(Number(_labels.dimwidths[ydimname]+_labels.dimbases[ydimname]));
-	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,true,true).range(colorbrewer.GnBu[9]);
+	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer.GnBu[9]);
 	if((self.labelsfrombase.z_label in this.min) && (self.labelsfrombase.z_label in this.max)) {
 		self.zscale.domain([this.max[self.labelsfrombase.z_label],this.min[self.labelsfrombase.z_label]]);
 	}
 	//var xscale = d3.scale.linear().domain([Number(_labels.dimbases[xdimname]),Number(_labels.dimwidths[xdimname])+Number(_labels.dimbases[xdimname])]).range([this.px,this.w-this.px]);
 	//var yscale = d3.scale.linear().domain([Number(_labels.dimwidths[ydimname])+Number(_labels.dimbases[ydimname]),Number(_labels.dimbases[ydimname])]).range([this.py,this.h-this.py]);
-	var xscale = this.createScale(_data,_types,self.labelsfrombase.x_label,this.w,this.px,false,false)
+	var xscale = this.createScale(_data,_types,self.labelsfrombase.x_label,this.w,this.px,this.inv[0]/*true*/,false)
 	console.log("true range: "+Number(_labels.dimbases[xdimname])+","+(Number(_labels.dimwidths[xdimname])+Number(_labels.dimbases[xdimname])));
-	var yscale = this.createScale(_data,_types,self.labelsfrombase.y_label,this.h,this.py,false,false)	
+	var yscale = this.createScale(_data,_types,self.labelsfrombase.y_label,this.h,this.py,this.inv[1]/*true*/,false)	
 	console.log(xscale.domain());
 	console.log(yscale.domain());
 	console.log(xscale.range());

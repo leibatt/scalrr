@@ -145,6 +145,7 @@ QVis.Graph.prototype.clear = function() {
 	this.brush = null;
 	this.max = null;
 	this.min = null;
+	this.inv = null;
 }
 
 // perform basic rendering tasks common to all graphs
@@ -166,6 +167,7 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 
 	this.max = _labels['max'];
 	this.min = _labels['min'];
+	this.inv = 'inv' in _labels ? _labels['inv'] : [false,false,false];
 	console.log("max:");
 	console.log(this.max);
 	console.log("min:");

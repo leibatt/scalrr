@@ -164,7 +164,7 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 	sdbioptions = {'db':aggregate_options['db'],'afl':False}
 	qpresults = verifyQuery(newquery,sdbioptions)
 	#print "qpresults:",qpresults
-	sdbioptions['reduce_res'] = qpresults['size'] > threshold
+	sdbioptions['reduce_res'] = True #qpresults['size'] > threshold
 	#if sdbioptions['reduce_res']:
 	aggregate_options['qpresults'] = qpresults
 	aggregate_options['resolution'] = threshold
@@ -336,7 +336,7 @@ def daggregate(query,options):
 		for i in range(1,len(chunkdims)):
 			chunks += ", "+str(chunkdims[i])
 	elif dimension > 0: # otherwise do default chunks
-		defaultchunkval = math.pow(1.0*options['qpsize']/threshold,1.0/dimension) if (1.0*options['qpsize']/threshold) > 1 else AGGR_CHUNK_DEFAULT
+		defaultchunkval = math.pow(1.0*options['qpsize']/threshold,1.0/dimension) #if (1.0*options['qpsize']/threshold) > 1 else AGGR_CHUNK_DEFAULT
 		defaultchunkval = int(math.ceil(defaultchunkval)) # round up
 		chunks += str(defaultchunkval)
 		for i in range(1,dimension) :

@@ -76,6 +76,8 @@ def getTileHelper(tile_info,l,user_id):
 	queryresultarr['total_tiles'] = total_tiles
 	queryresultarr['total_xtiles'] = saved_qpresults['total_xtiles']
 	queryresultarr['total_ytiles'] = saved_qpresults['total_ytiles']
+	queryresultarr['future_xtiles'] = saved_qpresults['future_xtiles']
+	queryresultarr['future_ytiles'] = saved_qpresults['future_ytiles']
 	queryresultarr['total_tiles_root'] = total_tiles_root
 	queryresultarr['zoom_diff'] = sbdata.default_diff
 	sdbi.scidbCloseConn(db)
