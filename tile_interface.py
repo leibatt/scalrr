@@ -2,6 +2,10 @@ import scalrr_back_data as sbdata
 import scidb_server_interface as sdbi
 import math
 
+def getTileByIDXY_Labels(tile_xid,tile_yid,x_label,y_label,l,user_id):
+	tile_info = {'type':'xy','tile_xid':tile_xid,'tile_yid':tile_yid,'x_label':x_label,'y_label':y_label}
+	return getTileHelper(tile_info,l,user_id)
+
 def getTileByIDXY(tile_xid,tile_yid,l,user_id):
 	tile_info = {'type':'xy','tile_xid':tile_xid,'tile_yid':tile_yid}
 	return getTileHelper(tile_info,l,user_id)
@@ -30,9 +34,16 @@ def getTileHelper(tile_info,l,user_id):
 		if len(saved_qpresults['dimbases']) > 0: # adjust bases for array if possible
 			xbase = int(saved_qpresults['dimbases'][saved_qpresults['dims'][0]])
 			ybase = int(saved_qpresults['dimbases'][saved_qpresults['dims'][1]])
-		x = saved_qpresults['dimwidths'][saved_qpresults['dims'][0]]
-		y = saved_qpresults['dimwidths'][saved_qpresults['dims'][1]]
+		xdim = 0
+		ydim = 1
+		if ('x_label' in tile_info) and ('y_label' in tile_info):
+			xdim = saved_qpresults['indexes'][tile_info['x_label']]
+			ydim = saved_qpresults['indexes'][tile_info['y_label']]
+		print "xdim:",xdim,",ydim:",ydim
+		x = saved_qpresults['dimwidths'][saved_qpresults['dims'][xdim]]
+		y = saved_qpresults['dimwidths'][saved_qpresults['dims'][ydim]]
 		k = sbdata.backend_metadata[user_id]['data_threshold']
+		n = saved_qpresults['numdims']
 		levels = sbdata.backend_metadata[user_id]['levels']
 		if levels == 0: # need to compute # of levels
 			tsize = saved_qpresults['size'] # get the size of the result
@@ -47,7 +58,7 @@ def getTileHelper(tile_info,l,user_id):
 	if tile_info['type'] == "center":
 		queryresultobj = sdbi.getTile(orig_query,tile_info['cx'],tile_info['cy'],l,levels-1,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
 	elif tile_info['type'] == "xy":
-		queryresultobj = sdbi.getTileByIDXY(orig_query,tile_info['tile_xid'],tile_info['tile_yid'],l,levels-1,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
+		queryresultobj = sdbi.getTileByIDXY(orig_query,n,xdim,ydim,tile_info['tile_xid'],tile_info['tile_yid'],l,levels-1,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
 	else:
 		queryresultobj = sdbi.getTileByID(orig_query,tile_info['tile_id'],l,levels-1,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
 	total_tiles = queryresultobj[1]['total_tiles']
@@ -63,6 +74,8 @@ def getTileHelper(tile_info,l,user_id):
 	queryresultarr['saved_qpresults'] = saved_qpresults
 	queryresultarr['max_zoom'] = levels
 	queryresultarr['total_tiles'] = total_tiles
+	queryresultarr['total_xtiles'] = saved_qpresults['total_xtiles']
+	queryresultarr['total_ytiles'] = saved_qpresults['total_ytiles']
 	queryresultarr['total_tiles_root'] = total_tiles_root
 	queryresultarr['zoom_diff'] = sbdata.default_diff
 	sdbi.scidbCloseConn(db)

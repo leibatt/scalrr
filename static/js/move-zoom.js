@@ -29,16 +29,17 @@ $(document).ready(function() {
 		var x = current_x;
 		var y = current_y;
 		var zoom = current_zoom;
-		x = x - 1;
-		if(x< 0){
-			x= 0;
+		y = y - 1;
+		if(y< 0){
+			y= 0;
 		}
-		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
+		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom,
+					x_label:renderagg.labelsfrombase.x_label,y_label:renderagg.labelsfrombase.y_label},function(jsondata){
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
 		console.log("move up:"+current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
-		current_x = x;
+		current_y = y;
 		return false;
 	}
 
@@ -46,16 +47,17 @@ $(document).ready(function() {
 		var x = current_x;
 		var y = current_y;
 		var zoom = current_zoom;
-		x = x + 1;
-		if(x >= total_xtiles){
-			x = total_xtiles-1;
+		y = y + 1;
+		if(y >= total_ytiles){
+			y = total_ytiles-1;
 		}
-		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
+		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom,
+					x_label:renderagg.labelsfrombase.x_label,y_label:renderagg.labelsfrombase.y_label},function(jsondata){
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
 		console.log("move down:"+current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
-		current_x = x;
+		current_y = y;
 		return false;
 	}
 
@@ -63,16 +65,17 @@ $(document).ready(function() {
 		var x = current_x;
 		var y = current_y;
 		var zoom = current_zoom;
-		y = y - 1;
-		if(y< 0){
-			y= 0;
+		x = x - 1;
+		if(x < 0){
+			x= 0;
 		}
-		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
+		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom,
+					x_label:renderagg.labelsfrombase.x_label,y_label:renderagg.labelsfrombase.y_label},function(jsondata){
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
 		console.log("move left:"+current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
-		current_y = y;
+		current_x = x;
 		return false;
 	}
 
@@ -80,16 +83,17 @@ $(document).ready(function() {
 		var x = current_x;
 		var y = current_y;
 		var zoom = current_zoom;
-		y = y + 1;
-		if(y >= total_ytiles){
-			y = total_ytiles-1;
+		x = x + 1;
+		if(x >= total_xtiles){
+			x = total_xtiles-1;
 		}
-		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
+		$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom,
+					x_label:renderagg.labelsfrombase.x_label,y_label:renderagg.labelsfrombase.y_label},function(jsondata){
 			console.log(jsondata);
 			redraw_graph(jsondata);
 		});
 		console.log("move right: "+current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
-		current_y = y;
+		current_x = x;
 		return false;
 	}
 
@@ -104,7 +108,8 @@ $(document).ready(function() {
 		x = Math.floor(x/zoom_diff);
 		y = Math.floor(y/zoom_diff);
 		if(zoom != current_zoom) { // if we're actually going somewhere else
-			$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
+			$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom,
+					x_label:renderagg.labelsfrombase.x_label,y_label:renderagg.labelsfrombase.y_label},function(jsondata){
 				console.log(jsondata);
 				redraw_graph(jsondata);
 			});
@@ -138,7 +143,8 @@ $(document).ready(function() {
 			zoom = max_zoom - 1;
 		}
 		if(zoom != current_zoom) { // if we're actually going somewhere else
-			$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom},function(jsondata){
+			$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom,
+					x_label:renderagg.labelsfrombase.x_label,y_label:renderagg.labelsfrombase.y_label},function(jsondata){
 				console.log(jsondata);
 				redraw_graph(jsondata);
 			});
@@ -169,12 +175,16 @@ $(document).ready(function() {
 	}
 
 	function redraw_graph(jsondata){
+		// preserve existing labels
+		var x_label = renderagg.labelsfrombase.x_label;
+		var y_label = renderagg.labelsfrombase.y_label;
+		var z_label = renderagg.labelsfrombase.z_label;
 		var opts = {overlap:-0, r:1.5};
 		var data = jsondata['data'];
 		var labels={'names' : jsondata['names'],
-                   'x' : jsondata['names'][0]['name'],
-		   'y' : jsondata['names'][1]['name'],
-		   'z' : '',
+                   'x' : x_label,
+		   'y' : y_label,
+		   'z' : z_label,
 		   'dimbases':jsondata['dimbases'],
 		   'dimwidths':jsondata['dimwidths'],
 		   'dimnames':jsondata['dimnames'],
@@ -191,12 +201,14 @@ $(document).ready(function() {
 		total_ytiles = jsondata['total_ytiles'];
 		total_tiles_root = jsondata['total_tiles_root'];
 		console.log("max zoom, total tiles, total tiles root: "+max_zoom+","+total_tiles+","+total_tiles_root);
+		console.log("total x/y tiles: ",total_xtiles+","+total_ytiles);
 		renderagg.mini_render(data, labels,types);
 	}
 
 	function draw_graph(jsondata) {
 		menutype = $('#vis-type-menu').val();
 		var opts = {overlap:-0, r:1.5};
+		var use_dims = false;
 		switch(menutype) {
 			case 'mapplot':
 				renderagg = new QVis.MapPlot('aggplot', opts);
@@ -206,16 +218,33 @@ $(document).ready(function() {
 				break;
 			case 'heatmap':
 				renderagg = new QVis.HeatMap('aggplot',opts);
+				use_dims = true;
 				break;
 			default:
 				console.log('menu type not supported, using heatmap...');
 				renderagg = new QVis.HeatMap('aggplot', opts);
+				use_dims = true;
 		}
 		
 		var data = jsondata['data'];
+
+		// set x and y labels
+		var x_label = jsondata['dimnames'][0];
+		var y_label = x_label;
+		if(use_dims) {
+			x_label = jsondata['dimnames'][0];
+			if(jsondata['dimnames'].length > 1) {
+				y_label = jsondata['dimnames'][1];
+			} else {
+				y_label = x_label;
+			}
+		} else if(jsondata['names'].length > 0) {
+			y_label = jsondata['dimnames'][1];
+		}
+
 		var labels={'names' : jsondata['names'],
-                   'x' : jsondata['names'][0]['name'],
-		   'y' : jsondata['names'][1]['name'],
+                   'x' : x_label,
+		   'y' : y_label,
 		   'z' : '',
 		   'dimbases':jsondata['dimbases'],
 		   'dimwidths':jsondata['dimwidths'],

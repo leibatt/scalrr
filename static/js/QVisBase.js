@@ -172,10 +172,17 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	console.log(this.min);
 
 	//if x and y axes should be restricted to dimensions only
+
 	var labelnames = [];
 	var found_xlabel = false;
 	var found_ylabel = false;
+	var attrnames = [];
+	var dimnames = _labels.dimnames;
+
 	for(var i = 0; i < _labels.names.length; i++) {
+		if(_labels.names[i]['isattr']){ // get all attribute names
+			attrnames.push(_labels.names[i]['name']);
+		}/*
 		if(!this.dimsonly || !_labels.names[i]['isattr']) {
 			labelnames.push(_labels.names[i]);
 			if(_labels.names[i]['name'] === _labels.x){
@@ -184,9 +191,15 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 			if(_labels.names[i]['name'] === _labels.y){
 				found_ylabel = true;
 			}
-		}
+		}*/
 	}
 
+	labelnames.push.apply(labelnames,dimnames);
+	if(!this.dimsonly){
+		labelnames.push.apply(labelnames,attrnames);
+	}
+
+/*
 	if(this.dimsonly && labelnames.length > 0) { // fixup xlabel and ylabel
 		if(!found_xlabel) {
 			console.log("got here");
@@ -196,6 +209,8 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 			_labels.y = labelnames[0]['name'];
 		}
 	}
+*/
+
 	//console.log("this.rootid: " + this.rootid+", self.rootid: "+self.rootid);
 	//console.log("this == self?" + this === self);
 
@@ -203,7 +218,8 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	// I iterate through each column and consolidate the points that would be rendered
 	// This means that there could be overlapping points from two different columns
 	var x_label = _labels.x,
-		y_label = _labels.y/*,
+		y_label = _labels.y,
+		z_label = _labels.z;/*,
 		cscale = d3.scale.category10().domain(_labels.names.map(function(d) {return d['name'];}));  // color scale
 
 	//TODO: push the legend and menu features into the graph object
@@ -216,7 +232,6 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 			.text(function(d) {return d['name'];});
 	*/
 
-	var z_label = '';
 	if(this.selectz) {
 		if(_labels.z === '') {
 			for(var i = 0; i < _labels.names.length; i++) {
@@ -234,14 +249,31 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	//
 	// render x-axis select options
 	if(this.selectx) {
-		var xaxisselect = this.xlabeldiv.prepend($("<select></select>")).find("select");
-		var xaxislabel = d3.selectAll(xaxisselect.get()).selectAll("option")
-				.data(/*_labels.names*/labelnames)
+		//this.xlabeldiv.prepend($("<label for=\"xaxis-select\">invert</label>"));
+		this.xlabeldiv.find("label#xlabel-select").after($("<select name=\"xaxis-select\" id=\"xaxis-select\"></select>"));
+		var xaxisselect = this.xlabeldiv.find("select");
+		var xaxisattrselect = xaxisselect.append($('<optgroup id="xaxis-attrs" label="attrs"></optgroup>')).find("#xaxis-attrs");
+		var xaxisdimselect = xaxisselect.append($('<optgroup id="xaxis-dims" label="dims"></optgroup>')).find("#xaxis-dims");
+		if(!this.dimsonly) {
+			var xaxislabel = d3.selectAll(xaxisattrselect.get()).selectAll("option")
+					.data(attrnames)
+				.enter().append("option")
+					.attr("value", function(d) { return d;})
+					.text(function(d) { return d;});
+		}
+		var xaxislabel = d3.selectAll(xaxisdimselect.get()).selectAll("option")
+				.data(dimnames)
 			.enter().append("option")
-				.attr("value", function(d) { return d['name'];})
-				.text(function(d) { return d['name'];});
+				.attr("value", function(d) { return d;})
+				.text(function(d) { return d;});
+		console.log(['xaxisselect',xaxisselect]);
+		//var xaxislabel = d3.selectAll(xaxisselect.get()).selectAll("option")
+		//		.data(/*_labels.names*/labelnames)
+		//	.enter().append("option")
+		//		.attr("value", function(d) { return d/*['name']*/;})
+		//		.text(function(d) { return d/*['name']*/;});
 		xaxisselect.val(x_label);
-		console.log(["label names",/*_labels.names*/labelnames]);
+		//console.log(["label names",/*_labels.names*/labelnames]);
 
 		//
 		// I create and execute this anonymous function so
@@ -250,6 +282,7 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 		// 
 		// notice that I use "self" instead of "this".
 		//
+/*
 		(function() {
 			var selectedval = x_label;
 			$("#"+self.rootid+" .xlabel select").change(function() {
@@ -270,21 +303,37 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 
 				self.render(_data, newlabels,_types, opts);
 			});
-		})();
+		})();*/
 	}
 
 	//
 	// render y-axis select options
 	if(this.selecty) {
-		var yaxisselect = this.ylabeldiv.prepend($("<select></select>")).find("select");
-		var yaxisattrselect = yaxisselect.append($('<optgroup label="attrs"></optgroup>')).find("optgroup");
-		var yaxislabel = d3.selectAll(yaxisattrselect.get()).selectAll("option")
-				.data(/*_labels.names*/labelnames)
+		//var yaxisselect = this.ylabeldiv.prepend($("<select></select>")).find("select");
+		this.ylabeldiv.find("label#ylabel-select").after($("<select name=\"yaxis-select\" id=\"yaxis-select\"></select>"));
+		var yaxisselect = this.ylabeldiv.find("select");
+		var yaxisattrselect = yaxisselect.append($('<optgroup id="yaxis-attrs" label="attrs"></optgroup>')).find("#yaxis-attrs");
+		var yaxisdimselect = yaxisselect.append($('<optgroup id="yaxis-dims" label="dims"></optgroup>')).find("#yaxis-dims");
+		if(!this.dimsonly) {
+			var yaxislabel = d3.selectAll(yaxisattrselect.get()).selectAll("option")
+					.data(attrnames)
+				.enter().append("option")
+					.attr("value", function(d) { return d;})
+					.text(function(d) { return d;});
+		}
+		var yaxislabel = d3.selectAll(yaxisdimselect.get()).selectAll("option")
+				.data(dimnames)
 			.enter().append("option")
-				.attr("value", function(d) { return d['name'];})
-				.text(function(d) { return d['name'];});
+				.attr("value", function(d) { return d;})
+				.text(function(d) { return d;});
+		//var yaxisattrselect = yaxisselect.append($('<optgroup label="attrs"></optgroup>')).find("optgroup");
+		//var yaxislabel = d3.selectAll(yaxisattrselect.get()).selectAll("option")
+		//		.data(/*_labels.names*/labelnames)
+		//	.enter().append("option")
+		//		.attr("value", function(d) { return d/*['name']*/;})
+		//		.text(function(d) { return d/*['name']*/;});
 		yaxisselect.val(y_label);
-
+/*
 		(function() {
 			var selectedval = y_label;
 			$("#"+self.rootid+" .ylabel select").change(function() {
@@ -305,18 +354,33 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 
 				self.render(_data, newlabels,_types, opts);
 			});
-		})();
+		})();*/
 	}
 
 	//
 	// render z-axis select options
+
 	if(this.selectz) {
-		var zaxisselect = this.zlabeldiv.prepend($("<select></select>")).find("select");
-		var zaxislabel = d3.selectAll(zaxisselect.get()).selectAll("option")
-				.data(_labels.names.filter(function(d){return (_types[d['name']] == 'int32')||(_types[d['name']] == 'int64')||(_types[d['name']] == 'double');}))
+		//var zaxisselect = this.zlabeldiv.prepend($("<select></select>")).find("select");
+		this.zlabeldiv.find("label#zlabel-select").after($("<select name=\"zaxis-select\" id=\"zaxis-select\"></select>"));
+		var zaxisselect = this.zlabeldiv.find("select");
+		var zaxisattrselect = zaxisselect.append($('<optgroup id="zaxis-attrs" label="attrs"></optgroup>')).find("#zaxis-attrs");
+		var zaxisdimselect = zaxisselect.append($('<optgroup id="zaxis-dims" label="dims"></optgroup>')).find("#zaxis-dims");
+		var zaxislabel = d3.selectAll(zaxisattrselect.get()).selectAll("option")
+				.data(attrnames.filter(function(d){return (_types[d] == 'int32')||(_types[d] == 'int64')||(_types[d] == 'double');}))
 			.enter().append("option")
-				.attr("value", function(d) { return d['name'];})
-				.text(function(d) { return d['name'];});
+				.attr("value", function(d) { return d;})
+				.text(function(d) { return d;});
+		var zaxislabel = d3.selectAll(zaxisdimselect.get()).selectAll("option")
+				.data(dimnames.filter(function(d){return (_types[d] == 'int32')||(_types[d] == 'int64')||(_types[d] == 'double');}))
+			.enter().append("option")
+				.attr("value", function(d) { return d;})
+				.text(function(d) { return d;});
+		//var zaxislabel = d3.selectAll(zaxisselect.get()).selectAll("option")
+		//		.data(_labels.names.filter(function(d){return (_types[d['name']] == 'int32')||(_types[d['name']] == 'int64')||(_types[d['name']] == 'double');}))
+		//	.enter().append("option")
+		//		.attr("value", function(d) { return d['name'];})
+		//		.text(function(d) { return d['name'];});
 		zaxisselect.val(z_label);
 
 		//
@@ -326,6 +390,7 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 		// 
 		// notice that I use "self" instead of "this".
 		//
+/*
 		(function() {
 			var selectedval = z_label;
 			$("#"+self.rootid+" .zlabel select").change(function() {
@@ -346,8 +411,64 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 
 				self.render(_data, newlabels,_types, opts);
 			});
-		})();
+		})();*/
 	}
+
+	//
+	// I create and execute this anonymous function so
+	// selectedval will be private to and accessible by the .change() callback function
+	// Manually set the new labels and call render_scatterplot again
+	// 
+	// notice that I use "self" instead of "this".
+	//
+	(function() {
+		var selectedzval = z_label; // get the previous values
+		var selectedxval = x_label;
+		var selectedyval = y_label;
+		var inv = 'inv' in _labels ? _labels['inv'] : [false,false,false];
+		console.log(['inv' in _labels,'x' in _labels]);
+		$("#"+self.rootid+" input#vis-update-submit").off('click');
+		$("#"+self.rootid+" input#vis-update-submit").click(function() {
+			var zval = '';//$("#"+self.rootid+" .zlabel select").val();
+			var yval = '';//$("#"+self.rootid+" .zlabel select").val();
+			var xval = '';//$("#"+self.rootid+" .zlabel select").val();
+
+			var inv_new = [false,false,false];
+			console.log(["old radio vals: ",inv]);
+			if(self.selectz) {
+				zval = $("#"+self.rootid+" .zlabel select").val(); // should be the same as before
+				inv_new[2]= $("#"+self.rootid+" input:radio[name='zlabel-radio']:checked").val() !== "";
+			}
+			if(self.selecty) {
+				yval = $("#"+self.rootid+" .ylabel select").val(); // should be the same as before
+				inv_new[1]= $("#"+self.rootid+" input:radio[name='ylabel-radio']:checked").val() !== "";
+			}
+			if(self.selectx) {
+				xval = $("#"+self.rootid+" .xlabel select").val(); // should be the same as before
+				inv_new[0]= $("#"+self.rootid+" input:radio[name='xlabel-radio']:checked").val() !== "";
+			}
+			console.log(["selected options", zval,yval,xval]);
+			console.log(["new radio vals: ",inv_new]);
+			// if the values haven't changed
+			if ((!self.selectz || ((zval === selectedzval) && (inv[2] === inv_new[2]))) 
+				&& (!self.selecty || ((yval === selectedyval) && (inv[1] === inv_new[1]))) 
+				&& (!self.selectx || ((xval === selectedxval)  && (inv[0] === inv_new[0])))) return false;
+			selectedxval = xval;
+			selectedyval = yval;
+			selectedzval = zval;
+			for(var i = 0; i <= 2; i++) {
+				inv[i]= inv_new[i];
+			}
+			//inv = inv_new;
+
+			console.log(["changed radio vals: ",inv]);
+			var newlabels = {"z" : zval,"y": yval, "x":xval, "names" : _labels.names,'dimnames':_labels.dimnames,'dimwidths':_labels.dimwidths,'dimbases':_labels.dimbases,
+				"max":_labels.max,"min":_labels.min, "inv":inv	};
+			
+			self.render(_data, newlabels,_types, opts);
+			return false;
+		});
+	})();
 
 	return {'x_label':x_label,'y_label':y_label,'z_label':z_label};
 }
@@ -357,6 +478,9 @@ used only to change the data view. all other objects should stay the same
 */
 QVis.Graph.prototype.mini_render = function(_data, _labels,_types, opts) {
 	this.jsvg.empty();
+	this.map.empty();
+	this.map.append('<div></div>');
+	this.brush = null;
 }
 
 /*

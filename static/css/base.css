@@ -62,6 +62,10 @@ div.xlabel, div.ylabel, div.zlabel {
 	text-align: center;
 }
 
+div#update-submit-div {
+	text-align: center;
+}
+
 #rawdata {
 	height: 300px;
 	overflow-y: scroll;

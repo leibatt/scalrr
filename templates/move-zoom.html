@@ -56,24 +56,32 @@
 		<div id="map" class=".hide-element">
 			<div></div>
 		</div>
-		<div name="xlabel" class="xlabel">
-			<div id="xlabel-radio">
-				<input type="radio" id="xlabel-radio1" name="xlabel-radio" /><label for="xlabel-radio1">invert</label>
-				<input type="radio" id="xlabel-radio2" name="xlabel-radio" checked="checked" /><label for="xlabel-radio2">none</label>
+		<form>
+			<div name="xlabel" class="xlabel">
+				<label for="xaxis-select" id="xlabel-select">x Axis: </label>
+				<div id="xlabel-radio">
+					<input type="radio" id="xlabel-radio1" name="xlabel-radio" value="invert"/><label for="xlabel-radio1">invert</label>
+					<input type="radio" id="xlabel-radio2" name="xlabel-radio" checked="checked"  value=""/><label for="xlabel-radio2">none</label>
+				</div>
 			</div>
-		</div>
-		<div name="ylabel" class="ylabel">
-			<div id="ylabel-radio">
-				<input type="radio" id="ylabel-radio1" name="ylabel-radio" /><label for="ylabel-radio1">invert</label>
-				<input type="radio" id="ylabel-radio2" name="ylabel-radio" checked="checked" /><label for="ylabel-radio2">none</label>
+			<div name="ylabel" class="ylabel">
+				<label for="yaxis-select" id="ylabel-select">y Axis: </label>
+				<div id="ylabel-radio">
+					<input type="radio" id="ylabel-radio1" name="ylabel-radio" value="invert"/><label for="ylabel-radio1">invert</label>
+					<input type="radio" id="ylabel-radio2" name="ylabel-radio" checked="checked" value=""/><label for="ylabel-radio2">none</label>
+				</div>
 			</div>
-		</div>
-		<div name="zlabel" class="zlabel">
-			<div id="zlabel-radio">
-				<input type="radio" id="zlabel-radio1" name="zlabel-radio" /><label for="zlabel-radio1">invert</label>
-				<input type="radio" id="zlabel-radio2" name="zlabel-radio" checked="checked" /><label for="zlabel-radio2">none</label>
+			<div name="zlabel" class="zlabel">
+				<label for="zaxis-select" id="zlabel-select">z Axis (color): </label>
+				<div id="zlabel-radio">
+					<input type="radio" id="zlabel-radio1" name="zlabel-radio" value="invert"/><label for="zlabel-radio1">invert</label>
+					<input type="radio" id="zlabel-radio2" name="zlabel-radio" checked="checked" value=""/><label for="zlabel-radio2">none</label>
+				</div>
 			</div>
-		</div>
+			<div id="update-submit-div">
+				<input type="submit" id="vis-update-submit" class="update-submit" value="Submit"></input>
+			</div>
+		</form>
 	</div>
 </body>
 

@@ -100,7 +100,9 @@ def getTileByID(orig_query,tile_id,l,max_l,d,x,xbase,y,ybase,threshold,aggregate
 #d = resolution difference between zoom levels along 1 axis
 #threshold = tile size, used for resolution reduction and tile computation
 #mxn = original array dimensions
-def getTileByIDXY(orig_query,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
+#TODO: just pass qpresults!!!!!
+def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
+	print "tile id request: (",tile_xid,",",tile_yid,")"
 	root_threshold = math.ceil(math.sqrt(threshold)) # assume the tiles are squares
 	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
 	total_xtiles = math.ceil(x/root_threshold) # number of tiles along x axis on the lowest level
@@ -140,16 +142,33 @@ def getTileByIDXY(orig_query,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,thresho
 	print "current_ytiles: ",total_ytiles_l
 	print "future_xtiles: ",future_xtiles
 	print "future_ytiles: ",future_ytiles
-	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
+	newquery = "select * from subarray(("+orig_query+")"
+	for i in range(n):
+		if i == xid:
+			newquery += "," + str(lower_x)
+		elif i == yid:
+			newquery += "," + str(lower_y)
+		else:
+			newquery += ",0"
+	for i in range(n):
+		if i == xid:
+			newquery += "," + str(upper_x)
+		elif i == yid:
+			newquery += "," + str(upper_y)
+		else:
+			newquery += ",0"
+	newquery += ")"
+	#newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
         newquery = str(newquery)
 	print "newquery: ",newquery
 	sdbioptions = {'db':aggregate_options['db'],'afl':False}
 	qpresults = verifyQuery(newquery,sdbioptions)
+	#print "qpresults:",qpresults
 	sdbioptions['reduce_res'] = qpresults['size'] > threshold
-	if sdbioptions['reduce_res']:
-		aggregate_options['qpresults'] = qpresults
-		aggregate_options['threshold'] = threshold
-		sdbioptions['reduce_options'] = aggregate_options
+	#if sdbioptions['reduce_res']:
+	aggregate_options['qpresults'] = qpresults
+	aggregate_options['resolution'] = threshold
+	sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
 	result[1]['total_xtiles'] = total_xtiles_l
 	result[1]['total_ytiles'] = total_ytiles_l
@@ -271,9 +290,11 @@ def check_query_plan(queryplan):
 			name = s.split('=')[0]
 			if name.find("(") != -1:
 				name = name[:name.find("(")]
+				name = "dims."+name
 				rangewidth = int(range)
 				bases[name] = 1 #1 by default
 			else:
+				name = "dims."+name
 				rangevals = range.split(':')
 				rangewidth = int(rangevals[1]) - int(rangevals[0]) + 1
 				bases[name]=rangevals[0];
@@ -397,6 +418,7 @@ def reduce_resolution(query,options):
 	db = options['db']
 	reduce_type = options['reduce_type']
 	qpresults = options['qpresults']
+	print "qpresults:",qpresults
 	#add common reduce function options
 	reduce_options = {'afl':options['afl'],'qpsize':qpresults['size']}
 	if 'resolution' in options:
@@ -717,7 +739,8 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 			for dimindex in range(len(currpos)):
 				dname = dimnames[dimindex]
 				dimobj[dname[:len(dname)-origarrnamelen]] = currpos[dimindex] # make sure you take off the array's name from each dimension
-				dataobj["dims."+dname[:len(dname)-origarrnamelen]] = currpos[dimindex]
+				#dataobj["dims."+dname[:len(dname)-origarrnamelen]] = currpos[dimindex]
+				dataobj[dname[:len(dname)-origarrnamelen]] = currpos[dimindex]
 			attrobj = {} #empty dictionary for the attribute values
 			#print  "start"
 			minval = None
@@ -761,7 +784,8 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 		namesobj.append({'name':"attrs."+attrname,'isattr':True})
 		typesobj["attrs."+attrname] = attrs[attri].getType()
 	for dimname in dimnames:
-		ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
+		#ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
+		ndimname = dimname[:len(dimname)-origarrnamelen]
 		namesobj.append({'name':ndimname,'isattr':False})
 		typesobj[ndimname] = "int32"
 	#for attri in range(len(attrnames)):

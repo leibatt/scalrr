@@ -65,9 +65,11 @@ def process_request(inputstring):
         options = request['options']
         tile_xid = int(request['tile_xid'])
         tile_yid = int(request['tile_yid'])
+	x_label = request['x_label']
+	y_label = request['y_label']
 	level = int(request['level'])
         print "fetching tile"
-        response = fetch_tile(tile_xid,tile_yid,level,options)
+        response = fetch_tile(tile_xid,tile_yid,x_label,y_label,level,options)
     else:
         raise Exception("unrecognized function passed")
     #dbclose()
@@ -179,7 +181,7 @@ def fetch_first_tile(userquery,options):
 	return tile
 
 #this is called after original query is run
-def fetch_tile(tile_xid,tile_yid,level,options):
+def fetch_tile(tile_xid,tile_yid,x_label,y_label,level,options):
 	global expert_threads
 	print "stopping experts"
 	sbdata.stop_prefetch.set() #stop the experts
@@ -207,7 +209,7 @@ def fetch_tile(tile_xid,tile_yid,level,options):
 	#otherwise go get the tile	
 	if tile is None:
 		print "tile not found, fetching from database"
-		tile = ti.getTileByIDXY(tile_xid,tile_yid,level,user_id)
+		tile = ti.getTileByIDXY_Labels(tile_xid,tile_yid,x_label,y_label,level,user_id)
 	with sbdata.user_history_lock: # add tile to history
 		if user_id not in sbdata.user_history:
 			sbdata.user_history[user_id] = []
