@@ -452,7 +452,7 @@ def daggregate(query,options):
 			attraggs+= "avg("+str(attrs[i])+") as avg_"+attrs[i]
 			attraggs+= ", min("+str(attrs[i])+") as min_"+attrs[i] # need for the color scale
 			attraggs+= ", max("+str(attrs[i])+") as max_"+attrs[i] # need for the color scale
-	final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
+	final_query = "select "+attraggs+" from ("+ final_query +") as my_array regrid "+chunks
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
 	#	
 	#final_query = "regrid(("+final_query+"),"+chunks+","+attraggs+")" # afl
