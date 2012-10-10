@@ -10,6 +10,7 @@ from datetime import datetime
 LOGICAL_PHYSICAL = "explain_physical"
 RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','FILTER':'filter','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
 AGGR_CHUNK_DEFAULT = 10
+TILE_AGGR_CHUNK_DEFAULT = 1 # don't aggregate if we're at the lowest zoom level
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
 D3_DATA_THRESHOLD = 10000
@@ -53,6 +54,7 @@ def getTile(orig_query,cx,cy,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_optio
 	if sdbioptions['reduce_res']:
 		aggregate_options['threshold'] = threshold
 		aggregate_options['qpresults'] = qpresults
+		aggregate_options['tile'] = True
 		sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
 	result[1]['total_tiles'] = total_tiles
@@ -88,10 +90,96 @@ def getTileByID(orig_query,tile_id,l,max_l,d,x,xbase,y,ybase,threshold,aggregate
 	if sdbioptions['reduce_res']:
 		aggregate_options['qpresults'] = qpresults
 		aggregate_options['threshold'] = threshold
+		aggregate_options['tile'] = True
 		sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
 	result[1]['total_tiles'] = total_tiles
 	result[1]['total_tiles_root'] = total_tiles_root
+	return result
+
+#orig_query = original user query
+#cx,cy= center
+#l = current zoom level
+#d = resolution difference between zoom levels along 1 axis
+#threshold = tile size, used for resolution reduction and tile computation
+#mxn = original array dimensions
+#TODO: just pass qpresults!!!!!
+def getTileByDimID(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
+	print "tile id request: (",tile_xid,",",tile_yid,")"
+	root_threshold = math.ceil(math.sqrt(threshold)) # assume the tiles are squares
+	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	total_xtiles = math.ceil(x/root_threshold) # number of tiles along x axis on the lowest level
+	total_ytiles = math.ceil(y/root_threshold) # number of tiles along y axis on the lowest level
+	bottomtiles_per_currenttile = math.pow(d,max_l-l)
+	total_xtiles_l = math.ceil(total_xtiles/bottomtiles_per_currenttile) # number of tiles along the x axis on the current level
+	total_ytiles_l = math.ceil(total_xtiles/bottomtiles_per_currenttile) # number of tiles along the y axis on the current level
+	print "level: ",l,", total levels: ",max_l
+	print "total bottomtiles x: ",total_xtiles
+	print "total bottomtiles y: ",total_ytiles
+	print "root_threshold: ",root_threshold
+	total_tiles = total_xtiles_l * total_ytiles_l
+	if tile_xid < 0 or tile_xid >= total_xtiles_l: #default, get a middle tile
+		tile_xid = int(total_xtiles_l/2)
+	if tile_yid < 0 or tile_yid >= total_ytiles_l: #default, get a middle tile
+		tile_yid = int(total_ytiles_l/2)
+	tile_width = root_threshold*math.pow(d,max_l-l) # figure out tile dimensions
+	# get future info about the tile
+	lower_x = int(xbase + tile_width*tile_xid)
+	lower_y = int(ybase + tile_width*tile_yid)
+	upper_x = int(lower_x+tile_width)
+	upper_y = int(lower_y+tile_width)
+	bottomtiles_per_currenttile_plus1level = math.pow(d,max_l-min(l+1,max_l))
+	future_xtiles = d # how many tiles at the next zoom level are in this tile along the x axis
+	future_ytiles = d # how many tiles at the next zoom level are in this tile along the y axis
+	print "bottomtiles_per_currenttile: ",bottomtiles_per_currenttile
+	print "bottomtiles_per_currenttile_plus1level: ",bottomtiles_per_currenttile_plus1level
+	if upper_x > (x + xbase): # if this tile contains less than d tiles at the next zoom level (edge case)
+		total_bottomtiles_x_here = total_xtiles - (total_xtiles_l-1)*bottomtiles_per_currenttile
+		print "total_bottomtiles_x_here: ",total_bottomtiles_x_here
+		future_xtiles = math.ceil(total_bottomtiles_x_here/bottomtiles_per_currenttile_plus1level)
+	if upper_y > (y + ybase): # if this tile contains less than d tiles at the next zoom level (edge case)
+		total_bottomtiles_y_here = total_ytiles - (total_ytiles_l-1)*bottomtiles_per_currenttile
+		print "total_bottomtiles_y_here: ",total_bottomtiles_y_here
+		future_ytiles = math.ceil(total_bottomtiles_y_here/bottomtiles_per_currenttile_plus1level)
+	print "current_xtiles: ",total_xtiles_l
+	print "current_ytiles: ",total_ytiles_l
+	print "future_xtiles: ",future_xtiles
+	print "future_ytiles: ",future_ytiles
+	newquery = "select * from subarray(("+orig_query+")"
+	for i in range(n):
+		if i == xid:
+			newquery += "," + str(lower_x)
+		elif i == yid:
+			newquery += "," + str(lower_y)
+		else:
+			newquery += ",0"
+	for i in range(n):
+		if i == xid:
+			newquery += "," + str(upper_x)
+		elif i == yid:
+			newquery += "," + str(upper_y)
+		else:
+			newquery += ",0"
+	newquery += ")"
+	#newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
+        newquery = str(newquery)
+	print "newquery: ",newquery
+	sdbioptions = {'db':aggregate_options['db'],'afl':False}
+	qpresults = verifyQuery(newquery,sdbioptions)
+	#print "qpresults:",qpresults
+	sdbioptions['reduce_res'] = True #qpresults['size'] > threshold
+	#if sdbioptions['reduce_res']:
+	aggregate_options['qpresults'] = qpresults
+	aggregate_options['resolution'] = threshold
+	aggregate_options['tile'] = True
+	sdbioptions['reduce_options'] = aggregate_options
+	result = executeQuery(newquery,sdbioptions)
+	result[1]['total_xtiles'] = total_xtiles_l
+	result[1]['total_ytiles'] = total_ytiles_l
+	result[1]['future_xtiles'] = future_xtiles
+	result[1]['future_ytiles'] = future_ytiles
+	result[1]['total_tiles'] = total_tiles
+	result[1]['total_tiles_root'] = math.sqrt(total_tiles)
 	return result
 
 #orig_query = original user query
@@ -168,6 +256,7 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 	#if sdbioptions['reduce_res']:
 	aggregate_options['qpresults'] = qpresults
 	aggregate_options['resolution'] = threshold
+	aggregate_options['tile'] = True
 	sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
 	result[1]['total_xtiles'] = total_xtiles_l
@@ -206,6 +295,7 @@ def oldgetTileByIDXY(orig_query,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,thre
 	if sdbioptions['reduce_res']:
 		aggregate_options['qpresults'] = qpresults
 		aggregate_options['threshold'] = threshold
+		aggregate_options['tile'] = True
 		sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
 	result[1]['total_tiles'] = total_tiles*total_tiles
@@ -336,7 +426,13 @@ def daggregate(query,options):
 		for i in range(1,len(chunkdims)):
 			chunks += ", "+str(chunkdims[i])
 	elif dimension > 0: # otherwise do default chunks
-		defaultchunkval = math.pow(1.0*options['qpsize']/threshold,1.0/dimension) #if (1.0*options['qpsize']/threshold) > 1 else AGGR_CHUNK_DEFAULT
+		quotient = 1.0*options['qpsize']/threshold # approximate number of base tiles
+		defaultchunkval = math.pow(quotient,1.0/dimension)
+		if quotient < 1.0:
+			if ('tile' in options) and options['tile']:
+				defaultchunkval = TILE_AGGR_CHUNK_DEFAULT
+			else:
+				defaultchunkval = AGGR_CHUNK_DEFAULT
 		defaultchunkval = int(math.ceil(defaultchunkval)) # round up
 		chunks += str(defaultchunkval)
 		for i in range(1,dimension) :
@@ -421,6 +517,8 @@ def reduce_resolution(query,options):
 	print "qpresults:",qpresults
 	#add common reduce function options
 	reduce_options = {'afl':options['afl'],'qpsize':qpresults['size']}
+	if 'tile' in options:
+		reduce_options['tile'] = options['tile']
 	if 'resolution' in options:
 		reduce_options['threshold'] = options['resolution']
         query = re.sub(r"[^\\](\'|\")","\\\1",query) #escape single and double quotes

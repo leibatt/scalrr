@@ -467,6 +467,7 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 			var newlabels = {"z" : zval,"y": yval, "x":xval, "names" : _labels.names,'dimnames':_labels.dimnames,'dimwidths':_labels.dimwidths,'dimbases':_labels.dimbases,
 				"max":_labels.max,"min":_labels.min, "inv":inv	};
 			
+			// TODO: this is the wrong _data variable! where is the updated one?
 			self.render(_data, newlabels,_types, opts);
 			return false;
 		});
@@ -678,7 +679,7 @@ QVis.Graph.prototype.drawRects = function(container,_data,_types,xscale,yscale,x
 		.attr('width', function(d) { return width(temp.get_data_obj(d[x_label],_types[x_label]))})
 		.attr('height', function(d) { return height(temp.get_data_obj(d[x_label],_types[x_label]))})
 		.attr('fill', function(d) { return color(d);})
-		.attr('label', function(d,i) {return i;});
+		.attr('label', function(d,i) {return "("+temp.get_data_obj(d[y_label],_types[y_label])+","+temp.get_data_obj(d[x_label],_types[x_label])+") = "+color(d);});
 }
 
 QVis.Graph.prototype.drawLines = function(container,_data,_types,xscale,yscale) {

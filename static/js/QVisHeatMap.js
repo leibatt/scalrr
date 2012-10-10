@@ -40,7 +40,11 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	console.log(Number(_labels.dimwidths[ydimname]+_labels.dimbases[ydimname]));
 	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer.GnBu[9]);
 	if((self.labelsfrombase.z_label in this.min) && (self.labelsfrombase.z_label in this.max)) {
-		self.zscale.domain([this.max[self.labelsfrombase.z_label],this.min[self.labelsfrombase.z_label]]);
+		if(this.inv[2]){
+			self.zscale.domain([this.max[self.labelsfrombase.z_label],this.min[self.labelsfrombase.z_label]]);
+		} else {
+			self.zscale.domain([this.min[self.labelsfrombase.z_label],this.max[self.labelsfrombase.z_label]]);
+		}
 	}
 	//var xscale = d3.scale.linear().domain([Number(_labels.dimbases[xdimname]),Number(_labels.dimwidths[xdimname])+Number(_labels.dimbases[xdimname])]).range([this.px,this.w-this.px]);
 	//var yscale = d3.scale.linear().domain([Number(_labels.dimwidths[ydimname])+Number(_labels.dimbases[ydimname]),Number(_labels.dimbases[ydimname])]).range([this.py,this.h-this.py]);
@@ -97,7 +101,11 @@ QVis.HeatMap.prototype.mini_render = function(_data, _labels,_types, opts) {
 	console.log(Number(_labels.dimwidths[ydimname]+_labels.dimbases[ydimname]));
 	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer.GnBu[9]);
 	if((self.labelsfrombase.z_label in this.min) && (self.labelsfrombase.z_label in this.max)) {
-		self.zscale.domain([this.max[self.labelsfrombase.z_label],this.min[self.labelsfrombase.z_label]]);
+		if(this.inv[2]){
+			self.zscale.domain([this.max[self.labelsfrombase.z_label],this.min[self.labelsfrombase.z_label]]);
+		} else {
+			self.zscale.domain([this.min[self.labelsfrombase.z_label],this.max[self.labelsfrombase.z_label]]);
+		}
 	}
 	//var xscale = d3.scale.linear().domain([Number(_labels.dimbases[xdimname]),Number(_labels.dimwidths[xdimname])+Number(_labels.dimbases[xdimname])]).range([this.px,this.w-this.px]);
 	//var yscale = d3.scale.linear().domain([Number(_labels.dimwidths[ydimname])+Number(_labels.dimbases[ydimname]),Number(_labels.dimbases[ydimname])]).range([this.py,this.h-this.py]);

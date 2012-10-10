@@ -165,7 +165,7 @@ $(document).ready(function() {
 			x_offset = future_xtiles - x_offset - 1;
 		}
 		if(renderagg.inv[1]) {
-			x_offset = future_ytiles - y_offset - 1;
+			y_offset = future_ytiles - y_offset - 1;
 		}
 		
 		x = current_x * zoom_diff + x_offset;
