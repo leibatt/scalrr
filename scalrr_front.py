@@ -10,6 +10,7 @@ import sys
 import uuid
 app = Flask(__name__)
 
+#TODO: put this info in a config file
 #HOST = 'modis.csail.mit.edu'    # The remote host
 HOST = 'localhost'
 PORT = 50007              # The same port as used by the server

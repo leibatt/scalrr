@@ -198,6 +198,8 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 	bottomtiles_per_currenttile = math.pow(d,max_l-l)
 	total_xtiles_l = math.ceil(total_xtiles/bottomtiles_per_currenttile) # number of tiles along the x axis on the current level
 	total_ytiles_l = math.ceil(total_xtiles/bottomtiles_per_currenttile) # number of tiles along the y axis on the current level
+	total_xtiles_lexact = 1.0*total_xtiles/bottomtiles_per_currenttile
+	total_ytiles_lexact = 1.0*total_ytiles/bottomtiles_per_currenttile
 	print "level: ",l,", total levels: ",max_l
 	print "total bottomtiles x: ",total_xtiles
 	print "total bottomtiles y: ",total_ytiles
@@ -216,18 +218,27 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 	bottomtiles_per_currenttile_plus1level = math.pow(d,max_l-min(l+1,max_l))
 	future_xtiles = d # how many tiles at the next zoom level are in this tile along the x axis
 	future_ytiles = d # how many tiles at the next zoom level are in this tile along the y axis
+	future_xtiles_exact = future_xtiles
+	future_ytiles_exact = future_ytiles
 	print "bottomtiles_per_currenttile: ",bottomtiles_per_currenttile
 	print "bottomtiles_per_currenttile_plus1level: ",bottomtiles_per_currenttile_plus1level
 	if upper_x > (x + xbase): # if this tile contains less than d tiles at the next zoom level (edge case)
-		total_bottomtiles_x_here = total_xtiles - (total_xtiles_l-1)*bottomtiles_per_currenttile
+		total_bottomtiles_x_here = total_xtiles - (1.0*total_xtiles_l-1)*bottomtiles_per_currenttile
 		print "total_bottomtiles_x_here: ",total_bottomtiles_x_here
-		future_xtiles = math.ceil(total_bottomtiles_x_here/bottomtiles_per_currenttile_plus1level)
+		future_xtiles_exact = total_bottomtiles_x_here/bottomtiles_per_currenttile_plus1level
+		future_xtiles = math.ceil(future_xtiles_exact)
+	print "upper_y:",upper_y,"y:",y,"ybase:",ybase
 	if upper_y > (y + ybase): # if this tile contains less than d tiles at the next zoom level (edge case)
-		total_bottomtiles_y_here = total_ytiles - (total_ytiles_l-1)*bottomtiles_per_currenttile
+		total_bottomtiles_y_here = total_ytiles - (1.0*total_ytiles_l-1)*bottomtiles_per_currenttile
 		print "total_bottomtiles_y_here: ",total_bottomtiles_y_here
-		future_ytiles = math.ceil(total_bottomtiles_y_here/bottomtiles_per_currenttile_plus1level)
+		future_ytiles_exact = total_bottomtiles_y_here/bottomtiles_per_currenttile_plus1level
+		future_ytiles = math.ceil(future_ytiles_exact)
 	print "current_xtiles: ",total_xtiles_l
 	print "current_ytiles: ",total_ytiles_l
+	print "current_xtiles_exact: ",total_xtiles_l
+	print "current_ytiles_exact: ",total_ytiles_l
+	print "future_xtiles_exact: ",future_xtiles_exact
+	print "future_ytiles_exact: ",future_ytiles_exact
 	print "future_xtiles: ",future_xtiles
 	print "future_ytiles: ",future_ytiles
 	newquery = "select * from subarray(("+orig_query+")"
@@ -265,6 +276,10 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 	result[1]['future_ytiles'] = future_ytiles
 	result[1]['total_tiles'] = total_tiles
 	result[1]['total_tiles_root'] = math.sqrt(total_tiles)
+	result[1]['total_xtiles_exact'] = total_xtiles_lexact
+	result[1]['total_ytiles_exact'] = total_ytiles_lexact
+	result[1]['future_xtiles_exact'] = future_xtiles_exact
+	result[1]['future_ytiles_exact'] = future_ytiles_exact
 	return result
 
 #orig_query = original user query
@@ -435,8 +450,10 @@ def daggregate(query,options):
 				defaultchunkval = AGGR_CHUNK_DEFAULT
 		defaultchunkval = int(math.ceil(defaultchunkval)) # round up
 		chunks += str(defaultchunkval)
+		#chunks += options['dimnames'][0]+" "+ str(defaultchunkval)
 		for i in range(1,dimension) :
 			chunks += ", "+str(defaultchunkval)
+			#chunks += ", "+ options['dimnames'][i]+" "+ str(defaultchunkval)
 	# need to escape apostrophes or the new query will break
 	attrs = options['attrs']
 	#final_query = re.sub("(')","\\\1",final_query)
@@ -452,7 +469,8 @@ def daggregate(query,options):
 			attraggs+= "avg("+str(attrs[i])+") as avg_"+attrs[i]
 			attraggs+= ", min("+str(attrs[i])+") as min_"+attrs[i] # need for the color scale
 			attraggs+= ", max("+str(attrs[i])+") as max_"+attrs[i] # need for the color scale
-	final_query = "select "+attraggs+" from ("+ final_query +") as my_array regrid "+chunks
+	final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
+	#final_query = "select "+attraggs+" from ("+ final_query +") regrid as ( partition by "+chunks
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
 	#	
 	#final_query = "regrid(("+final_query+"),"+chunks+","+attraggs+")" # afl
@@ -528,6 +546,7 @@ def reduce_resolution(query,options):
 		reduce_options['numdims'] = qpresults['numdims']
 		reduce_options['attrs'] = qpresults['attrs']['names']
 		reduce_options['attrtypes'] = qpresults['attrs']['types']
+		reduce_options['dimnames'] = qpresults['dims']
 		newquery = daggregate(query,reduce_options)
 	elif reduce_type == RESTYPE['SAMPLE']:
 		if 'probability' in options:

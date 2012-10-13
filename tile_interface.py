@@ -80,6 +80,10 @@ def getTileHelper(tile_info,l,user_id):
 	queryresultarr['future_ytiles'] = saved_qpresults['future_ytiles']
 	queryresultarr['total_tiles_root'] = total_tiles_root
 	queryresultarr['zoom_diff'] = sbdata.default_diff
+	queryresultarr['total_xtiles_exact'] = saved_qpresults['total_xtiles_exact']
+	queryresultarr['total_ytiles_exact'] = saved_qpresults['total_ytiles_exact']
+	queryresultarr['future_xtiles_exact'] = saved_qpresults['future_xtiles_exact']
+	queryresultarr['future_ytiles_exact'] = saved_qpresults['future_ytiles_exact']
 	sdbi.scidbCloseConn(db)
 	return queryresultarr
 

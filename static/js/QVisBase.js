@@ -680,6 +680,10 @@ QVis.Graph.prototype.drawRects = function(container,_data,_types,xscale,yscale,x
 		.attr('height', function(d) { return height(temp.get_data_obj(d[x_label],_types[x_label]))})
 		.attr('fill', function(d) { return color(d);})
 		.attr('label', function(d,i) {return "("+temp.get_data_obj(d[y_label],_types[y_label])+","+temp.get_data_obj(d[x_label],_types[x_label])+") = "+color(d);});
+/*
+	container.selectAll('rect')
+		.on("click",function(d,i){console.log(d3.mouse(this))});
+*/
 }
 
 QVis.Graph.prototype.drawLines = function(container,_data,_types,xscale,yscale) {

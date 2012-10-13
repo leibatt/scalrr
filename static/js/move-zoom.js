@@ -13,8 +13,11 @@ var total_tiles_root = 1;
 var zoom_diff = 2;
 var future_xtiles= 1;
 var future_ytiles = 1;
+var future_xtiles_exact = 1;
+var future_ytiles_exact= 1;
 
 var menutype;
+var once =0;
 
 $(document).ready(function() {
 	$('#sql-query-submit').on('click',user_query_handler);
@@ -22,8 +25,8 @@ $(document).ready(function() {
 	$('#button-down').on('click',move_down);
 	$('#button-left').on('click',move_left);
 	$('#button-right').on('click',move_right);
-	$('#button-zoom-out').on('click',zoom_out);
-	$('#button-zoom-in').on('click',zoom_in);
+	//$('#button-zoom-out').on('click',zoom_out);
+	//$('#button-zoom-in').on('click',zoom_in);
 	$('.nav-button').button();
 
 	function move_up() {
@@ -168,8 +171,46 @@ $(document).ready(function() {
 			y_offset = future_ytiles - y_offset - 1;
 		}
 		
-		x = current_x * zoom_diff + x_offset;
-		y = current_y * zoom_diff + y_offset;
+		var x = current_x * zoom_diff + x_offset;
+		var y = current_y * zoom_diff + y_offset;
+		zoom = current_zoom + 1;
+		if(zoom >= max_zoom) {
+			zoom = max_zoom - 1;
+		}
+		if(zoom != current_zoom) { // if we're actually going somewhere else
+			$.getJSON('/fetch-tile',{tile_xid: x,tile_yid:y,level:zoom,
+					x_label:renderagg.labelsfrombase.x_label,y_label:renderagg.labelsfrombase.y_label},function(jsondata){
+				console.log(jsondata);
+				redraw_graph(jsondata);
+			});
+			console.log("zoom in: "+current_x+","+current_y+","+current_zoom+"-->"+x+","+y+","+zoom);
+			current_y = y;
+			current_x = x;
+			current_zoom = zoom;
+		}
+		return false;
+	}
+
+	function zoom_in2(x_offset,y_offset) {
+		if(x_offset < 0) {
+			x_offset = 0;
+		} else if (x_offset >= future_xtiles) {
+			x_offset = future_xtiles - 1;
+		}
+		if(y_offset < 0) {
+			y_offset = 0;
+		} else if (y_offset >= future_ytiles) {
+			y_offset = future_ytiles - 1;
+		}
+		if(renderagg.inv[0]) {
+			x_offset = future_xtiles - x_offset - 1;
+		}
+		if(renderagg.inv[1]) {
+			y_offset = future_ytiles - y_offset - 1;
+		}
+		
+		var x = current_x * zoom_diff + x_offset;
+		var y = current_y * zoom_diff + y_offset;
 		zoom = current_zoom + 1;
 		if(zoom >= max_zoom) {
 			zoom = max_zoom - 1;
@@ -191,6 +232,7 @@ $(document).ready(function() {
 	function user_query_handler() {
 		max_zoom = QVis.DEFAULT_MAX_ZOOM;
 		num_tiles = 1;
+		once = 0;
 		if(renderagg) {
 			renderagg.clear();
 		}
@@ -232,13 +274,43 @@ $(document).ready(function() {
 		total_tiles = jsondata['total_tiles'];
 		total_xtiles = jsondata['total_xtiles'];
 		total_ytiles = jsondata['total_ytiles'];
+		future_xtiles_exact = jsondata['future_xtiles_exact'];
+		future_ytiles_exact = jsondata['future_ytiles_exact'];
 		total_tiles_root = jsondata['total_tiles_root'];
 		future_xtiles = jsondata['future_xtiles'];
 		future_ytiles = jsondata['future_ytiles'];
 		console.log("max zoom, total tiles, total tiles root: "+max_zoom+","+total_tiles+","+total_tiles_root);
 		console.log("total x/y tiles: ",total_xtiles+","+total_ytiles);
 		console.log("future x/y tiles: ",future_xtiles+","+future_ytiles);
+
+		if(once == 1) {
+			once += 1;
+			(function() {
+				var mini_render = renderagg.mini_render;
+				renderagg.mini_render = function(_data, _labels,_types, opts) {
+					mini_render.apply(this,[_data, _labels,_types, opts]);
+					$('svg rect').off();
+					$('svg rect').unbind();
+					renderagg.rectcontainer.selectAll('rect')
+						.on("click",function(d,i){return check_zoom_in(d3.mouse(this));});
+
+					$('svg rect')
+						.bind("contextmenu",function(e) { return zoom_out();});
+				}
+
+
+			})();
+		}
 		renderagg.mini_render(data, labels,types);
+
+/*
+		renderagg.mini_render(data, labels,types);
+		renderagg.rectcontainer.selectAll('rect')
+			.on("click",function(d,i){return check_zoom_in(d3.mouse(this));});
+
+		$('svg rect')
+			.bind("contextmenu",function(e) { return zoom_out();});
+*/
 	}
 
 	function draw_graph(jsondata) {
@@ -298,9 +370,51 @@ $(document).ready(function() {
 		total_tiles_root = jsondata['total_tiles_root'];
 		total_xtiles = jsondata['total_xtiles'];
 		total_ytiles = jsondata['total_ytiles'];
+		future_xtiles_exact = jsondata['future_xtiles_exact'];
+		future_ytiles_exact = jsondata['future_ytiles_exact'];
 		future_xtiles = jsondata['future_xtiles'];
 		future_ytiles = jsondata['future_ytiles'];
 		console.log("max zoom, total tiles, total tiles root: "+max_zoom+","+total_tiles+","+total_tiles_root);
+
+		if(once == 0){
+			once += 1;
+			(function() {
+				var render = renderagg.render;
+				renderagg.render = function(_data, _labels,_types, _opts) {
+					render.apply(this,[_data, _labels,_types, _opts]);
+					$('svg rect').off();
+					$('svg rect').unbind();
+					renderagg.rectcontainer.selectAll('rect')
+						.on("click",function(d,i){return check_zoom_in(d3.mouse(this));});
+
+					$('svg rect')
+						.bind("contextmenu",function(e) { return zoom_out();});
+				}
+
+
+			})();
+		}
+
 		renderagg.render(data, labels,types);
+	}
+
+	function check_zoom_in(coords) {
+		console.log(["coords:",coords]);
+		// cut up the space according to the size of the tiles
+		var width = 1.0*renderagg.w / future_xtiles_exact;
+		var height = 1.0*renderagg.h / future_ytiles_exact;
+		var xdim = 1.0*coords[0] - renderagg.px;
+		var ydim = 1.0*coords[1] - renderagg.py;
+		if(renderagg.inv[0]) {
+			xdim = 1.0*renderagg.w - xdim;
+		}
+		if(renderagg.inv[1]){
+			ydim= 1.0*renderagg.h-ydim;
+		}
+
+		var xindex = Math.floor(xdim / width);
+		var yindex = Math.floor(ydim / height);
+		console.log(["width",width,"height",height,"xdim",xdim,"ydim",ydim,"xindex",xindex,"yindex",yindex,"future_xtiles_exact",future_xtiles_exact,"future_ytiles_exact",future_ytiles_exact]);
+		return zoom_in2(xindex,yindex);
 	}
 });

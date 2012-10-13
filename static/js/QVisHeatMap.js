@@ -77,14 +77,13 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 		function(d){return Math.max(1,(self.h-2*self.py)/(_labels.dimwidths[ydimname]-1));},
 		function(d) {return self.zscale(d[self.labelsfrombase.z_label]);});
 
-	this.add_brush(xscale,yscale,/*'dims.'+*/xdimname,/*'dims.'+*/ydimname,function(d) {return self.zscale(d[self.labelsfrombase.z_label]);},this.rectcontainer);
+	//this.add_brush(xscale,yscale,/*'dims.'+*/xdimname,/*'dims.'+*/ydimname,function(d) {return self.zscale(d[self.labelsfrombase.z_label]);},this.rectcontainer);
 
 }
 
 QVis.HeatMap.prototype.mini_render = function(_data, _labels,_types, opts) {
-	this.draw_obj = "rect";
-	
 	var self = this;
+	this.draw_obj = "rect";
 	
 	//call the original mini_render function
 	QVis.HeatMap.base.mini_render.call(this,_data,_labels,_types,opts);
@@ -138,6 +137,6 @@ QVis.HeatMap.prototype.mini_render = function(_data, _labels,_types, opts) {
 		function(d){return Math.max(1,(self.h-2*self.py)/(_labels.dimwidths[ydimname]-1));},
 		function(d) {return self.zscale(d[self.labelsfrombase.z_label]);});
 
-	this.add_brush(xscale,yscale,/*'dims.'+*/xdimname,/*'dims.'+*/ydimname,function(d) {return self.zscale(d[self.labelsfrombase.z_label]);},this.rectcontainer);
+	//this.add_brush(xscale,yscale,/*'dims.'+*/xdimname,/*'dims.'+*/ydimname,function(d) {return self.zscale(d[self.labelsfrombase.z_label]);},this.rectcontainer);
 
 }
