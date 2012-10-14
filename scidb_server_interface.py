@@ -104,62 +104,44 @@ def getTileByID(orig_query,tile_id,l,max_l,d,x,xbase,y,ybase,threshold,aggregate
 #threshold = tile size, used for resolution reduction and tile computation
 #mxn = original array dimensions
 #TODO: just pass qpresults!!!!!
-def getTileByDimID(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
-	print "tile id request: (",tile_xid,",",tile_yid,")"
-	root_threshold = math.ceil(math.sqrt(threshold)) # assume the tiles are squares
+def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate_options): # zero-based indexing
+	print "tile id request: (",tile_id,")"
+	root_threshold = math.ceil(math.pow(threshold,1.0/n)) # assume the tiles are squares
 	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
-	total_xtiles = math.ceil(x/root_threshold) # number of tiles along x axis on the lowest level
-	total_ytiles = math.ceil(y/root_threshold) # number of tiles along y axis on the lowest level
+	total_tiles = [1.0]*n
+	total_tiles_l = [1.0]*n
+	lower = [0]*n
+	upper= [0]*n
+	future_tiles = [d]*n
+	future_tiles_exact = [d]*n
+	total = 1
 	bottomtiles_per_currenttile = math.pow(d,max_l-l)
-	total_xtiles_l = math.ceil(total_xtiles/bottomtiles_per_currenttile) # number of tiles along the x axis on the current level
-	total_ytiles_l = math.ceil(total_xtiles/bottomtiles_per_currenttile) # number of tiles along the y axis on the current level
-	print "level: ",l,", total levels: ",max_l
-	print "total bottomtiles x: ",total_xtiles
-	print "total bottomtiles y: ",total_ytiles
-	print "root_threshold: ",root_threshold
-	total_tiles = total_xtiles_l * total_ytiles_l
-	if tile_xid < 0 or tile_xid >= total_xtiles_l: #default, get a middle tile
-		tile_xid = int(total_xtiles_l/2)
-	if tile_yid < 0 or tile_yid >= total_ytiles_l: #default, get a middle tile
-		tile_yid = int(total_ytiles_l/2)
-	tile_width = root_threshold*math.pow(d,max_l-l) # figure out tile dimensions
-	# get future info about the tile
-	lower_x = int(xbase + tile_width*tile_xid)
-	lower_y = int(ybase + tile_width*tile_yid)
-	upper_x = int(lower_x+tile_width)
-	upper_y = int(lower_y+tile_width)
 	bottomtiles_per_currenttile_plus1level = math.pow(d,max_l-min(l+1,max_l))
-	future_xtiles = d # how many tiles at the next zoom level are in this tile along the x axis
-	future_ytiles = d # how many tiles at the next zoom level are in this tile along the y axis
+	tile_width = root_threshold*math.pow(d,max_l-l) # figure out tile dimensions
+	print "level: ",l,", total levels: ",max_l
+	print "total bottomtiles: ",total_tiles
+	print "root_threshold: ",root_threshold
 	print "bottomtiles_per_currenttile: ",bottomtiles_per_currenttile
 	print "bottomtiles_per_currenttile_plus1level: ",bottomtiles_per_currenttile_plus1level
-	if upper_x > (x + xbase): # if this tile contains less than d tiles at the next zoom level (edge case)
-		total_bottomtiles_x_here = total_xtiles - (total_xtiles_l-1)*bottomtiles_per_currenttile
-		print "total_bottomtiles_x_here: ",total_bottomtiles_x_here
-		future_xtiles = math.ceil(total_bottomtiles_x_here/bottomtiles_per_currenttile_plus1level)
-	if upper_y > (y + ybase): # if this tile contains less than d tiles at the next zoom level (edge case)
-		total_bottomtiles_y_here = total_ytiles - (total_ytiles_l-1)*bottomtiles_per_currenttile
-		print "total_bottomtiles_y_here: ",total_bottomtiles_y_here
-		future_ytiles = math.ceil(total_bottomtiles_y_here/bottomtiles_per_currenttile_plus1level)
-	print "current_xtiles: ",total_xtiles_l
-	print "current_ytiles: ",total_ytiles_l
-	print "future_xtiles: ",future_xtiles
-	print "future_ytiles: ",future_ytiles
+	for i in range(n):
+		total_tiles[i] = math.ceil(1.0*widths[i]/root_threshold) # number of tiles along dimension i on the lowest level
+		total_tiles_l[i] = math.ceil(1.0*total_tiles[i]/bottomtiles_per_currenttile)
+		total *= total_tiles_l[i]
+		lower[i] = int(bases[i]+tile_width*tile_id[i])
+		upper[i] = int(lower[i]+tile_width-1)
+		if upper[i] > (widths[i]+bases[i]-1):
+			upper[i] = bases[i]+widths[i]-1
+			total_bottomtiles_here = total_tiles[i] - (total_tiles_l[i]-1)*bottomtiles_per_currenttile
+			print "total_bottomtiles_here: ",total_bottomtiles_here
+			future_tiles[i] = math.ceil(total_bottomtiles_here/bottomtiles_per_currenttile_plus1level)
+		future_tiles_exact[i] = 1.0*(upper[i]-lower[i])/max(tile_width/2.0,root_threshold)
+	print "current_tiles: ",total_tiles_l
+	print "future_tiles: ",future_tiles
 	newquery = "select * from subarray(("+orig_query+")"
 	for i in range(n):
-		if i == xid:
-			newquery += "," + str(lower_x)
-		elif i == yid:
-			newquery += "," + str(lower_y)
-		else:
-			newquery += ",0"
+		newquery += "," + str(lower[i])
 	for i in range(n):
-		if i == xid:
-			newquery += "," + str(upper_x)
-		elif i == yid:
-			newquery += "," + str(upper_y)
-		else:
-			newquery += ",0"
+		newquery += "," + str(upper[i])
 	newquery += ")"
 	#newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
         newquery = str(newquery)
@@ -174,12 +156,9 @@ def getTileByDimID(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yb
 	aggregate_options['tile'] = True
 	sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
-	result[1]['total_xtiles'] = total_xtiles_l
-	result[1]['total_ytiles'] = total_ytiles_l
-	result[1]['future_xtiles'] = future_xtiles
-	result[1]['future_ytiles'] = future_ytiles
-	result[1]['total_tiles'] = total_tiles
-	result[1]['total_tiles_root'] = math.sqrt(total_tiles)
+	result[1]['total_tiles'] = total_tiles_l
+	result[1]['future_tiles'] = future_tiles
+	result[1]['future_tiles_exact'] = future_tiles_exact
 	return result
 
 #orig_query = original user query
@@ -197,7 +176,7 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 	total_ytiles = math.ceil(y/root_threshold) # number of tiles along y axis on the lowest level
 	bottomtiles_per_currenttile = math.pow(d,max_l-l)
 	total_xtiles_l = math.ceil(total_xtiles/bottomtiles_per_currenttile) # number of tiles along the x axis on the current level
-	total_ytiles_l = math.ceil(total_xtiles/bottomtiles_per_currenttile) # number of tiles along the y axis on the current level
+	total_ytiles_l = math.ceil(total_ytiles/bottomtiles_per_currenttile) # number of tiles along the y axis on the current level
 	total_xtiles_lexact = 1.0*total_xtiles/bottomtiles_per_currenttile
 	total_ytiles_lexact = 1.0*total_ytiles/bottomtiles_per_currenttile
 	print "level: ",l,", total levels: ",max_l
@@ -210,29 +189,30 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 	if tile_yid < 0 or tile_yid >= total_ytiles_l: #default, get a middle tile
 		tile_yid = int(total_ytiles_l/2)
 	tile_width = root_threshold*math.pow(d,max_l-l) # figure out tile dimensions
+	print "tile width:",tile_width
 	# get future info about the tile
 	lower_x = int(xbase + tile_width*tile_xid)
 	lower_y = int(ybase + tile_width*tile_yid)
-	upper_x = int(lower_x+tile_width)
-	upper_y = int(lower_y+tile_width)
+	upper_x = min(x+xbase-1,int(lower_x+tile_width-1))
+	upper_y = min(y+ybase-1,int(lower_y+tile_width-1))
 	bottomtiles_per_currenttile_plus1level = math.pow(d,max_l-min(l+1,max_l))
-	future_xtiles = d # how many tiles at the next zoom level are in this tile along the x axis
-	future_ytiles = d # how many tiles at the next zoom level are in this tile along the y axis
-	future_xtiles_exact = future_xtiles
-	future_ytiles_exact = future_ytiles
+	future_xtiles = d if tile_width > root_threshold else 1 # how many tiles at the next zoom level are in this tile along the x axis
+	future_ytiles = d if tile_width > root_threshold else 1 # how many tiles at the next zoom level are in this tile along the y axis
+	future_xtiles_exact = 1.0*(upper_x-lower_x)/max(tile_width/2.0,root_threshold)
+	future_ytiles_exact = 1.0*(upper_y-lower_y)/max(tile_width/2.0,root_threshold)
 	print "bottomtiles_per_currenttile: ",bottomtiles_per_currenttile
 	print "bottomtiles_per_currenttile_plus1level: ",bottomtiles_per_currenttile_plus1level
-	if upper_x > (x + xbase): # if this tile contains less than d tiles at the next zoom level (edge case)
+	if (upper_x > (x + xbase-1)): # if this tile contains less than d tiles at the next zoom level (edge case)
 		total_bottomtiles_x_here = total_xtiles - (1.0*total_xtiles_l-1)*bottomtiles_per_currenttile
 		print "total_bottomtiles_x_here: ",total_bottomtiles_x_here
-		future_xtiles_exact = total_bottomtiles_x_here/bottomtiles_per_currenttile_plus1level
-		future_xtiles = math.ceil(future_xtiles_exact)
+		future_xtiles_exact2 = total_bottomtiles_x_here/bottomtiles_per_currenttile_plus1level
+		future_xtiles = math.ceil(future_xtiles_exact2)
 	print "upper_y:",upper_y,"y:",y,"ybase:",ybase
-	if upper_y > (y + ybase): # if this tile contains less than d tiles at the next zoom level (edge case)
+	if (upper_y > (y + ybase-1)): # if this tile contains less than d tiles at the next zoom level (edge case)
 		total_bottomtiles_y_here = total_ytiles - (1.0*total_ytiles_l-1)*bottomtiles_per_currenttile
 		print "total_bottomtiles_y_here: ",total_bottomtiles_y_here
-		future_ytiles_exact = total_bottomtiles_y_here/bottomtiles_per_currenttile_plus1level
-		future_ytiles = math.ceil(future_ytiles_exact)
+		future_ytiles_exact2 = total_bottomtiles_y_here/bottomtiles_per_currenttile_plus1level
+		future_ytiles = math.ceil(future_ytiles_exact2)
 	print "current_xtiles: ",total_xtiles_l
 	print "current_ytiles: ",total_ytiles_l
 	print "current_xtiles_exact: ",total_xtiles_l

@@ -6,10 +6,8 @@ var flip = true; // whether we need to do inverted moves
 
 // get these from backend
 var max_zoom = 1;
-var total_tiles = 1;
 var total_xtiles = 1;
 var total_ytiles = 1;
-var total_tiles_root = 1;
 var zoom_diff = 2;
 var future_xtiles= 1;
 var future_ytiles = 1;
@@ -271,15 +269,13 @@ $(document).ready(function() {
 		console.log(jsondata['dimwidths']);
 
 		max_zoom = jsondata['max_zoom'];
-		total_tiles = jsondata['total_tiles'];
 		total_xtiles = jsondata['total_xtiles'];
 		total_ytiles = jsondata['total_ytiles'];
 		future_xtiles_exact = jsondata['future_xtiles_exact'];
 		future_ytiles_exact = jsondata['future_ytiles_exact'];
-		total_tiles_root = jsondata['total_tiles_root'];
 		future_xtiles = jsondata['future_xtiles'];
 		future_ytiles = jsondata['future_ytiles'];
-		console.log("max zoom, total tiles, total tiles root: "+max_zoom+","+total_tiles+","+total_tiles_root);
+		console.log("max zoom: "+max_zoom);
 		console.log("total x/y tiles: ",total_xtiles+","+total_ytiles);
 		console.log("future x/y tiles: ",future_xtiles+","+future_ytiles);
 
@@ -366,15 +362,13 @@ $(document).ready(function() {
 
 		zoom_diff = jsondata['zoom_diff'];
 		max_zoom = jsondata['max_zoom'];
-		total_tiles = jsondata['total_tiles'];
-		total_tiles_root = jsondata['total_tiles_root'];
 		total_xtiles = jsondata['total_xtiles'];
 		total_ytiles = jsondata['total_ytiles'];
 		future_xtiles_exact = jsondata['future_xtiles_exact'];
 		future_ytiles_exact = jsondata['future_ytiles_exact'];
 		future_xtiles = jsondata['future_xtiles'];
 		future_ytiles = jsondata['future_ytiles'];
-		console.log("max zoom, total tiles, total tiles root: "+max_zoom+","+total_tiles+","+total_tiles_root);
+		console.log("max zoom: "+max_zoom);
 
 		if(once == 0){
 			once += 1;
@@ -401,8 +395,8 @@ $(document).ready(function() {
 	function check_zoom_in(coords) {
 		console.log(["coords:",coords]);
 		// cut up the space according to the size of the tiles
-		var width = 1.0*renderagg.w / future_xtiles_exact;
-		var height = 1.0*renderagg.h / future_ytiles_exact;
+		var width = Math.min(1.0*renderagg.w / future_xtiles_exact,renderagg.w);
+		var height = Math.min(1.0*renderagg.h / future_ytiles_exact,renderagg.h);
 		var xdim = 1.0*coords[0] - renderagg.px;
 		var ydim = 1.0*coords[1] - renderagg.py;
 		if(renderagg.inv[0]) {
