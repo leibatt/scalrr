@@ -98,13 +98,17 @@ def fetch_first_tile():
 @app.route('/fetch-tile',methods=["POST", "GET"])
 def fetch_tile():
     print >> sys.stderr, "got json request in noreduce function"
+    print "args:",request.args
     tile_xid = request.args.get('tile_xid',"",type=int)
     tile_yid = request.args.get('tile_yid',"",type=int)
+    tile_id = request.args.getlist('temp_id[]')
+    for i in range(len(tile_id)):
+      tile_id[i] = int(tile_id[i])
     x_label = request.args.get('x_label',"",type=str)
     y_label = request.args.get('y_label',"",type=str)
     level = request.args.get('level',"",type=int)
     options = {'user_id':session['user_id']}
-    server_request = {'options':options,'tile_xid':tile_xid,'tile_yid':tile_yid,'level':level,'y_label':y_label,'x_label':x_label,'function':'fetch_tile'}
+    server_request = {'options':options,'tile_xid':tile_xid,'tile_yid':tile_yid,'tile_id':tile_id,'level':level,'y_label':y_label,'x_label':x_label,'function':'fetch_tile'}
     queryresultarr = send_request(server_request)
     if 'saved_qpresults' in queryresultarr:
         session['saved_qpresults'] = queryresultarr['saved_qpresults']

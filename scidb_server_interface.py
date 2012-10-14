@@ -118,11 +118,6 @@ def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate
 	bottomtiles_per_currenttile = math.pow(d,max_l-l)
 	bottomtiles_per_currenttile_plus1level = math.pow(d,max_l-min(l+1,max_l))
 	tile_width = root_threshold*math.pow(d,max_l-l) # figure out tile dimensions
-	print "level: ",l,", total levels: ",max_l
-	print "total bottomtiles: ",total_tiles
-	print "root_threshold: ",root_threshold
-	print "bottomtiles_per_currenttile: ",bottomtiles_per_currenttile
-	print "bottomtiles_per_currenttile_plus1level: ",bottomtiles_per_currenttile_plus1level
 	for i in range(n):
 		total_tiles[i] = math.ceil(1.0*widths[i]/root_threshold) # number of tiles along dimension i on the lowest level
 		total_tiles_l[i] = math.ceil(1.0*total_tiles[i]/bottomtiles_per_currenttile)
@@ -135,6 +130,11 @@ def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate
 			print "total_bottomtiles_here: ",total_bottomtiles_here
 			future_tiles[i] = math.ceil(total_bottomtiles_here/bottomtiles_per_currenttile_plus1level)
 		future_tiles_exact[i] = 1.0*(upper[i]-lower[i])/max(tile_width/2.0,root_threshold)
+	print "level: ",l,", total levels: ",max_l
+	print "total bottomtiles: ",total_tiles
+	print "root_threshold: ",root_threshold
+	print "bottomtiles_per_currenttile: ",bottomtiles_per_currenttile
+	print "bottomtiles_per_currenttile_plus1level: ",bottomtiles_per_currenttile_plus1level
 	print "current_tiles: ",total_tiles_l
 	print "future_tiles: ",future_tiles
 	newquery = "select * from subarray(("+orig_query+")"

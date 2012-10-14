@@ -59,17 +59,19 @@ def process_request(inputstring):
         options = request['options']
         query = str(request['query'])
         print "fetching first tile for:\"",query,"\""
-        response = fetch_first_tile(query,options)
+        response = fetch_first_tile2(query,options)
     elif request['function'] == "fetch_tile":
 	print "got here"
         options = request['options']
         tile_xid = int(request['tile_xid'])
         tile_yid = int(request['tile_yid'])
+	tile_id=request['tile_id']
 	x_label = request['x_label']
 	y_label = request['y_label']
 	level = int(request['level'])
         print "fetching tile"
-        response = fetch_tile(tile_xid,tile_yid,x_label,y_label,level,options)
+        #response = fetch_tile(tile_xid,tile_yid,x_label,y_label,level,options)
+        response = fetch_tile2(tile_id,level,options)
     else:
         raise Exception("unrecognized function passed")
     #dbclose()
@@ -240,6 +242,39 @@ def fetch_tile(tile_xid,tile_yid,x_label,y_label,level,options):
 	#	experts[i].remove_all_tiles(user_id) # remove prefetched tiles
 	#	expert_threads[i] = threading.Thread(target=experts[i].prefetch,args=(sbdata.max_prefetched,user_id))
 	#	expert_threads[i].start()
+	return tile
+
+def fetch_first_tile2(userquery,options):
+	db = sdbi.scidbOpenConn()
+	global experts
+	query = userquery
+	sdbioptions = {'afl':False,'db':db}
+	saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
+	user_id = options['user_id']
+	# setup metadata
+	print "setting up metadata"
+	with sbdata.metadata_lock:
+		sbdata.backend_metadata[user_id] = {}
+		sbdata.backend_metadata[user_id]['orig_query'] = query
+		sbdata.backend_metadata[user_id]['saved_qpresults'] = saved_qpresults
+		if 'data_threshold' in options:
+			sbdata.backend_metadata[user_id]['data_threshold'] = options['data_threshold']
+		else: # default is whatever is prescribed in scidb server interface code
+			sbdata.backend_metadata[user_id]['data_threshold'] = sdbi.D3_DATA_THRESHOLD
+		sbdata.backend_metadata[user_id]['levels'] = 0 #sbdata.default_levels #leave at default levels for now
+		#TODO: let # levels vary
+	#get tile
+	tile = ti.getTileByIDN([0,0],0,user_id)
+	return tile
+
+#this is called after original query is run
+def fetch_tile2(tile_id,level,options):
+	global expert_threads
+	print "stopping experts"
+	sbdata.stop_prefetch.set() #stop the experts
+	user_id = options['user_id']
+	print "tile id:",tile_id
+	tile = ti.getTileByIDN(tile_id,level,user_id)
 	return tile
 
 #returns necessary options for reduce type

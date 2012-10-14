@@ -6,7 +6,13 @@ def getTileByIDXY_Labels(tile_xid,tile_yid,x_label,y_label,l,user_id):
 	tile_info = {'type':'xy','tile_xid':tile_xid,'tile_yid':tile_yid,'x_label':x_label,'y_label':y_label}
 	return getTileHelper(tile_info,l,user_id)
 
+def getTileByIDXY(tile_xid,tile_yid,l,user_id):
+	tile_info = {'type':'xy','tile_xid':tile_xid,'tile_yid':tile_yid}
+	return getTileHelper(tile_info,l,user_id)
+
+
 def getTileByIDN(tile_id,l,user_id):
+	print "calling getTileByIDN"
 	tile_info = {'type':'n','tile_id':tile_id}
 	return getTileHelper2(tile_info,l,user_id)
 
@@ -72,6 +78,8 @@ def getTileHelper(tile_info,l,user_id):
 	queryresultarr['dimbases'] = saved_qpresults['dimbases']
 	queryresultarr['dimwidths'] = saved_qpresults['dimwidths']
 	queryresultarr['saved_qpresults'] = saved_qpresults
+	queryresultarr['numdims'] = saved_qpresults['numdims']
+	queryresultarr['indexes'] = saved_qpresults['indexes']
 	queryresultarr['max_zoom'] = levels
 	queryresultarr['total_tiles'] = total_tiles
 	queryresultarr['total_xtiles'] = saved_qpresults['total_xtiles']
@@ -104,12 +112,17 @@ def getTileHelper2(tile_info,l,user_id):
 		levels = sbdata.backend_metadata[user_id]['levels']
 		if levels == 0: # need to compute # of levels
 			root_k = math.ceil(math.pow(k,1.0/n))
+			print "root_k:",root_k,"d:",sbdata.default_diff
 			for i in range(n):
 				w_i = widths[i]
+				print "w_i:",w_i
 				l_i = 1
 				if w_i > root_k:
-					t_i = w_i/root_k
-					l_i = math.ceil(math.log(t_i)/math.log(root_k))
+					t_i = math.ceil(w_i/root_k) # number of base level tiles
+					print "t_i:",t_i
+					print "log t_i:",math.log(t_i),"log d:",math.log(sbdata.default_diff)
+					l_i = math.ceil(math.log(t_i)/math.log(sbdata.default_diff))+1
+					print "l_i:",l_i,"levels:",levels
 				if l_i > levels:
 					levels = l_i
 			sbdata.backend_metadata[user_id]['levels'] = levels # store this computed value
@@ -127,12 +140,15 @@ def getTileHelper2(tile_info,l,user_id):
 	queryresultarr['dimnames'] = saved_qpresults['dims']
 	queryresultarr['dimbases'] = saved_qpresults['dimbases']
 	queryresultarr['dimwidths'] = saved_qpresults['dimwidths']
+	queryresultarr['numdims'] = saved_qpresults['numdims']
+	queryresultarr['indexes'] = saved_qpresults['indexes']
 	queryresultarr['saved_qpresults'] = saved_qpresults
 	queryresultarr['max_zoom'] = levels
 	queryresultarr['zoom_diff'] = sbdata.default_diff
 	queryresultarr['total_tiles'] = saved_qpresults['total_tiles']
 	queryresultarr['future_tiles'] = saved_qpresults['future_tiles']
 	queryresultarr['future_tiles_exact'] = saved_qpresults['future_tiles_exact']
+	print "indexes:",saved_qpresults['indexes']
 	sdbi.scidbCloseConn(db)
 	return queryresultarr
 
