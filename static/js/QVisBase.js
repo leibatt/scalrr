@@ -484,6 +484,66 @@ QVis.Graph.prototype.mini_render = function(_data, _labels,_types, opts) {
 	this.map.empty();
 	this.map.append('<div></div>');
 	this.brush = null;
+
+	var self = this;
+
+	//
+	// I create and execute this anonymous function so
+	// selectedval will be private to and accessible by the .change() callback function
+	// Manually set the new labels and call render_scatterplot again
+	// 
+	// notice that I use "self" instead of "this".
+	//
+	(function() {
+		var selectedzval = self.labelsfrombase.z_label; // get the previous values
+		var selectedxval = self.labelsfrombase.x_label;
+		var selectedyval = self.labelsfrombase.y_label;
+		var inv = 'inv' in _labels ? _labels['inv'] : [false,false,false];
+		console.log(['inv' in _labels,'x' in _labels]);
+		$("#"+self.rootid+" input#vis-update-submit").off('click');
+		$("#"+self.rootid+" input#vis-update-submit").click(function() {
+			var zval = '';//$("#"+self.rootid+" .zlabel select").val();
+			var yval = '';//$("#"+self.rootid+" .zlabel select").val();
+			var xval = '';//$("#"+self.rootid+" .zlabel select").val();
+
+			var inv_new = [false,false,false];
+			console.log(["old radio vals: ",inv]);
+			if(self.selectz) {
+				zval = $("#"+self.rootid+" .zlabel select").val(); // should be the same as before
+				inv_new[2]= $("#"+self.rootid+" input:radio[name='zlabel-radio']:checked").val() !== "";
+			}
+			if(self.selecty) {
+				yval = $("#"+self.rootid+" .ylabel select").val(); // should be the same as before
+				inv_new[1]= $("#"+self.rootid+" input:radio[name='ylabel-radio']:checked").val() !== "";
+			}
+			if(self.selectx) {
+				xval = $("#"+self.rootid+" .xlabel select").val(); // should be the same as before
+				inv_new[0]= $("#"+self.rootid+" input:radio[name='xlabel-radio']:checked").val() !== "";
+			}
+			console.log(["selected options", zval,yval,xval]);
+			console.log(["new radio vals: ",inv_new]);
+			// if the values haven't changed
+			if ((!self.selectz || ((zval === selectedzval) && (inv[2] === inv_new[2]))) 
+				&& (!self.selecty || ((yval === selectedyval) && (inv[1] === inv_new[1]))) 
+				&& (!self.selectx || ((xval === selectedxval)  && (inv[0] === inv_new[0])))) return false;
+			selectedxval = xval;
+			selectedyval = yval;
+			selectedzval = zval;
+			for(var i = 0; i <= 2; i++) {
+				inv[i]= inv_new[i];
+			}
+			//inv = inv_new;
+
+			console.log(["changed radio vals: ",inv]);
+			var newlabels = {"z" : zval,"y": yval, "x":xval, "names" : _labels.names,'dimnames':_labels.dimnames,'dimwidths':_labels.dimwidths,'dimbases':_labels.dimbases,
+				"max":self.max,"min":self.min, "inv":inv	};
+			
+			// TODO: this is the wrong _data variable! where is the updated one?
+			console.log("blah blah blah blah blah");
+			self.render(_data, newlabels,_types, opts);
+			return false;
+		});
+	})();
 }
 
 /*
