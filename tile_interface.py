@@ -130,6 +130,10 @@ def getTileHelper2(tile_info,l,user_id):
 	aggr_options = setup_reduce_type('AGGR',setup_aggr_options)
 	aggr_options['db'] = db
 	queryresultobj = sdbi.getTileByIDN(orig_query,n,tile_info['tile_id'],l,levels-1,sbdata.default_diff,bases,widths,k,aggr_options)
+	if 'error' in queryresultobj:
+		# this is bad, return the error
+		sdbi.scidbCloseConn(db)
+		return queryresultobj
 	#total_tiles = queryresultobj[1]['total_tiles']
 	#total_tiles_root = queryresultobj[1]['total_tiles_root']
 	#print "total_tiles_root:",total_tiles_root

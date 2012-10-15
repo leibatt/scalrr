@@ -57,6 +57,8 @@ def getTile(orig_query,cx,cy,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_optio
 		aggregate_options['tile'] = True
 		sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
+	if 'error' in result:
+		return result
 	result[1]['total_tiles'] = total_tiles
 	result[1]['total_tiles_root'] = total_tiles_root
 	return result
@@ -93,6 +95,8 @@ def getTileByID(orig_query,tile_id,l,max_l,d,x,xbase,y,ybase,threshold,aggregate
 		aggregate_options['tile'] = True
 		sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
+	if 'error' in result:
+		return result
 	result[1]['total_tiles'] = total_tiles
 	result[1]['total_tiles_root'] = total_tiles_root
 	return result
@@ -156,6 +160,8 @@ def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate
 	aggregate_options['tile'] = True
 	sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
+	if 'error' in result:
+		return result
 	result[1]['total_tiles'] = total_tiles_l
 	result[1]['future_tiles'] = future_tiles
 	result[1]['future_tiles_exact'] = future_tiles_exact
@@ -250,6 +256,8 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 	aggregate_options['tile'] = True
 	sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
+	if 'error' in result:
+		return result
 	result[1]['total_xtiles'] = total_xtiles_l
 	result[1]['total_ytiles'] = total_ytiles_l
 	result[1]['future_xtiles'] = future_xtiles
@@ -293,6 +301,8 @@ def oldgetTileByIDXY(orig_query,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,thre
 		aggregate_options['tile'] = True
 		sdbioptions['reduce_options'] = aggregate_options
 	result = executeQuery(newquery,sdbioptions)
+	if 'error' in result:
+		return result
 	result[1]['total_tiles'] = total_tiles*total_tiles
 	result[1]['total_tiles_root'] = total_tiles
 	return result
@@ -303,6 +313,8 @@ def oldgetTileByIDXY(orig_query,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,thre
 #function to verify query query result size
 def verifyQuery(query,options):
 	queryplan = query_optimizer(query,options)
+	if 'error' in queryplan:
+		return queryplan
 	return check_query_plan(queryplan) #returns a dictionary
 
 #function to do the resolution reduction when running queries
@@ -323,11 +335,14 @@ def executeQuery(query,options):
 		print  "running original query."
 		#print  "final query:",final_query#,"\nexecuting query",datetime.now()
 		result = []
-		if options['afl']:
-			result.append(db.executeQuery(final_query,'afl'))
-		else:
-			result.append(db.executeQuery(final_query,'aql'))
-		result.append(verifyQuery(final_query,options))
+		try:			
+			if options['afl']:
+				result.append(db.executeQuery(final_query,'afl'))
+			else:
+				result.append(db.executeQuery(final_query,'aql'))
+			result.append(verifyQuery(final_query,options))
+		except Exception as e:
+			return {'error':{'type':str(type(e)),'args':e.args}}
 		return result
 
 #function to do the resolution reduction when running queries
@@ -345,7 +360,11 @@ def query_optimizer(query,options):
 		queryplan_query = LOGICAL_PHYSICAL+"('"+query+"','aql')"
 	#print  "queryplan query: "
 	#print  queryplan_query
-	optimizer_answer = db.executeQuery(queryplan_query,'afl')
+	optimizer_answer = None
+	try:
+		optimizer_answer = db.executeQuery(queryplan_query,'afl')
+	except Exception as e:
+		return {'error':{'type':str(type(e)),'args':e.args}}
 	#print  optimizer_answer
 	# flatten the list into one big string, and then split on '\n'
 	optimizer_answer_array = getOneAttrArrFromQuery(optimizer_answer,"")[0].split('\n') #should return array with one item (the query plan)
@@ -368,7 +387,8 @@ def check_query_plan(queryplan):
 	widths = {}
 	indexes = {}
 	for i, s in enumerate(dim_array):
-		if (i % 3) == 0:
+		#if (i % 3) == 0:
+		if "=" in s:
 			# split on equals, get the range, split on ':'
 			#print  "s:",s
 			range = s.split('=')[1]
@@ -539,8 +559,11 @@ def reduce_resolution(query,options):
 		raise Exception('reduce_type not recognized by scidb interface api')
 	result =[]
         newquery = str(newquery)
-	result.append(db.executeQuery(newquery,'aql'))
-	result.append(verifyQuery(newquery,{'afl':False,'db':db}))
+	try:
+		result.append(db.executeQuery(newquery,'aql'))
+		result.append(verifyQuery(newquery,{'afl':False,'db':db}))
+	except Exception as e:
+		return {'error':{'type':str(type(e)),'args':e.args}}
 	#print  result[1]
 	return result
 

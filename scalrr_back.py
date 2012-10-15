@@ -250,6 +250,9 @@ def fetch_first_tile2(userquery,options):
 	query = userquery
 	sdbioptions = {'afl':False,'db':db}
 	saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
+	sdbi.scidbCloseConn(db)
+	if 'error' in saved_qpresults:
+		return saved_qpresults
 	user_id = options['user_id']
 	# setup metadata
 	print "setting up metadata"
@@ -267,6 +270,8 @@ def fetch_first_tile2(userquery,options):
 	base_id = [0] * saved_qpresults['numdims']
 	print "base id:",base_id
 	tile = ti.getTileByIDN(base_id,0,user_id)
+	if 'error' in tile:
+		return tile
 	#save tile info
 	tile_key = str(base_id)
 	with sbdata.user_history_lock: # add tile to history
@@ -315,6 +320,8 @@ def fetch_tile2(tile_id,level,options):
 	if tile is None:
 		print "tile not found, fetching from database"
 		tile = ti.getTileByIDN(tile_id,level,user_id)
+	if 'error' in tile:
+		return tile
 	with sbdata.user_history_lock: # add tile to history
 		if user_id not in sbdata.user_history:
 			sbdata.user_history[user_id] = []

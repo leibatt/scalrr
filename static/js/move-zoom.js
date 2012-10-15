@@ -240,16 +240,29 @@ $(document).ready(function() {
 		console.log("resolution: "+resolution_lvl);
 		$.getJSON('/fetch-first-tile',{query: querytext,data_threshold:resolution_lvl},function(jsondata){
 			console.log(jsondata);
-			$('#resulting-plot-header').addClass('show');
-			$('#aggplot').addClass('show');
-			draw_graph(jsondata);
+			$('#error_message').remove();
+			if(!("error" in jsondata)) {
+				draw_graph(jsondata);
+				$('#resulting-plot-header').addClass('show');
+				$('#aggplot').addClass('show');
 
-			// set index back to 0
-			current_id = new Array(numdims);
-			for (var i = 0; i < numdims; i++) {current_id[i] = 0;}
+				// set index back to 0
+				current_id = new Array(numdims);
+				for (var i = 0; i < numdims; i++) {current_id[i] = 0;}
 
-			//mapping of labels to id numbers
-			indexmap = jsondata['indexes'];
+				//mapping of labels to id numbers
+				indexmap = jsondata['indexes'];
+			} else {
+				$('#resulting-plot-header').removeClass('show');
+				$('#aggplot').removeClass('show');
+				console.log(["error!!!!! OMGOMGOMG",jsondata['error'],jsondata['error']['args'][0].indexOf("\n")]);
+				var error_args = jsondata['error']['args'][0].replace(/\n/g,"<br>");
+				error_args = error_args.replace(/ /g,"&nbsp");
+				var error_string = "<div id=\"error_message\"><p>An error occured in running your query:</p>";
+				error_string = error_string + "<p>"+error_args+"</p></div>";
+				$("#resulting-plot-header").before($(error_string));
+				return false;
+			}
 		});
 		return false;
 	}
@@ -332,6 +345,16 @@ $(document).ready(function() {
 	}
 
 	function draw_graph(jsondata) {
+/*
+		$('#error_message').remove();
+		if('error' in jsondata) {
+			console.log("error!!!!! OMGOMGOMG");
+			var error_string = "<div id=\"error_message\"><p>An error occured in running your query:</p>";
+			error_string = error_string + "<p>"+jsondata['error']['args']+"</p></div>";
+			$("#resulting-plot-header").before($(error_string));
+			return false;
+		}
+*/
 		menutype = $('#vis-type-menu').val();
 		var opts = {overlap:-0, r:1.5};
 		var use_dims = false;

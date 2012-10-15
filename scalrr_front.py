@@ -91,7 +91,8 @@ def fetch_first_tile():
 	options['data_threshold'] = data_threshold
     server_request = {'query':query,'options':options,'function':'fetch_first_tile'}
     queryresultarr = send_request(server_request)
-    print >> sys.stderr, "result length: ",len(queryresultarr['data'])
+    if 'error' not in queryresultarr: # error happened
+        print >> sys.stderr, "result length: ",len(queryresultarr['data'])
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
@@ -103,7 +104,7 @@ def fetch_tile():
     tile_yid = request.args.get('tile_yid',"",type=int)
     tile_id = request.args.getlist('temp_id[]')
     for i in range(len(tile_id)):
-      tile_id[i] = int(tile_id[i])
+        tile_id[i] = int(tile_id[i])
     x_label = request.args.get('x_label',"",type=str)
     y_label = request.args.get('y_label',"",type=str)
     level = request.args.get('level',"",type=int)
