@@ -1,0 +1,23 @@
+rename
+unload_library
+load_library
+load
+redimension_store
+redimension
+remove
+attribute_rename
+rename
+create array
+store
+save
+cancel
+diskinfo
+list
+setopt
+echo
+explain_logical
+explain_physical
+reduce_distro
+drop array
+set
+update

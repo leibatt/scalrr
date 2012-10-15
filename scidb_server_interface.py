@@ -15,6 +15,17 @@ PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
 D3_DATA_THRESHOLD = 10000
 
+BAD_WORDS_FILE = "bad_words.txt"
+BAD_WORDS= None
+try:
+	with open(BAD_WORDS_FILE) as myfile:
+		BAD_WORDS = myfile.readlines()
+	for i in range(len(BAD_WORDS)):
+		BAD_WORDS[i] = re.sub(r"\n","",BAD_WORDS[i])
+except Exception as e:
+	print "error loading",BAD_WORDS_FILE,"!"
+	print e
+
 #db = 0
 
 def scidbOpenConn():
@@ -29,6 +40,19 @@ def scidbCloseConn(db):
 		db.disconnect()
 		db = 0
 
+#check for dangerous queries
+def has_bad_words(query):
+	print "bad words: ",BAD_WORDS
+	if ";" in query:
+		return {'error':{'type':"unsafe query",'args':("no semicolons allowed",)}}
+	if BAD_WORDS is None:
+		return false
+	for bw in BAD_WORDS:
+		#if re.search("[^a-z0-9_]"+str(bw)+"(,|\\s|(|$",query,re.IGNORECASE):
+		if bw in query:
+			return {'error':{'type':"unsafe query",'args':("\""+query+"\" contains the unsafe word(s): \""+str(bw)+"\"",)}}
+	return None
+
 #orig_query = original user query
 #cx,cy= center
 #l = current zoom level
@@ -36,7 +60,8 @@ def scidbCloseConn(db):
 #jxk = maximum dimensions handled by the front-end
 #mxn = original array dimensions
 def getTile(orig_query,cx,cy,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options):
-	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	#orig_query = re.sub(r"[^\\](\'|\")","\\\1",orig_query) #escape single and double quotes
+	#orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
 	total_tiles = math.pow(d,2*l)
 	total_tiles_root = math.sqrt(total_tiles)
 	tile_x = x/total_tiles_root # figure out tile dimensions
@@ -70,7 +95,8 @@ def getTile(orig_query,cx,cy,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_optio
 #jxk = maximum dimensions handled by the front-end
 #mxn = original array dimensions
 def getTileByID(orig_query,tile_id,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
-	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	#orig_query = re.sub(r"[^\\](\'|\")","\\\1",orig_query) #escape single and double quotes
+	#orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
 	total_tiles = math.pow(d,2*l)
 	if tile_id < 0 or tile_id >= total_tiles: #default, get a middle tile
 		tile_id = int(totaltiles/2)
@@ -111,7 +137,8 @@ def getTileByID(orig_query,tile_id,l,max_l,d,x,xbase,y,ybase,threshold,aggregate
 def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate_options): # zero-based indexing
 	print "tile id request: (",tile_id,")"
 	root_threshold = math.ceil(math.pow(threshold,1.0/n)) # assume the tiles are squares
-	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	#orig_query = re.sub(r"[^\\](\'|\")","\\\1",orig_query) #escape single and double quotes
+	#orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
 	total_tiles = [1.0]*n
 	total_tiles_l = [1.0]*n
 	lower = [0]*n
@@ -177,7 +204,8 @@ def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate
 def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
 	print "tile id request: (",tile_xid,",",tile_yid,")"
 	root_threshold = math.ceil(math.sqrt(threshold)) # assume the tiles are squares
-	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	#orig_query = re.sub(r"[^\\](\'|\")","\\\1",orig_query) #escape single and double quotes
+	#orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
 	total_xtiles = math.ceil(x/root_threshold) # number of tiles along x axis on the lowest level
 	total_ytiles = math.ceil(y/root_threshold) # number of tiles along y axis on the lowest level
 	bottomtiles_per_currenttile = math.pow(d,max_l-l)
@@ -277,7 +305,8 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 #threshold = tile size, used for resolution reduction and tile computation
 #mxn = original array dimensions
 def oldgetTileByIDXY(orig_query,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
-	orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
+	#orig_query = re.sub(r"[^\\](\'|\")","\\\1",orig_query) #escape single and double quotes
+	#orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
 	total_tiles = math.pow(d,l) # number of tiles along 1 axis (square for all tiles at this levels)
 	if tile_xid < 0 or tile_xid >= total_tiles: #default, get a middle tile
 		tile_xid = int(totaltiles/2)
@@ -312,6 +341,9 @@ def oldgetTileByIDXY(orig_query,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,thre
 #required options: afl
 #function to verify query query result size
 def verifyQuery(query,options):
+	bw = has_bad_words(query)
+	if bw is not None:
+		return bw
 	queryplan = query_optimizer(query,options)
 	if 'error' in queryplan:
 		return queryplan
@@ -350,7 +382,9 @@ def executeQuery(query,options):
 def query_optimizer(query,options):
 	db = options['db']
 	afl = options['afl']
-	query = re.sub("(\\')","\\\\\\1",query)
+    	query = re.sub(r"([^\\])(\'|\")",r"\1\\\2",query)
+        #query = re.sub(r"[^\\](\'|\")","\\\1",query) #escape single and double quotes
+	#query = re.sub("(\\')","\\\\\\1",query)
 	# eventually want to be able to infer this
 	queryplan_query = ""
 	optimizer_answer = []
@@ -461,7 +495,7 @@ def daggregate(query,options):
 	#make the new query an aql query so we can rename the aggregates easily
 	attraggs = ""
 	#print  "options attrtypes: ",options['attrtypes']
-	for i in range(0,len(attrs)):
+	for i in range(len(attrs)):
 		#print  "attr type: ",options['attrtypes'][i]
 		if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
 			if attraggs != "":
@@ -469,6 +503,10 @@ def daggregate(query,options):
 			attraggs+= "avg("+str(attrs[i])+") as avg_"+attrs[i]
 			attraggs+= ", min("+str(attrs[i])+") as min_"+attrs[i] # need for the color scale
 			attraggs+= ", max("+str(attrs[i])+") as max_"+attrs[i] # need for the color scale
+		else:
+			if attraggs != "":
+				attraggs += ", "
+			attraggs+= "max("+str(attrs[i])+") as max_"+attrs[i]
 	final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
 	#final_query = "select "+attraggs+" from ("+ final_query +") regrid as ( partition by "+chunks
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
@@ -539,7 +577,8 @@ def reduce_resolution(query,options):
 		reduce_options['tile'] = options['tile']
 	if 'resolution' in options:
 		reduce_options['threshold'] = options['resolution']
-        query = re.sub(r"[^\\](\'|\")","\\\1",query) #escape single and double quotes
+        #query = re.sub(r"[^\\](\'|\")","\\\1",query) #escape single and double quotes
+	print "escaped query:",query
 	if reduce_type == RESTYPE['AGGR']:
 		if 'chunkdims' in options: #user specified chunk dims
 			reduce_options['chunkdims'] = options['chunkdims']

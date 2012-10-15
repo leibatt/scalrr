@@ -48,6 +48,7 @@ def dbclose():
 def process_request(inputstring):
     print "received request: \"",inputstring,"\""
     request = json.loads(inputstring) # parse string into json
+    print "parsed request:",request
     response = ''
     #dbconnect()
     if request['function'] == "query_execute":
@@ -254,6 +255,7 @@ def fetch_first_tile2(userquery,options):
 	sdbioptions = {'afl':False,'db':db}
 	saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
 	sdbi.scidbCloseConn(db)
+	print "saved qp results, looking for error:",saved_qpresults
 	if 'error' in saved_qpresults:
 		return saved_qpresults
 	user_id = options['user_id']

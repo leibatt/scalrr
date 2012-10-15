@@ -99,7 +99,6 @@ def fetch_first_tile():
 @app.route('/fetch-tile',methods=["POST", "GET"])
 def fetch_tile():
     print >> sys.stderr, "got json request in noreduce function"
-    print "args:",request.args
     tile_xid = request.args.get('tile_xid',"",type=int)
     tile_yid = request.args.get('tile_yid',"",type=int)
     tile_id = request.args.getlist('temp_id[]')
