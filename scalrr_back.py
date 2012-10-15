@@ -10,10 +10,13 @@ import threading
 import select
 import socket
 import sys
+import os
 
 from datetime import datetime
 
 import dumb_expert
+
+history_dir = "user_history_files"
 
 HOST = '0.0.0.0'
 PORT = 50007            # Arbitrary non-privileged port
@@ -275,7 +278,15 @@ def fetch_first_tile2(userquery,options):
 	#save tile info
 	tile_key = str(base_id)
 	with sbdata.user_history_lock: # add tile to history
-		sbdata.user_history[user_id] = [{'tile_id':base_id,'level':0,'timestamp':datetime.now()}]
+		currtime = datetime.now()
+		sbdata.user_history[user_id] = [{'tile_id':base_id,'level':0,'timestamp':currtime}]
+		try:
+			if not os.path.isdir(history_dir):
+				os.makedirs(history_dir)
+			with open(history_dir +"/"+str(user_id)+".txt", "a") as myfile:
+			    myfile.write(str(base_id)+'\t0\t'+str(currtime)+"\n")
+		except Exception as e:
+			print e # don't barf if this doesn't work
 	with sbdata.user_tiles_lock:# save tile
 		sbdata.user_tiles[user_id] = {0:{tile_key:tile}}
 		print "added tile to sbdata.user_tiles:"#,sbdata.user_tiles
@@ -323,11 +334,18 @@ def fetch_tile2(tile_id,level,options):
 	if 'error' in tile:
 		return tile
 	with sbdata.user_history_lock: # add tile to history
+		currtime = datetime.now()
 		if user_id not in sbdata.user_history:
 			sbdata.user_history[user_id] = []
-		sbdata.user_history[user_id].append({'tile_id':tile_id,'level':level,'timestamp':datetime.now()})
-		print sbdata.user_history[user_id]
-		print "history: ",sbdata.user_history[user_id]
+		sbdata.user_history[user_id].append({'tile_id':tile_id,'level':level,'timestamp':currtime})
+		try:
+			if not os.path.isdir(history_dir):
+				os.makedirs(history_dir)
+			with open(history_dir +"/"+str(user_id)+".txt", "a") as myfile:
+			    myfile.write(str(tile_id)+'\t'+str(level)+'\t'+str(currtime)+"\n")
+		except Exception as e:
+			print e  # don't barf if this doesn't work
+		#print "history: ",sbdata.user_history[user_id]
 	with sbdata.user_tiles_lock:# save tile
 		if user_id not in sbdata.user_tiles:
 			sbdata.user_tiles[user_id] = {}
