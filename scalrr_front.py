@@ -17,7 +17,7 @@ app = Flask(__name__)
 
 
 #TODO: put this info in a config file
-LOGFILE = "scalrr_front.log"
+LOGFILE = "logs/scalrr_front.log"
 HOST = 'localhost'
 PORT = 50007              # The same port as used by the server
 
@@ -93,7 +93,7 @@ def get_data2():
     session['user_id'] = str(uuid.uuid4())
     return render_template('index2.html')
 
-#@app.route('/fetch-first-tile',methods=["POST", "GET"])
+@app.route('/fetch-first-tile',methods=["POST", "GET"])
 def fetch_first_tile():
     app.logger.info("got fetch first tile request")
     query = request.args.get('query',"",type=str)
@@ -108,7 +108,7 @@ def fetch_first_tile():
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-#@app.route('/fetch-tile',methods=["POST", "GET"])
+@app.route('/fetch-tile',methods=["POST", "GET"])
 def fetch_tile():
     app.logger.info("got json request in noreduce function")
     tile_xid = request.args.get('tile_xid',"",type=int)
