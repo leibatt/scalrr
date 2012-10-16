@@ -48,7 +48,7 @@ def has_bad_words(query):
 	if BAD_WORDS is None:
 		return false
 	for bw in BAD_WORDS:
-		#if re.search("[^a-z0-9_]"+str(bw)+"(,|\\s|(|$",query,re.IGNORECASE):
+		#if re.search("(^|[^a-z0-9_])"+str(bw)+"([^a-z0-9_]|$)",query,re.IGNORECASE):
 		if bw in query:
 			return {'error':{'type':"unsafe query",'args':("\""+query+"\" contains the unsafe word(s): \""+str(bw)+"\"",)}}
 	return None

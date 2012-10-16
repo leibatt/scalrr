@@ -10,14 +10,19 @@ import traceback
 import socket
 import sys
 import uuid
+import logging
+from logging.handlers import RotatingFileHandler
+from logging import Formatter
 app = Flask(__name__)
 
+
 #TODO: put this info in a config file
-#HOST = 'modis.csail.mit.edu'    # The remote host
+LOGFILE = "scalrr_front.log"
 HOST = 'localhost'
 PORT = 50007              # The same port as used by the server
 
 app.secret_key = 'L\x05\xb9\xab=\xe8V\x98X)\xb5\xa6\xf3uQB\x1d\x1fz\xb9y\xd7\xfb\xca'
+
 
 def connect_to_backend():
     """Make sure we're connected"""
@@ -27,13 +32,13 @@ def connect_to_backend():
 		try:
 		    session['backend_conn'] = socket.socket(af, socktype, proto)
 		except socket.error, msg:
-		    print msg
+		    app.logger.error('error occurred connecting to backend:\n'+str(msg))
 		    session['backend_conn'] = None
 		    continue
 		try:
 		    session['backend_conn'].connect(sa)
 		except socket.error, msg:
-		    print msg
+		    app.logger.error('error occurred connecting to backend:\n'+str(msg))
 		    session['backend_conn'].close()
 		    session['backend_conn'] = None
 		    continue
@@ -41,7 +46,7 @@ def connect_to_backend():
 	else:
 		break
     if session['backend_conn'] is None:
-        print 'could not open socket'
+        app.logger.warning('could not open socket')
 	sys.exit(1)
 
 def close_connection_to_backend():
@@ -53,16 +58,16 @@ def close_connection_to_backend():
 def send_request(request):
     connect_to_backend()
     s = session['backend_conn']
-    print >> sys.stderr,"sending request \"",json.dumps(request),"\" to ",HOST
+    app.logger.info("sending request \""+json.dumps(request)+"\" to "+HOST)
     s.send(json.dumps(request))
     s.shutdown(socket.SHUT_WR)
-    print >> sys.stderr,"retrieving data from ",HOST
+    app.logger.info("retrieving data from "+HOST)
     response = ''
     while 1:
         data = s.recv(1024)
         response += data
         if not data: break
-    print >> sys.stderr,"received data from ",HOST
+    app.logger.info("received data from "+HOST)
     close_connection_to_backend()
     return json.loads(response)
 
@@ -86,7 +91,7 @@ def get_data2():
 
 @app.route('/fetch-first-tile',methods=["POST", "GET"])
 def fetch_first_tile():
-    print >> sys.stderr, "got fetch first tile request"
+    app.logger.info("got fetch first tile request")
     query = request.args.get('query',"",type=str)
     data_threshold = request.args.get('data_threshold',0,type=int)
     options = {'user_id':session['user_id']}
@@ -95,13 +100,13 @@ def fetch_first_tile():
     server_request = {'query':query,'options':options,'function':'fetch_first_tile'}
     queryresultarr = send_request(server_request)
     if 'error' not in queryresultarr: # error happened
-        print >> sys.stderr, "result length: ",len(queryresultarr['data'])
+        app.logger.info("result length: "+str(len(queryresultarr['data'])))
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
 @app.route('/fetch-tile',methods=["POST", "GET"])
 def fetch_tile():
-    print >> sys.stderr, "got json request in noreduce function"
+    app.logger.info("got json request in noreduce function")
     tile_xid = request.args.get('tile_xid',"",type=int)
     tile_yid = request.args.get('tile_yid',"",type=int)
     tile_id = request.args.getlist('temp_id[]')
@@ -115,13 +120,13 @@ def fetch_tile():
     queryresultarr = send_request(server_request)
     if 'saved_qpresults' in queryresultarr:
         session['saved_qpresults'] = queryresultarr['saved_qpresults']
-    print >> sys.stderr, "result length: ",len(queryresultarr['data'])
+    app.logger.info("result length: "+str(len(queryresultarr['data'])))
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
 @app.route('/json-data', methods=["POST", "GET"])
 def get_data_ajax():
-    print >> sys.stderr, "got json request in init function"
+    app.logger.info("got json request in init function")
     query = request.args.get('query',"",type=str)
     resolution = request.args.get('resolution',0,type=int)
     options = {'reduce_res_check':True,'resolution':resolution}
@@ -138,7 +143,7 @@ def get_data_ajax():
 
 @app.route('/json-data-noreduction', methods=["POST", "GET"])
 def get_data_ajax_noreduction():
-    print >> sys.stderr, "got json request in noreduce function"
+    app.logger.info("got json request in noreduce function")
     query = request.args.get('query',"",type=str)
     options = {'reduce_res_check':False}
     options['user_id'] = session['user_id']
@@ -150,13 +155,13 @@ def get_data_ajax_noreduction():
     queryresultarr = send_request(server_request)
     if 'saved_qpresults' in queryresultarr:
         session['saved_qpresults'] = queryresultarr['saved_qpresults']
-    print >> sys.stderr, "result length: ",len(queryresultarr['data'])
+    app.logger.info("result length: "+str(len(queryresultarr['data'])))
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
 @app.route('/json-data-reduce', methods=["POST", "GET"])
 def get_data_ajax_reduce():
-    print >> sys.stderr, "got json request in reduce function"
+    app.logger.info("got json request in reduce function")
     query = request.args.get('query',"",type=str)
     reduce_type = request.args.get('reduce_type',"",type=str)
     predicate = request.args.get('predicate',"",type=str)
@@ -171,7 +176,7 @@ def get_data_ajax_reduce():
 	options['predicate'] = predicate
     server_request = {'query':query,'options':options,'function':'query_execute'}
     queryresultarr = send_request(server_request)
-    print >> sys.stderr, "result length: ",len(queryresultarr['data'])
+    app.logger.info("result length: "+str(len(queryresultarr['data'])))
     if 'saved_qpresults' in queryresultarr:
         session['saved_qpresults'] = queryresultarr['saved_qpresults']
     #print >> sys.stderr, queryresultarr
@@ -181,8 +186,16 @@ def get_data_ajax_reduce():
 
 if __name__ == "__main__":
     app.debug = True
+    if not app.debug:
+        file_handler = RotatingFileHandler(LOGFILE, maxBytes=10000, backupCount=1)
+        file_handler.setFormatter(Formatter(
+            '%(asctime)s %(levelname)s: %(message)s '
+            '[in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.WARNING)
+        app.logger.addHandler(file_handler)
     #address = ('', 8080)
     #http_server = WSGIServer(address, app, handler_class=WebSocketHandler)
-    print "server is running now"
+    app.logger.info("server is running now")
     #http_server.serve_forever()
     app.run()
