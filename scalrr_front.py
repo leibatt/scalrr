@@ -71,10 +71,6 @@ def send_request(request):
     close_connection_to_backend()
     return json.loads(response)
 
-@app.route('/robots.txt',methods=["POST","GET"])
-def robots():
-	return send_file("robots.txt")
-
 #@app.route('/blah/',methods=["POST", "GET"])
 def blah():
     return render_template('blah.html')
