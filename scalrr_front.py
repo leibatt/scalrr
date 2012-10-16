@@ -1,3 +1,5 @@
+#activate_this = '/path/to/env/bin/activate_this.py'
+#execfile(activate_this, dict(__file__=activate_this))
 #from gevent.pywsgi import WSGIServer # must be pywsgi to support websocket
 #from geventwebsocket.handler import WebSocketHandler
 from flask import Flask, session, request, render_template, g, redirect, send_file
