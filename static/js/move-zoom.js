@@ -47,7 +47,7 @@ $(document).ready(function() {
 		
 		//var temp_id = build_index(x,y,renderagg.labelsfrombase.x_label,renderagg.labelsfrombase.y_label);
 		//console.log(["temp_id",temp_id]);
-		$.getJSON('/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
+		$.getJSON($SCRIPT_ROOT+'/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
 					x_label:x_label,y_label:y_label,
 					temp_id:new_id},function(jsondata){
 			console.log(jsondata);
@@ -78,7 +78,7 @@ $(document).ready(function() {
 			new_id[ypos] = total_tiles[ypos]-1;
 		}
 		//var temp_id = build_index(x,y,renderagg.labelsfrombase.x_label,renderagg.labelsfrombase.y_label);
-		$.getJSON('/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
+		$.getJSON($SCRIPT_ROOT+'/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
 					x_label:x_label,y_label:y_label,
 					temp_id:new_id},function(jsondata){
 			console.log(jsondata);
@@ -109,7 +109,7 @@ $(document).ready(function() {
 			new_id[xpos]= 0;
 		}
 		//var temp_id = build_index(x,y,x_label,y_label);
-		$.getJSON('/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
+		$.getJSON($SCRIPT_ROOT+'/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
 					x_label:x_label,y_label:y_label,
 					temp_id:new_id},function(jsondata){
 			console.log(jsondata);
@@ -141,7 +141,7 @@ $(document).ready(function() {
 			new_id[xpos] = total_tiles[xpos]-1;
 		}
 		//var temp_id = build_index(x,y,renderagg.labelsfrombase.x_label,renderagg.labelsfrombase.y_label);
-		$.getJSON('/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
+		$.getJSON($SCRIPT_ROOT+'/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
 					x_label:x_label,y_label:y_label,
 					temp_id:new_id},function(jsondata){
 			console.log(jsondata);
@@ -170,7 +170,7 @@ $(document).ready(function() {
 
 		if(zoom != current_zoom) { // if we're actually going somewhere else
 			//var temp_id = build_index(x,y,renderagg.labelsfrombase.x_label,renderagg.labelsfrombase.y_label);
-			$.getJSON('/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
+			$.getJSON($SCRIPT_ROOT+'/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
 					x_label:x_label,y_label:y_label,
 					temp_id:new_id},function(jsondata){
 				console.log(jsondata);
@@ -215,7 +215,7 @@ $(document).ready(function() {
 		if(zoom != current_zoom) { // if we're actually going somewhere else
 			//var temp_id = build_index(x,y,x_label,y_label);
 			//console.log(["temp id: ",temp_id]);
-			$.getJSON('/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
+			$.getJSON($SCRIPT_ROOT+'/fetch-tile',{tile_xid: -1,tile_yid:-1,level:zoom,
 					x_label:x_label,y_label:y_label,
 					temp_id:new_id},function(jsondata){
 				console.log(jsondata);
@@ -239,7 +239,7 @@ $(document).ready(function() {
 		resolution_lvl = $('#resolution-lvl-menu').val();
 		console.log("resolution: "+resolution_lvl);
 		console.log(["script root",$SCRIPT_ROOT]);
-		$.getJSON('/fetch-first-tile',{query: querytext,data_threshold:resolution_lvl},function(jsondata){
+		$.getJSON($SCRIPT_ROOT+'/fetch-first-tile',{query: querytext,data_threshold:resolution_lvl},function(jsondata){
 			console.log(jsondata);
 			$('#error_message').remove();
 			if(!("error" in jsondata)) {
