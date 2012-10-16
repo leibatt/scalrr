@@ -73,7 +73,7 @@ def send_request(request):
 
 @app.route('/robots.txt',methods=["POST","GET"])
 def robots():
-	send_file("robots.txt")
+	return send_file("robots.txt")
 
 #@app.route('/blah/',methods=["POST", "GET"])
 def blah():
