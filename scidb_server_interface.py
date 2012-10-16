@@ -42,7 +42,7 @@ def scidbCloseConn(db):
 
 #check for dangerous queries
 def has_bad_words(query):
-	print "bad words: ",BAD_WORDS
+	#print "bad words: ",BAD_WORDS
 	if ";" in query:
 		return {'error':{'type':"unsafe query",'args':("no semicolons allowed",)}}
 	if BAD_WORDS is None:
