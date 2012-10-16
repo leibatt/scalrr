@@ -16,43 +16,44 @@ app = Flask(__name__)
 #HOST = 'modis.csail.mit.edu'    # The remote host
 HOST = 'localhost'
 PORT = 50007              # The same port as used by the server
-s = None
 
 app.secret_key = 'L\x05\xb9\xab=\xe8V\x98X)\xb5\xa6\xf3uQB\x1d\x1fz\xb9y\xd7\xfb\xca'
 
 def connect_to_backend():
-    global s
     """Make sure we're connected"""
     for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
         af, socktype, proto, canonname, sa = res
-        try:
-	    s = socket.socket(af, socktype, proto)
-        except socket.error, msg:
-	    print msg
-	    s = None
-	    continue
-        try:
-	    s.connect(sa)
-        except socket.error, msg:
-	    print msg
-	    s.close()
-	    s = None
-	    continue
-        break
-    if s is None:
+	if 'backend_conn' not in session:
+		try:
+		    session['backend_conn'] = socket.socket(af, socktype, proto)
+		except socket.error, msg:
+		    print msg
+		    session['backend_conn'] = None
+		    continue
+		try:
+		    session['backend_conn'].connect(sa)
+		except socket.error, msg:
+		    print msg
+		    session['backend_conn'].close()
+		    session['backend_conn'] = None
+		    continue
+		break
+	else:
+		break
+    if session['backend_conn'] is None:
         print 'could not open socket'
 	sys.exit(1)
 
 def close_connection_to_backend():
-    global s
     """Make sure we close the connection"""
-    s.close()
-    s = None
+    session['backend_conn'].close()
+    session['backend_conn'] = None
+    session.pop('backend_conn')
 
 def send_request(request):
-    global s
-    print >> sys.stderr,"sending request \"",json.dumps(request),"\" to ",HOST
     connect_to_backend()
+    s = session['backend_conn']
+    print >> sys.stderr,"sending request \"",json.dumps(request),"\" to ",HOST
     s.send(json.dumps(request))
     s.shutdown(socket.SHUT_WR)
     print >> sys.stderr,"retrieving data from ",HOST
