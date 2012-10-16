@@ -15,6 +15,9 @@
 	<script type="text/javascript" src="{{url_for('static',filename='js/QVisScatterPlot.js')}}" ></script>
 	<script type="text/javascript" src="{{url_for('static',filename='js/QVisMapPlot.js')}}" ></script>
 	<script type="text/javascript" src="{{url_for('static',filename='js/QVisHeatMap.js')}}" ></script>
+	<script type=text/javascript>
+		$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+	</script>
 </head>
 
 

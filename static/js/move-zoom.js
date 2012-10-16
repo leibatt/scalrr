@@ -238,6 +238,7 @@ $(document).ready(function() {
 		querytext = $('#sql-query-text').val();
 		resolution_lvl = $('#resolution-lvl-menu').val();
 		console.log("resolution: "+resolution_lvl);
+		console.log(["script root",$SCRIPT_ROOT]);
 		$.getJSON('/fetch-first-tile',{query: querytext,data_threshold:resolution_lvl},function(jsondata){
 			console.log(jsondata);
 			$('#error_message').remove();
