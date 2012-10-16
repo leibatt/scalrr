@@ -71,11 +71,15 @@ def send_request(request):
     close_connection_to_backend()
     return json.loads(response)
 
-@app.route('/blah/',methods=["POST", "GET"])
+@app.route('/robots.txt',methods=["POST","GET"])
+def robots():
+	send_file("robots.txt")
+
+#@app.route('/blah/',methods=["POST", "GET"])
 def blah():
     return render_template('blah.html')
 
-@app.route('/blah/miserables.json', methods=["POST", "GET"])
+#@app.route('/blah/miserables.json', methods=["POST", "GET"])
 def get__example_readme():
     return send_file("data/miserables.json")
 
@@ -84,12 +88,12 @@ def get_move_zoom():
     session['user_id'] = str(uuid.uuid4())
     return render_template('move-zoom.html')
 
-@app.route('/index2/', methods=["POST", "GET"])
+#@app.route('/index2/', methods=["POST", "GET"])
 def get_data2():
     session['user_id'] = str(uuid.uuid4())
     return render_template('index2.html')
 
-@app.route('/fetch-first-tile',methods=["POST", "GET"])
+#@app.route('/fetch-first-tile',methods=["POST", "GET"])
 def fetch_first_tile():
     app.logger.info("got fetch first tile request")
     query = request.args.get('query',"",type=str)
@@ -104,7 +108,7 @@ def fetch_first_tile():
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-@app.route('/fetch-tile',methods=["POST", "GET"])
+#@app.route('/fetch-tile',methods=["POST", "GET"])
 def fetch_tile():
     app.logger.info("got json request in noreduce function")
     tile_xid = request.args.get('tile_xid',"",type=int)
@@ -124,7 +128,7 @@ def fetch_tile():
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-@app.route('/json-data', methods=["POST", "GET"])
+#@app.route('/json-data', methods=["POST", "GET"])
 def get_data_ajax():
     app.logger.info("got json request in init function")
     query = request.args.get('query',"",type=str)
@@ -141,7 +145,7 @@ def get_data_ajax():
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-@app.route('/json-data-noreduction', methods=["POST", "GET"])
+#@app.route('/json-data-noreduction', methods=["POST", "GET"])
 def get_data_ajax_noreduction():
     app.logger.info("got json request in noreduce function")
     query = request.args.get('query',"",type=str)
@@ -159,7 +163,7 @@ def get_data_ajax_noreduction():
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-@app.route('/json-data-reduce', methods=["POST", "GET"])
+#@app.route('/json-data-reduce', methods=["POST", "GET"])
 def get_data_ajax_reduce():
     app.logger.info("got json request in reduce function")
     query = request.args.get('query',"",type=str)
