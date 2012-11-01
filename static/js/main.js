@@ -73,6 +73,8 @@ $(document).ready(function() {
                    'x' : jsondata['names'][0]['name'],
 		   'y' : jsondata['names'][1]['name'],
 		   'z' : '',
+		   'max':jsondata['max'],
+		   'min':jsondata['min'],
 		   'dimbases':jsondata['dimbases'],
 		   'dimwidths':jsondata['dimwidths'],
 		   'dimnames':jsondata['dimnames']};
@@ -81,7 +83,7 @@ $(document).ready(function() {
 		console.log(jsondata['dimbases']);
 		console.log(jsondata['dimwidths']);
 		$('#aggplot').addClass('show');
-		renderagg.render(data, labels,types);
+		renderagg.render(data, labels,types,opts);
 	}
 
 	function dialogue(querytext) {

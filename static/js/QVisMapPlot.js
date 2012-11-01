@@ -24,11 +24,11 @@ QVis.MapPlot.prototype.render = function(_data, _labels,_types, opts) {
 
 	var self = this;
 	//call the original render function
-	self.labelsfrombase = QVis.ScatterPlot.base.render.call(this,_data,_labels,_types,opts);
+	self.labelsfrombase = QVis.MapPlot.base.render.call(this,_data,_labels,_types,opts);
 
 	// create x,y axis scales
-	var xscale = this.createScale(_data,_types,self.labelsfrombase.x_label,this.w,this.px,false,false);
-	var yscale = this.createScale(_data,_types,self.labelsfrombase.y_label,this.h,this.py,true,false);
+	var xscale = this.createScale(_data,_types,self.labelsfrombase.x_label,this.w,this.px,this.inv[0],false);
+	var yscale = this.createScale(_data,_types,self.labelsfrombase.y_label,this.h,this.py,this.inv[1],false);
 
 	// Create the Google Map…
 	var map = new google.maps.Map(d3.select("#map div").node(), {

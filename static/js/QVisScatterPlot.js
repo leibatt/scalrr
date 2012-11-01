@@ -31,10 +31,17 @@ QVis.ScatterPlot.prototype.render = function(_data, _labels,_types, opts) {
 	console.log("z_label "+self.labelsfrombase.z_label);
 
 	// create x,y axis scales
-	var xscale = this.createScale(_data,_types,self.labelsfrombase.x_label,this.w,this.px,false,false);
-	var yscale = this.createScale(_data,_types,self.labelsfrombase.y_label,this.h,this.py,true,false);
-	var zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,0,0,false,true)
+	var xscale = this.createScale(_data,_types,self.labelsfrombase.x_label,this.w,this.px,this.inv[0],false);
+	var yscale = this.createScale(_data,_types,self.labelsfrombase.y_label,this.h,this.py,this.inv[1],false);
+	var zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,0,0,this.inv[2],true)
 			.range(colorbrewer.Oranges[9]);
+	if((self.labelsfrombase.z_label in this.min) && (self.labelsfrombase.z_label in this.max)) {
+		if(this.inv[2]){
+			zscale.domain([this.max[self.labelsfrombase.z_label],this.min[self.labelsfrombase.z_label]]);
+		} else {
+			zscale.domain([this.min[self.labelsfrombase.z_label],this.max[self.labelsfrombase.z_label]]);
+		}
+	}
 	console.log("xscale domain: "+xscale.domain());
 	console.log("zscale range: "+zscale.range());
 

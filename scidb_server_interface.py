@@ -477,7 +477,7 @@ def build_cast(saved_qpresults):
 			cast += ","
 		else:
 			front = False
-		cast += name+":"+attrs['types'][i]
+		cast += name+":"+attrs['types'][i]+ " NULL"
 	cast += "> ["
 	front = True
 	for i,name in enumerate(saved_qpresults['dims']):
@@ -567,8 +567,8 @@ def daggregate(query,options):
 			for i in range(1,dimension) :
 				chunks += ", "+str(defaultchunkval)
 				#chunks += ", "+ options['dimnames'][i]+" "+ str(defaultchunkval)
-		final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
-		#final_query = "select "+attraggs+" from cast(("+ final_query +"),"+cast+") regrid "+chunks
+		#final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
+		final_query = "select "+attraggs+" from cast(("+ final_query +"),"+cast+") regrid "+chunks
 	#final_query = "select "+attraggs+" from ("+ final_query +") regrid as ( partition by "+chunks
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
 	#	
