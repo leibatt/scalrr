@@ -7,6 +7,7 @@ import simplejson as json
 import math
 from datetime import datetime
 
+USE_NEW_SYNTAX = False
 LOGICAL_PHYSICAL = "explain_physical"
 RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','FILTER':'filter','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
 AGGR_CHUNK_DEFAULT = 10
@@ -17,6 +18,7 @@ D3_DATA_THRESHOLD = 10000
 
 BAD_WORDS_FILE = "bad_words.txt"
 BAD_WORDS= None
+
 try:
 	with open(BAD_WORDS_FILE) as myfile:
 		BAD_WORDS = myfile.readlines()
@@ -420,6 +422,8 @@ def check_query_plan(queryplan):
 	bases= {}
 	widths = {}
 	indexes = {}
+	chunkwidths = {}
+	chunkoverlaps = {}
 	for i, s in enumerate(dim_array):
 		#if (i % 3) == 0:
 		if "=" in s:
@@ -427,7 +431,7 @@ def check_query_plan(queryplan):
 			#print  "s:",s
 			range = s.split('=')[1]
 			name = s.split('=')[0]
-			if name.find("(") != -1:
+			if name.find("(") >= 0:
 				name = name[:name.find("(")]
 				name = "dims."+name
 				rangewidth = int(range)
@@ -439,10 +443,13 @@ def check_query_plan(queryplan):
 				bases[name]=rangevals[0];
 			names.append(name)
 			indexes[name] = dims
+			chunkwidths[name] = int(dim_array[i+1])
+			chunkoverlaps[name] = int(dim_array[i+2])
 			size *= rangewidth
 			dims += 1
 			widths[name] =rangewidth;
-	return {'size': size, 'numdims': dims, 'dims': names, 'indexes':indexes, 'attrs':get_attrs(queryplan),'dimbases':bases,'dimwidths':widths}
+	return {'size': size, 'numdims': dims, 'dims': names, 'indexes':indexes, 'attrs':get_attrs(queryplan)
+		,'dimbases':bases,'dimwidths':widths,'chunkwidths':chunkwidths,'chunkoverlaps':chunkoverlaps}
 
 #get all attributes of the result matrix
 def get_attrs(queryplan):
