@@ -188,6 +188,7 @@ def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate
 	aggregate_options['resolution'] = threshold
 	aggregate_options['tile'] = True
 	sdbioptions['reduce_options'] = aggregate_options
+	print "expected size:",qpresults['size']
 	result = executeQuery(newquery,sdbioptions)
 	if 'error' in result:
 		return result
@@ -419,6 +420,7 @@ def check_query_plan(queryplan):
 	dims = 0
 	size = 1
 	names = []
+	truenames = []
 	bases= {}
 	widths = {}
 	indexes = {}
@@ -429,18 +431,20 @@ def check_query_plan(queryplan):
 		if "=" in s:
 			# split on equals, get the range, split on ':'
 			#print  "s:",s
-			range = s.split('=')[1]
+			rangeval = s.split('=')[1]
 			name = s.split('=')[0]
 			if name.find("(") >= 0:
 				name = name[:name.find("(")]
+				truenames.append(name)
 				name = "dims."+name
-				rangewidth = int(range)
+				rangewidth = int(rangeval)
 				bases[name] = 1 #1 by default
 			else:
+				truenames.append(name)
 				name = "dims."+name
-				rangevals = range.split(':')
+				rangevals = rangeval.split(':')
 				rangewidth = int(rangevals[1]) - int(rangevals[0]) + 1
-				bases[name]=rangevals[0];
+				bases[name]=int(rangevals[0]);
 			names.append(name)
 			indexes[name] = dims
 			chunkwidths[name] = int(dim_array[i+1])
@@ -448,7 +452,7 @@ def check_query_plan(queryplan):
 			size *= rangewidth
 			dims += 1
 			widths[name] =rangewidth;
-	return {'size': size, 'numdims': dims, 'dims': names, 'indexes':indexes, 'attrs':get_attrs(queryplan)
+	return {'size': size, 'numdims': dims,'truedims':truenames, 'dims': names, 'indexes':indexes, 'attrs':get_attrs(queryplan)
 		,'dimbases':bases,'dimwidths':widths,'chunkwidths':chunkwidths,'chunkoverlaps':chunkoverlaps}
 
 #get all attributes of the result matrix
@@ -464,39 +468,44 @@ def get_attrs(queryplan):
 		types.append(name_type[1])
 	return {'names':names,'types':types}
 
+def build_cast(saved_qpresults):
+	cast = "<"
+	front = True
+	attrs = saved_qpresults['attrs']
+	for i,name in enumerate(attrs['names']):
+		if not front:
+			cast += ","
+		else:
+			front = False
+		cast += name+":"+attrs['types'][i]
+	cast += "> ["
+	front = True
+	for i,name in enumerate(saved_qpresults['dims']):
+		if not front:
+			cast += ","
+		else:
+			front = False
+		cast += saved_qpresults['truedims'][i]+"="+str(saved_qpresults['dimbases'][name])+":"+str(saved_qpresults['dimbases'][name]+saved_qpresults['dimwidths'][name]-1)+","+str(saved_qpresults['chunkwidths'][name])+","+str(saved_qpresults['chunkoverlaps'][name])
+	cast += "]"
+	return cast
+
 #options: {'numdims':int, 'chunkdims': [ints], 'attrs':[strings],'flex':'more'/'less'/'none','afl':True/False, 'qpsize':int}
 #required options: numdims, afl, attrs, attrtypes, qpsize
 #NOTE: ASSUMES AVG IS THE AGG FUNCTION!
 #TODO: Fix the avg func assumption
 def daggregate(query,options):
+	saved_qpresults = options['saved_qpresults']
+	cast = build_cast(saved_qpresults)
+	print "cast:",cast
 	final_query = query
 	if 'threshold' in options:
 		threshold = options['threshold']
 	else:
 		threshold= D3_DATA_THRESHOLD
 	dimension = options['numdims']
-	chunks = ""
-	if ('chunkdims' in options) and (len(options['chunkdims']) > 0): #chunkdims specified
-		chunkdims = options['chunkdims']
-		chunks += str(chunkdims[0])
-		for i in range(1,len(chunkdims)):
-			chunks += ", "+str(chunkdims[i])
-	elif dimension > 0: # otherwise do default chunks
-		quotient = 1.0*options['qpsize']/threshold # approximate number of base tiles
-		defaultchunkval = math.pow(quotient,1.0/dimension)
-		if quotient < 1.0:
-			if ('tile' in options) and options['tile']:
-				defaultchunkval = TILE_AGGR_CHUNK_DEFAULT
-			else:
-				defaultchunkval = AGGR_CHUNK_DEFAULT
-		defaultchunkval = int(math.ceil(defaultchunkval)) # round up
-		chunks += str(defaultchunkval)
-		#chunks += options['dimnames'][0]+" "+ str(defaultchunkval)
-		for i in range(1,dimension) :
-			chunks += ", "+str(defaultchunkval)
-			#chunks += ", "+ options['dimnames'][i]+" "+ str(defaultchunkval)
-	# need to escape apostrophes or the new query will break
 	attrs = options['attrs']
+
+	# need to escape apostrophes or the new query will break
 	#final_query = re.sub("(')","\\\1",final_query)
 
 	#make the new query an aql query so we can rename the aggregates easily
@@ -514,7 +523,52 @@ def daggregate(query,options):
 			if attraggs != "":
 				attraggs += ", "
 			attraggs+= "max("+str(attrs[i])+") as max_"+attrs[i]
-	final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
+
+	if USE_NEW_SYNTAX:
+		chunks = ""
+		if ('chunkdims' in options) and (len(options['chunkdims']) > 0): #chunkdims specified
+			chunkdims = options['chunkdims']
+			chunks += saved_qpresults['truedims'][0]+","+str(chunkdims[0])
+			for i in range(1,len(chunkdims)):
+				chunks += ", "+saved_qpresults['truedims'][i]+","+str(chunkdims[i])
+		elif dimension > 0: # otherwise do default chunks
+			quotient = 1.0*options['qpsize']/threshold # approximate number of base tiles
+			defaultchunkval = math.pow(quotient,1.0/dimension)
+			if quotient < 1.0:
+				if ('tile' in options) and options['tile']:
+					defaultchunkval = TILE_AGGR_CHUNK_DEFAULT
+				else:
+					defaultchunkval = AGGR_CHUNK_DEFAULT
+			defaultchunkval = int(math.ceil(defaultchunkval)) # round up
+			chunks += saved_qpresults['truedims'][0]+" "+str(defaultchunkval)
+			#chunks += options['dimnames'][0]+" "+ str(defaultchunkval)
+			for i in range(1,dimension) :
+				chunks += ", "+saved_qpresults['truedims'][i]+" "+str(defaultchunkval)
+		final_query = "select "+attraggs+" from cast(("+ final_query +"),"+cast+") regrid as (partition by "+chunks+")"
+	else:
+		chunks = ""
+		if ('chunkdims' in options) and (len(options['chunkdims']) > 0): #chunkdims specified
+			chunkdims = options['chunkdims']
+			chunks += str(chunkdims[0])
+			for i in range(1,len(chunkdims)):
+				chunks += ", "+str(chunkdims[i])
+		elif dimension > 0: # otherwise do default chunks
+			quotient = 1.0*options['qpsize']/threshold # approximate number of base tiles
+			print "quotient:",quotient,",size:",options['qpsize'],",threshold:",threshold
+			defaultchunkval = math.pow(quotient,1.0/dimension)
+			if quotient < 1.0:
+				if ('tile' in options) and options['tile']:
+					defaultchunkval = TILE_AGGR_CHUNK_DEFAULT
+				else:
+					defaultchunkval = AGGR_CHUNK_DEFAULT
+			defaultchunkval = int(math.ceil(defaultchunkval)) # round up
+			chunks += str(defaultchunkval)
+			#chunks += options['dimnames'][0]+" "+ str(defaultchunkval)
+			for i in range(1,dimension) :
+				chunks += ", "+str(defaultchunkval)
+				#chunks += ", "+ options['dimnames'][i]+" "+ str(defaultchunkval)
+		final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
+		#final_query = "select "+attraggs+" from cast(("+ final_query +"),"+cast+") regrid "+chunks
 	#final_query = "select "+attraggs+" from ("+ final_query +") regrid as ( partition by "+chunks
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
 	#	
@@ -593,6 +647,7 @@ def reduce_resolution(query,options):
 		reduce_options['attrs'] = qpresults['attrs']['names']
 		reduce_options['attrtypes'] = qpresults['attrs']['types']
 		reduce_options['dimnames'] = qpresults['dims']
+		reduce_options['saved_qpresults'] = qpresults
 		newquery = daggregate(query,reduce_options)
 	elif reduce_type == RESTYPE['SAMPLE']:
 		if 'probability' in options:

@@ -40,8 +40,8 @@ def getTileHelper(tile_info,l,user_id):
 		if len(saved_qpresults['dimbases']) > 0: # adjust bases for array if possible
 			xbase = int(saved_qpresults['dimbases'][saved_qpresults['dims'][0]])
 			ybase = int(saved_qpresults['dimbases'][saved_qpresults['dims'][1]])
-		xdim = 0
-		ydim = 1
+		xdim = None
+		ydim = None
 		if ('x_label' in tile_info) and ('y_label' in tile_info):
 			xdim = saved_qpresults['indexes'][tile_info['x_label']]
 			ydim = saved_qpresults['indexes'][tile_info['y_label']]
@@ -52,12 +52,16 @@ def getTileHelper(tile_info,l,user_id):
 		n = saved_qpresults['numdims']
 		levels = sbdata.backend_metadata[user_id]['levels']
 		if levels == 0: # need to compute # of levels
+			root_k = math.ceil(math.pow(k,1.0/n))
+			k = root_k ** 2 ## adjust to make it a nice power
+			print "*************threshold:",k
 			tsize = saved_qpresults['size'] # get the size of the result
 			if tsize <= k: # if k happens to be larger than the total results
 				levels = 1
 			else: # round up to include the topmost level
 				levels = math.ceil(math.log(tsize)/math.log(k))+1
 			sbdata.backend_metadata[user_id]['levels'] = levels # store this computed value
+			sbdata.backend_metadata[user_id]['data_threshold'] = k
 	setup_aggr_options = {'afl':False,'saved_qpresults':saved_qpresults}
 	aggr_options = setup_reduce_type('AGGR',setup_aggr_options)
 	aggr_options['db'] = db
@@ -112,6 +116,7 @@ def getTileHelper2(tile_info,l,user_id):
 		levels = sbdata.backend_metadata[user_id]['levels']
 		if levels == 0: # need to compute # of levels
 			root_k = math.ceil(math.pow(k,1.0/n))
+			k = root_k ** 2
 			print "root_k:",root_k,"d:",sbdata.default_diff
 			for i in range(n):
 				w_i = widths[i]
@@ -126,6 +131,7 @@ def getTileHelper2(tile_info,l,user_id):
 				if l_i > levels:
 					levels = l_i
 			sbdata.backend_metadata[user_id]['levels'] = levels # store this computed value
+			sbdata.backend_metadata[user_id]['data_threshold'] = k
 	setup_aggr_options = {'afl':False,'saved_qpresults':saved_qpresults}
 	aggr_options = setup_reduce_type('AGGR',setup_aggr_options)
 	aggr_options['db'] = db

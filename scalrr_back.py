@@ -255,9 +255,12 @@ def fetch_first_tile2(userquery,options):
 	sdbioptions = {'afl':False,'db':db}
 	saved_qpresults = sdbi.verifyQuery(query,sdbioptions)
 	sdbi.scidbCloseConn(db)
-	print "saved qp results, looking for error:",saved_qpresults
+	print "saved qp results, looking for error"
 	if 'error' in saved_qpresults:
+		print "error found, returning error:",saved_qpresults
 		return saved_qpresults
+	else:
+		print "saved_qpresults:",saved_qpresults
 	user_id = options['user_id']
 	# setup metadata
 	print "setting up metadata"
