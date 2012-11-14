@@ -18,7 +18,8 @@ app = Flask(__name__)
 
 #TODO: put this info in a config file
 LOGFILE = "logs/scalrr_front.log"
-HOST = 'modis.csail.mit.edu'
+HOST = 'localhost'
+#HOST = 'modis.csail.mit.edu'
 PORT = 50007              # The same port as used by the server
 
 app.secret_key = 'L\x05\xb9\xab=\xe8V\x98X)\xb5\xa6\xf3uQB\x1d\x1fz\xb9y\xd7\xfb\xca'

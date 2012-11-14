@@ -74,12 +74,21 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	//console.log("height:"+(self.h-2*self.py)/_labels.dimwidths[ydimname]);
 	//just testing the rects function
 	//console.log(["xwidth",_labels.dimwidths[xdimname]]);
-	this.drawRects(this.rectcontainer,_data,_types,xscale,yscale,/*'dims.'+*/xdimname,/*'dims.'+*/ydimname,function(d){return Math.max(1,(self.w-2*self.px)/(_labels.dimwidths[xdimname]-1))},
+	this.drawRects(this.rectcontainer,_data,_types,xscale,yscale,/*'dims.'+*/xdimname,/*'dims.'+*/ydimname,function(d){return Math.max(1,(self.w-2*self.px)/(_labels.dimwidths[xdimname]-1));},
 		function(d){return Math.max(1,(self.h-2*self.py)/(_labels.dimwidths[ydimname]-1));},
 		function(d) {return self.zscale(d[self.labelsfrombase.z_label]);});
 
 	//this.add_brush(xscale,yscale,/*'dims.'+*/xdimname,/*'dims.'+*/ydimname,function(d) {return self.zscale(d[self.labelsfrombase.z_label]);},this.rectcontainer);
 
+	// this adds a rectangle we can find the mouse clicks from
+	this.rectcontainer.append('rect')
+		.attr("id","mouseclick_rect")
+		.attr("x", this.px)
+		.attr("y", this.py)
+		.attr("width", this.w-2*this.px+Math.max(1,(self.w-2*self.px)/(_labels.dimwidths[xdimname]-1)))				
+		.attr("height", this.h-2*this.py+Math.max(1,(self.h-2*self.py)/(_labels.dimwidths[ydimname]-1)))
+		.style("color","black")
+		.style("opacity",0.0);
 }
 
 QVis.HeatMap.prototype.mini_render = function(_data, _labels,_types, opts) {
@@ -140,4 +149,13 @@ QVis.HeatMap.prototype.mini_render = function(_data, _labels,_types, opts) {
 
 	//this.add_brush(xscale,yscale,/*'dims.'+*/xdimname,/*'dims.'+*/ydimname,function(d) {return self.zscale(d[self.labelsfrombase.z_label]);},this.rectcontainer);
 
+	// this adds a rectangle we can find the mouse clicks from
+	this.rectcontainer.append('rect')
+		.attr("id","mouseclick_rect")
+		.attr("x", this.px)
+		.attr("y", this.py)
+		.attr("width", this.w-2*this.px+Math.max(1,(self.w-2*self.px)/(_labels.dimwidths[xdimname]-1)))				
+		.attr("height", this.h-2*this.py+Math.max(1,(self.h-2*self.py)/(_labels.dimwidths[ydimname]-1)))
+		.style("color","black")
+		.style("opacity",0.0);
 }

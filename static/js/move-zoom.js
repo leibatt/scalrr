@@ -312,12 +312,17 @@ $(document).ready(function() {
 				var mini_render = renderagg.mini_render;
 				renderagg.mini_render = function(_data, _labels,_types, opts) {
 					mini_render.apply(this,[_data, _labels,_types, opts]);
-					$('svg rect').off();
-					$('svg rect').unbind();
-					renderagg.rectcontainer.selectAll('rect')
+					console.log("got here in mousclick thing");
+					//$('svg rect').off();
+					//$('svg rect').unbind();
+					$('#mouseclick_rect').off();
+					$('#mouseclick_rect').unbind();
+					//renderagg.rectcontainer.selectAll('rect')
+					renderagg.rectcontainer.selectAll('#mouseclick_rect')
 						.on("click",function(d,i){return check_zoom_in(d3.mouse(this));});
 
-					$('svg rect')
+					//$('svg rect')
+					$('#mouseclick_rect')
 						.bind("contextmenu",function(e) { return zoom_out();});
 				}
 
@@ -427,12 +432,16 @@ $(document).ready(function() {
 				var render = renderagg.render;
 				renderagg.render = function(_data, _labels,_types, _opts) {
 					render.apply(this,[_data, _labels,_types, _opts]);
-					$('svg rect').off();
-					$('svg rect').unbind();
-					renderagg.rectcontainer.selectAll('rect')
+					console.log("got here in mousclick thing");
+					//$('svg rect').off();
+					//$('svg rect').unbind();
+					$('#mouseclick_rect').off();
+					$('#mouseclick_rect').unbind();
+					renderagg.rectcontainer.selectAll('#mouseclick_rect')
 						.on("click",function(d,i){return check_zoom_in(d3.mouse(this));});
 
-					$('svg rect')
+					//$('svg rect')
+					$('#mouseclick_rect')
 						.bind("contextmenu",function(e) { return zoom_out();});
 				}
 
@@ -449,6 +458,8 @@ $(document).ready(function() {
 		// cut up the space according to the size of the tiles
 		var width = Math.min(1.0*renderagg.w / future_tiles_exact[indexmap[renderagg.labelsfrombase.x_label]],renderagg.w);
 		var height = Math.min(1.0*renderagg.h / future_tiles_exact[indexmap[renderagg.labelsfrombase.y_label]],renderagg.h);
+
+		// adjust for padding in graph
 		var xdim = 1.0*coords[0] - renderagg.px;
 		var ydim = 1.0*coords[1] - renderagg.py;
 		if(renderagg.inv[0]) {
