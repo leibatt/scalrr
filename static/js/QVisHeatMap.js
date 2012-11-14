@@ -32,7 +32,8 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	var xdimname = self.labelsfrombase.x_label;//.substring("dims.".length);//""+_labels.dimnames[0];
 	var ydimname = self.labelsfrombase.y_label;//.substring("dims.".length);//""+_labels.dimnames[1];
 	//console.log("dimnames: "+xdimname+','+ydimname);
-	//console.log(_labels.dimbases[xdimname]);
+	//console.log(['dimbases',_labels.dimbases[xdimname]]);
+	console.log(['labels',_labels]);
 	//console.log(_labels.dimwidths[xdimname]);
 	//console.log(Number(_labels.dimwidths[xdimname]+_labels.dimbases[xdimname]));
 	//console.log(_labels.dimbases[ydimname]);

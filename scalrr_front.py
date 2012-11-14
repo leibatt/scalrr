@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 #TODO: put this info in a config file
 LOGFILE = "logs/scalrr_front.log"
-HOST = 'localhost'
+HOST = 'modis.csail.mit.edu'
 PORT = 50007              # The same port as used by the server
 
 app.secret_key = 'L\x05\xb9\xab=\xe8V\x98X)\xb5\xa6\xf3uQB\x1d\x1fz\xb9y\xd7\xfb\xca'
@@ -84,7 +84,7 @@ def get_move_zoom():
     session['user_id'] = str(uuid.uuid4())
     return render_template('move-zoom.html')
 
-#@app.route('/index2/', methods=["POST", "GET"])
+@app.route('/index2/', methods=["POST", "GET"])
 def get_data2():
     session['user_id'] = str(uuid.uuid4())
     return render_template('index2.html')
@@ -124,7 +124,7 @@ def fetch_tile():
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-#@app.route('/json-data', methods=["POST", "GET"])
+@app.route('/json-data', methods=["POST", "GET"])
 def get_data_ajax():
     app.logger.info("got json request in init function")
     query = request.args.get('query',"",type=str)
@@ -141,7 +141,7 @@ def get_data_ajax():
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-#@app.route('/json-data-noreduction', methods=["POST", "GET"])
+@app.route('/json-data-noreduction', methods=["POST", "GET"])
 def get_data_ajax_noreduction():
     app.logger.info("got json request in noreduce function")
     query = request.args.get('query',"",type=str)
@@ -159,7 +159,7 @@ def get_data_ajax_noreduction():
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-#@app.route('/json-data-reduce', methods=["POST", "GET"])
+@app.route('/json-data-reduce', methods=["POST", "GET"])
 def get_data_ajax_reduce():
     app.logger.info("got json request in reduce function")
     query = request.args.get('query',"",type=str)

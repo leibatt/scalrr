@@ -134,7 +134,7 @@ def query_execute(userquery,options):
 	else: #return original query
 		sdbioptions = {'afl':False,'reduce_res':False,'db':db}
 	queryresultobj = sdbi.executeQuery(query,sdbioptions)
-
+	print "queryresultobj:",queryresultobj
 	print  "retrieved data from db.\nparsing results..."
 	sdbioptions={'dimnames':saved_qpresults['dims']}
 	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
