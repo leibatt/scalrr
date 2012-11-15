@@ -22,7 +22,12 @@ HOST = 'localhost'
 #HOST = 'modis.csail.mit.edu'
 PORT = 50007              # The same port as used by the server
 
-app.secret_key = 
+app.secret_key = None
+
+with open("secret_key.txt","r") as keyfile:
+    for line in keyfile:
+        app.secret_key = str(line)
+        print "secret key:",line
 
 def connect_to_backend():
     """Make sure we're connected"""
