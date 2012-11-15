@@ -17,17 +17,24 @@ app = Flask(__name__)
 
 
 #TODO: put this info in a config file
-LOGFILE = "logs/scalrr_front.log"
-HOST = 'localhost'
+LOGFILE = None
+HOST = None
 #HOST = 'modis.csail.mit.edu'
-PORT = 50007              # The same port as used by the server
+PORT = None              # The same port as used by the server
 
 app.secret_key = None
 
 with open("secret_key.txt","r") as keyfile:
     for line in keyfile:
-        app.secret_key = str(line)
-        print "secret key:",line
+	keypair = line[:-1].split('=',1)
+	if keypair[0] == 'log_file':
+	    LOGFILE = str(keypair[1])
+        elif keypair[0] == 'host':
+            HOST = str(keypair[1])
+        elif keypair[0] == 'port':
+            PORT = int(keypair[1])
+        elif keypair[0] == 'secret_key':
+            app.secret_key = str(keypair[1])
 
 def connect_to_backend():
     """Make sure we're connected"""
