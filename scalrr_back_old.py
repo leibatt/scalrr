@@ -12,12 +12,6 @@ import socket
 import sys
 import os
 
-# for web socket stuff, using Tornado
-import tornado.httpserver
-import tornado.websocket
-import tornado.ioloop
-import tornado.web
-
 from datetime import datetime
 
 import dumb_expert
@@ -83,8 +77,7 @@ def process_request(inputstring):
         #response = fetch_tile(tile_xid,tile_yid,x_label,y_label,level,options)
         response = fetch_tile2(tile_id,level,options)
     else:
-	response = {'error':{'type':"unrecognized function passed",'args':inputstring}}
-        #raise Exception("unrecognized function passed")
+        raise Exception("unrecognized function passed")
     #dbclose()
     print "returning response"
     return json.dumps(response)
@@ -408,27 +401,85 @@ def setup_reduce_type(reduce_type,options):
 	#else: #unrecognized type
 	#	raise Exception("Unrecognized reduce type passed to the server.")
 	return returnoptions
- 
-# used to manage requests
-class WSHandler(tornado.websocket.WebSocketHandler):
-    def open(self):
-        print 'new connection'
-      
-    def on_message(self, message):
-        print 'message received %s' % message
-	response = process_request(str(message)) # get response for client
-	self.write_message(response) # send response to client
- 
-    def on_close(self):
-      print 'connection closed'
- 
- 
-application = tornado.web.Application([
-    (r'/', WSHandler),
-])
- 
- 
+
+class Server:
+    def __init__(self):
+        self.host = HOST
+        self.port = PORT
+        self.backlog = 5
+        self.size = PACKET_SIZE
+        self.server = None
+        self.threads = []
+
+    def open_socket(self):
+        for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
+            af, socktype, proto, canonname, sa = res
+            try:
+                self.server = socket.socket(af, socktype, proto)
+            except socket.error, msg:
+                self.server = None
+                continue
+            try:
+                self.server.bind(sa)
+                self.server.listen(1)
+            except socket.error, msg:
+                self.server.close()
+                self.server = None
+                continue
+            break
+        if self.server is None:
+            print 'could not open socket'
+            sys.exit(1)
+
+    def run(self):
+        self.open_socket()
+        input = [self.server,sys.stdin]
+        running = 1
+        while running:
+            inputready,outputready,exceptready = select.select(input,[],[])
+
+            for s in inputready:
+
+                if s == self.server:
+                    # handle the server socket
+                    c = Client(self.server.accept())
+                    c.start()
+                    self.threads.append(c)
+
+                elif s == sys.stdin:
+                    # handle standard input
+                    junk = sys.stdin.readline()
+                    running = 0
+
+        # close all threads
+
+        self.server.close()
+        for c in self.threads:
+            c.join()
+
+class Client(threading.Thread):
+    def __init__(self,(client,address)):
+        threading.Thread.__init__(self)
+        self.client = client
+        self.address = address
+        self.size = PACKET_SIZE
+
+    def run(self):
+        running = 1
+	print 'Connected by', self.address
+	request = ''
+	while running:
+	    data = self.client.recv(PACKET_SIZE)
+	    #print "data: ",data
+	    if data: 
+                request += data
+            else:
+                running = 0
+	print "final data: \"",request,"\""
+	response = process_request(request)
+	self.client.send(response)
+	self.client.close()
+
 if __name__ == "__main__":
-    http_server = tornado.httpserver.HTTPServer(application)
-    http_server.listen(PORT)
-    tornado.ioloop.IOLoop.instance().start()
+    s = Server()
+    s.run() 

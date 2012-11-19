@@ -10,7 +10,6 @@ import traceback
 import socket
 import sys
 import uuid
-import websocket
 import logging
 from logging.handlers import RotatingFileHandler
 from logging import Formatter
@@ -37,17 +36,30 @@ with open("config.txt","r") as keyfile:
         elif keypair[0] == 'secret_key':
             app.secret_key = str(keypair[1])
 
-CONN_STRING = str("ws://"+str(HOST)+":"+str(PORT)+"/")
-
 def connect_to_backend():
-    if 'backend_conn' not in session:
-        try:
-            ws = websocket.create_connection(CONN_STRING)
-            session['backend_conn'] = ws
-        except Exception as e:
-            app.logger.error('error occurred connecting to backend:\n'+str(type(e)))
-    if ('backend_conn' not in session) or (session['backend_conn'] is None):
-        app.logger.warning('could not open connection to \''+CONN_STRING+'\'')
+    """Make sure we're connected"""
+    for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
+        af, socktype, proto, canonname, sa = res
+	if 'backend_conn' not in session:
+		try:
+		    session['backend_conn'] = socket.socket(af, socktype, proto)
+		except socket.error, msg:
+		    app.logger.error('error occurred connecting to backend:\n'+str(msg))
+		    session['backend_conn'] = None
+		    continue
+		try:
+		    session['backend_conn'].connect(sa)
+		except socket.error, msg:
+		    app.logger.error('error occurred connecting to backend:\n'+str(msg))
+		    session['backend_conn'].close()
+		    session['backend_conn'] = None
+		    continue
+		break
+	else:
+		break
+    if session['backend_conn'] is None:
+        app.logger.warning('could not open socket')
+	sys.exit(1)
 
 def close_connection_to_backend():
     """Make sure we close the connection"""
@@ -57,12 +69,17 @@ def close_connection_to_backend():
 
 def send_request(request):
     connect_to_backend()
-    ws = session['backend_conn']
-    app.logger.info("sending request \""+json.dumps(request)+"\" to '"+CONN_STRING+"'")
-    ws.send(json.dumps(request))
-    app.logger.info("retrieving data from '"+CONN_STRING+"'")
-    response = ws.recv()
-    app.logger.info("received data from '"+CONN_STRING+"'")
+    s = session['backend_conn']
+    app.logger.info("sending request \""+json.dumps(request)+"\" to "+HOST)
+    s.send(json.dumps(request))
+    s.shutdown(socket.SHUT_WR)
+    app.logger.info("retrieving data from "+HOST)
+    response = ''
+    while 1:
+        data = s.recv(1024)
+        response += data
+        if not data: break
+    app.logger.info("received data from "+HOST)
     close_connection_to_backend()
     return json.loads(response)
 

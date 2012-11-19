@@ -10,7 +10,6 @@ import traceback
 import socket
 import sys
 import uuid
-import websocket
 import logging
 from logging.handlers import RotatingFileHandler
 from logging import Formatter
@@ -18,36 +17,37 @@ app = Flask(__name__)
 
 
 #TODO: put this info in a config file
-LOGFILE = None
-HOST = None
-#HOST = 'modis.csail.mit.edu'
-PORT = None              # The same port as used by the server
+LOGFILE = "logs/scalrr_front.log"
+HOST = 'localhost'
+PORT = 50007              # The same port as used by the server
 
-app.secret_key = None
+app.secret_key = 'L\x05\xb9\xab=\xe8V\x98X)\xb5\xa6\xf3uQB\x1d\x1fz\xb9y\xd7\xfb\xca'
 
-with open("config.txt","r") as keyfile:
-    for line in keyfile:
-	keypair = line[:-1].split('=',1)
-	if keypair[0] == 'log_file':
-	    LOGFILE = str(keypair[1])
-        elif keypair[0] == 'host':
-            HOST = str(keypair[1])
-        elif keypair[0] == 'port':
-            PORT = int(keypair[1])
-        elif keypair[0] == 'secret_key':
-            app.secret_key = str(keypair[1])
-
-CONN_STRING = str("ws://"+str(HOST)+":"+str(PORT)+"/")
 
 def connect_to_backend():
-    if 'backend_conn' not in session:
-        try:
-            ws = websocket.create_connection(CONN_STRING)
-            session['backend_conn'] = ws
-        except Exception as e:
-            app.logger.error('error occurred connecting to backend:\n'+str(type(e)))
-    if ('backend_conn' not in session) or (session['backend_conn'] is None):
-        app.logger.warning('could not open connection to \''+CONN_STRING+'\'')
+    """Make sure we're connected"""
+    for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
+        af, socktype, proto, canonname, sa = res
+	if 'backend_conn' not in session:
+		try:
+		    session['backend_conn'] = socket.socket(af, socktype, proto)
+		except socket.error, msg:
+		    app.logger.error('error occurred connecting to backend:\n'+str(msg))
+		    session['backend_conn'] = None
+		    continue
+		try:
+		    session['backend_conn'].connect(sa)
+		except socket.error, msg:
+		    app.logger.error('error occurred connecting to backend:\n'+str(msg))
+		    session['backend_conn'].close()
+		    session['backend_conn'] = None
+		    continue
+		break
+	else:
+		break
+    if session['backend_conn'] is None:
+        app.logger.warning('could not open socket')
+	sys.exit(1)
 
 def close_connection_to_backend():
     """Make sure we close the connection"""
@@ -57,12 +57,17 @@ def close_connection_to_backend():
 
 def send_request(request):
     connect_to_backend()
-    ws = session['backend_conn']
-    app.logger.info("sending request \""+json.dumps(request)+"\" to '"+CONN_STRING+"'")
-    ws.send(json.dumps(request))
-    app.logger.info("retrieving data from '"+CONN_STRING+"'")
-    response = ws.recv()
-    app.logger.info("received data from '"+CONN_STRING+"'")
+    s = session['backend_conn']
+    app.logger.info("sending request \""+json.dumps(request)+"\" to "+HOST)
+    s.send(json.dumps(request))
+    s.shutdown(socket.SHUT_WR)
+    app.logger.info("retrieving data from "+HOST)
+    response = ''
+    while 1:
+        data = s.recv(1024)
+        response += data
+        if not data: break
+    app.logger.info("received data from "+HOST)
     close_connection_to_backend()
     return json.loads(response)
 
@@ -79,7 +84,7 @@ def get_move_zoom():
     session['user_id'] = str(uuid.uuid4())
     return render_template('move-zoom.html')
 
-@app.route('/index2/', methods=["POST", "GET"])
+#@app.route('/index2/', methods=["POST", "GET"])
 def get_data2():
     session['user_id'] = str(uuid.uuid4())
     return render_template('index2.html')
@@ -119,7 +124,7 @@ def fetch_tile():
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-@app.route('/json-data', methods=["POST", "GET"])
+#@app.route('/json-data', methods=["POST", "GET"])
 def get_data_ajax():
     app.logger.info("got json request in init function")
     query = request.args.get('query',"",type=str)
@@ -136,7 +141,7 @@ def get_data_ajax():
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-@app.route('/json-data-noreduction', methods=["POST", "GET"])
+#@app.route('/json-data-noreduction', methods=["POST", "GET"])
 def get_data_ajax_noreduction():
     app.logger.info("got json request in noreduce function")
     query = request.args.get('query',"",type=str)
@@ -154,7 +159,7 @@ def get_data_ajax_noreduction():
     #print >> sys.stderr, json.dumps(queryresultarr)
     return json.dumps(queryresultarr)
 
-@app.route('/json-data-reduce', methods=["POST", "GET"])
+#@app.route('/json-data-reduce', methods=["POST", "GET"])
 def get_data_ajax_reduce():
     app.logger.info("got json request in reduce function")
     query = request.args.get('query',"",type=str)
