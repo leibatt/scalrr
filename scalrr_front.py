@@ -24,7 +24,7 @@ PORT = None              # The same port as used by the server
 
 app.secret_key = None
 
-with open("secret_key.txt","r") as keyfile:
+with open("config.txt","r") as keyfile:
     for line in keyfile:
 	keypair = line[:-1].split('=',1)
 	if keypair[0] == 'log_file':
