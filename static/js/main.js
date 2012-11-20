@@ -80,8 +80,8 @@ $(document).ready(function() {
 		   'dimnames':jsondata['dimnames']};
 		var types = jsondata['types'];
 		
-		console.log(jsondata['dimbases']);
-		console.log(jsondata['dimwidths']);
+		console.log(['dimbases',jsondata['dimbases']]);
+		console.log(['dimwidths',jsondata['dimwidths']]);
 		$('#aggplot').addClass('show');
 		renderagg.render(data, labels,types,opts);
 	}

@@ -184,7 +184,7 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 	for(var i = 0; i < _labels.names.length; i++) {
 		if(_labels.names[i]['isattr']){ // get all attribute names
 			attrnames.push(_labels.names[i]['name']);
-		}/*
+		}
 		if(!this.dimsonly || !_labels.names[i]['isattr']) {
 			labelnames.push(_labels.names[i]);
 			if(_labels.names[i]['name'] === _labels.x){
@@ -193,7 +193,7 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 			if(_labels.names[i]['name'] === _labels.y){
 				found_ylabel = true;
 			}
-		}*/
+		}
 	}
 
 	labelnames.push.apply(labelnames,dimnames);
@@ -201,7 +201,7 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 		labelnames.push.apply(labelnames,attrnames);
 	}
 
-/*
+
 	if(this.dimsonly && labelnames.length > 0) { // fixup xlabel and ylabel
 		if(!found_xlabel) {
 			console.log("got here");
@@ -211,14 +211,11 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 			_labels.y = labelnames[0]['name'];
 		}
 	}
-*/
+
 
 	//console.log("this.rootid: " + this.rootid+", self.rootid: "+self.rootid);
 	//console.log("this == self?" + this === self);
 
-	// _labels.names contains the columns that will be plotted on the y-axis
-	// I iterate through each column and consolidate the points that would be rendered
-	// This means that there could be overlapping points from two different columns
 	var x_label = _labels.x,
 		y_label = _labels.y,
 		z_label = _labels.z;/*,
@@ -467,7 +464,6 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 			var newlabels = {"z" : zval,"y": yval, "x":xval, "names" : _labels.names,'dimnames':_labels.dimnames,'dimwidths':_labels.dimwidths,'dimbases':_labels.dimbases,
 				"max":_labels.max,"min":_labels.min, "inv":inv	};
 			
-			// TODO: this is the wrong _data variable! where is the updated one?
 			self.render(_data, newlabels,_types, opts);
 			return false;
 		});

@@ -143,7 +143,7 @@ QVis.HeatMap.prototype.mini_render = function(_data, _labels,_types, opts) {
 	//console.log("height:"+(self.h-2*self.py)/_labels.dimwidths[ydimname]);
 	//just testing the rects function
 	//console.log(["xwidth",_labels.dimwidths[xdimname]]);
-	this.drawRects(this.rectcontainer,_data,_types,xscale,yscale,/*'dims.'+*/xdimname,/*'dims.'+*/ydimname,function(d){return Math.max(1,(self.w-2*self.px)/(_labels.dimwidths[xdimname]-1))},
+	this.drawRects(this.rectcontainer,_data,_types,xscale,yscale,/*'dims.'+*/xdimname,/*'dims.'+*/ydimname,function(d){return Math.max(1,(self.w-2*self.px)/(_labels.dimwidths[xdimname]-1));},
 		function(d){return Math.max(1,(self.h-2*self.py)/(_labels.dimwidths[ydimname]-1));},
 		function(d) {return self.zscale(d[self.labelsfrombase.z_label]);});
 

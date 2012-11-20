@@ -10,7 +10,7 @@ from datetime import datetime
 USE_NEW_SYNTAX = False
 LOGICAL_PHYSICAL = "explain_physical"
 RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','FILTER':'filter','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
-AGGR_CHUNK_DEFAULT = 10
+AGGR_CHUNK_DEFAULT = 1
 TILE_AGGR_CHUNK_DEFAULT = 1 # don't aggregate if we're at the lowest zoom level
 PROB_DEFAULT = .5
 SIZE_THRESHOLD = 50
@@ -540,6 +540,7 @@ def daggregate(query,options):
 				else:
 					defaultchunkval = AGGR_CHUNK_DEFAULT
 			defaultchunkval = int(math.ceil(defaultchunkval)) # round up
+			print "chunk size:",defaultchunkval,"quotient:",quotient,",size:",options['qpsize'],",threshold:",threshold
 			chunks += saved_qpresults['truedims'][0]+" "+str(defaultchunkval)
 			#chunks += options['dimnames'][0]+" "+ str(defaultchunkval)
 			for i in range(1,dimension) :
@@ -554,8 +555,8 @@ def daggregate(query,options):
 				chunks += ", "+str(chunkdims[i])
 		elif dimension > 0: # otherwise do default chunks
 			quotient = 1.0*options['qpsize']/threshold # approximate number of base tiles
-			print "quotient:",quotient,",size:",options['qpsize'],",threshold:",threshold
 			defaultchunkval = math.pow(quotient,1.0/dimension)
+			print "chunk size:",defaultchunkval,"quotient:",quotient,",size:",options['qpsize'],",threshold:",threshold
 			if quotient < 1.0:
 				if ('tile' in options) and options['tile']:
 					defaultchunkval = TILE_AGGR_CHUNK_DEFAULT
