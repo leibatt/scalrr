@@ -3,7 +3,7 @@ import json
 #import md5
 import traceback
 import scidb_server_interface as sdbi
-import mysql_server_interface as mdbi
+#import mysql_server_interface as mdbi
 import scalrr_back_data as sbdata
 import tile_interface as ti
 import threading
@@ -41,15 +41,15 @@ def dbconnect():
     """Make sure we are connected to the database each request."""
     if DEFAULT_DB == SCIDB:
     	sdbi.scidbOpenConn()
-    else:
-    	mdbi.mysqlOpenConn()
+    #else:
+    	#mdbi.mysqlOpenConn()
 
 def dbclose():
     """Closes the database again at the end of the request."""
     if DEFAULT_DB == SCIDB:
     	sdbi.scidbCloseConn()
-    else:
-    	mdbi.mysqlOpenConn()
+    #else:
+    	#mdbi.mysqlOpenConn()
 
 def process_request(inputstring):
     print "received request: \"",inputstring,"\""
@@ -62,7 +62,8 @@ def process_request(inputstring):
         query = str(request['query'])
         print "executing query:\"",query,"\""
         if DEFAULT_DB == MYSQL:
-            response = query_execute_base(query,options)
+            #response = query_execute_base(query,options)
+            response = {}
         elif DEFAULT_DB == SCIDB:
             response = query_execute(query,options)
     elif request['function'] == "fetch_first_tile":
@@ -90,11 +91,11 @@ def process_request(inputstring):
     return json.dumps(response)
 
 #mysql code
-def query_execute_base(userquery,options):
-	query = userquery
-	mdbioptions = {}
-	mdbi.mysqlExecuteQuery(query,mdbioptions)
-	return mdbi.mysqlGetAllAttrArrFromQueryForJSON(mdbioptions)
+#def query_execute_base(userquery,options):
+#	query = userquery
+#	mdbioptions = {}
+#	mdbi.mysqlExecuteQuery(query,mdbioptions)
+#	return mdbi.mysqlGetAllAttrArrFromQueryForJSON(mdbioptions)
 
 #options: {reduce_res_check:True/False}
 def query_execute(userquery,options):
