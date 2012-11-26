@@ -1,6 +1,7 @@
 import sys
 sys.path.append('/opt/scidb/12.3/lib')
 sys.path.append('/opt/scidb/12.7/lib')
+sys.path.append('/opt/scidb/12.10/lib')
 import scidbapi as scidb
 import string, re
 import simplejson as json
