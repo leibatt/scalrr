@@ -57,7 +57,7 @@ g {
 	padding-right: 10px;
 }
 
-div.xlabel, div.ylabel, div.zlabel {
+div.xlabel, div.ylabel, div.zlabel,form div.width,form div.height {
 	margin: 10px;
 	text-align: center;
 }
@@ -134,20 +134,33 @@ g.xaxis path,g.yaxis path {
 	display: block;
 }
 
-#resulting-plot-header {
-	visibility: hidden;
-}
-
-#resulting-plot-header.show {
-	visibility: visible;
-}
-
-#aggplot, #map {
+#aggplot, #map, #canvas, #aggplot-form, #resulting-plot-header, #nav {
 	display: none;
 }
+/*
+#map, #map div {
+	height: 100%;
+	width: 100%;
+}
+*/
 
-#aggplot.show, #map.show {
+#aggplot.show {
 	display: block;
+	position:relative;
+}
+
+#aggplot-form.show,#resulting-plot-header.show, #nav.show {
+	display: block;
+}
+
+#map.show, #canvas.show {
+	display: block;
+}
+
+#canvas.show, #svg_aggplot {
+	position: absolute;
+	top: 0;
+	left: 0;
 }
 
 /*

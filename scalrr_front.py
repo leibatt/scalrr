@@ -84,6 +84,11 @@ def get_data2():
     session['user_id'] = str(uuid.uuid4())
     return render_template('index2.html')
 
+@app.route('/canvas/', methods=["POST", "GET"])
+def get_data2():
+    session['user_id'] = str(uuid.uuid4())
+    return render_template('canvas.html')
+
 @app.route('/fetch-first-tile',methods=["POST", "GET"])
 def fetch_first_tile():
     app.logger.info("got fetch first tile request")

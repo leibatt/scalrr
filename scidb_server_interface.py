@@ -569,8 +569,8 @@ def daggregate(query,options):
 			for i in range(1,dimension) :
 				chunks += ", "+str(defaultchunkval)
 				#chunks += ", "+ options['dimnames'][i]+" "+ str(defaultchunkval)
-		#final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
-		final_query = "select "+attraggs+" from cast(("+ final_query +"),"+cast+") regrid "+chunks
+		final_query = "select "+attraggs+" from ("+ final_query +") regrid "+chunks
+		#final_query = "select "+attraggs+" from cast(("+ final_query +"),"+cast+") regrid "+chunks
 	#final_query = "select "+attraggs+" from ("+ final_query +") regrid as ( partition by "+chunks
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
 	#	
@@ -590,7 +590,8 @@ def dsample(query,options):
 		probability = options['probability']
 	elif 'threshold' in options:
 		threshold = options['threshold']
-		probability = min([1,threshold * 1.0 / options['qpsize']])
+		probability = min([1,threshold * 1.0 / 7576])#options['qpsize']])
+		print "threshold: ",threshold
 	else:
 		probability = min([1,D3_DATA_THRESHOLD * 1.0 / options['qpsize']])
 	probability = str(probability);
@@ -600,7 +601,7 @@ def dsample(query,options):
 	#	final_query = "bernoulli(("+final_query+"), "+probability+")"
 	#else:
 	final_query = "select * from bernoulli(("+ final_query +"), "+probability+")"
-	#print  "final query:",final_query,"\nexecuting query..."
+	print  "final query:",final_query#,"\nexecuting query..."
 	#if options['afl']:
 	#	result = db.executeQuery(final_query,'afl')
 	#else:

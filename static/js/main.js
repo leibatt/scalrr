@@ -53,9 +53,13 @@ $(document).ready(function() {
 	function draw_graph(jsondata) {
 		var menutype = $('#vis-type-menu').val();
 		var opts = {overlap:-0, r:1.5};
+		var xlabel = jsondata['names'][0]['name'];
+		var ylabel = jsondata['names'][1]['name'];
 		switch(menutype) {
 			case 'mapplot':
 				renderagg = new QVis.MapPlot('aggplot', opts);
+				xlabel = "attrs.lat";
+				ylabel = "attrs.lon";
 				break;
 			case 'scatterplot':
 				renderagg = new QVis.ScatterPlot('aggplot', opts);
@@ -70,8 +74,8 @@ $(document).ready(function() {
 		
 		var data = jsondata['data'];
 		var labels={'names' : jsondata['names'],
-                   'x' : jsondata['names'][0]['name'],
-		   'y' : jsondata['names'][1]['name'],
+                   'x' : xlabel,
+		   'y' : ylabel,
 		   'z' : '',
 		   'max':jsondata['max'],
 		   'min':jsondata['min'],
@@ -79,7 +83,6 @@ $(document).ready(function() {
 		   'dimwidths':jsondata['dimwidths'],
 		   'dimnames':jsondata['dimnames']};
 		var types = jsondata['types'];
-		
 		console.log(['dimbases',jsondata['dimbases']]);
 		console.log(['dimwidths',jsondata['dimwidths']]);
 		$('#aggplot').addClass('show');

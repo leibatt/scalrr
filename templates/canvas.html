@@ -17,6 +17,7 @@
 	<script type="text/javascript" src="{{url_for('static',filename='js/QVisHeatMap.js')}}" ></script>
 	<script type=text/javascript>
 		$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+		$USE_CANVAS = true;
 	</script>
 </head>
 
@@ -53,13 +54,9 @@
 		<a id="button-right" class="nav-button">right</a>
 	</div>
 	<div id="aggplot" class=".hide-element">
-<!--
-		<a id="button-zoom-in" class="nav-button zoom">zoom in</a>
-		<input id="zoom-in-text" type="text"/>
-		<a id="button-zoom-out" class="nav-button zoom">zoom out</a>
--->
 		<div class="legend"></div>
-		<svg style="display:block"></svg>
+		<canvas id="canvas" class=".hide-element"></canvas>
+		<svg></svg>
 		<div id="map" class=".hide-element">
 			<div></div>
 		</div>
@@ -86,11 +83,11 @@
 				<input type="radio" id="zlabel-radio2" name="zlabel-radio" checked="checked" value=""/><label for="zlabel-radio2">none</label>
 			</div>
 		</div>
-		<div name="width" class="width">
+		<div class="width">
 			<label for="update-width" id="label-width">width: </label>
 			<input type="text" id="update-width"/>
 		</div>
-		<div name="height" class="height">
+		<div class="height">
 			<label for="update-height" id="label-height">height: </label>
 			<input type="text" id="update-height"/>
 		</div>

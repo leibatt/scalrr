@@ -15,8 +15,8 @@ QVis.Graph = function(rootid,opts) {
 	this.ylabeldiv = null;
 	this.svg = null;
 
-	this.h = opts['h'] || 600;
-	this.w = opts['w'] || 900;
+	this.h = opts['h'] || 800;
+	this.w = opts['w'] || 1100;
 	this.px = 80;
 	this.py = 30;
 }
@@ -133,13 +133,13 @@ QVis.Graph.prototype.clear = function() {
 	this.map = $("#"+this.rootid + " #map");
 	this.jsvg = $("#"+this.rootid + " svg");
 	this.jlegend = $("#"+this.rootid+" .legend");
-	this.xlabeldiv = $("#"+this.rootid+" .xlabel");	
-	this.ylabeldiv = $("#"+this.rootid+" .ylabel");	
-	this.zlabeldiv = $("#"+this.rootid+" .zlabel");	
-	this.jsvg.empty(); this.jlegend.empty();
+	this.xlabeldiv = $("#"+this.rootid+"-form .xlabel");	
+	this.ylabeldiv = $("#"+this.rootid+"-form .ylabel");	
+	this.zlabeldiv = $("#"+this.rootid+"-form .zlabel");	
 	this.xlabeldiv.find("select").remove();//.empty();
 	this.ylabeldiv.find("select").remove();//.empty();
 	this.zlabeldiv.find("select").remove();//.empty();
+	this.jsvg.empty(); this.jlegend.empty();
 	this.map.empty();
 	this.map.append('<div></div>');
 	this.brush = null;
@@ -413,6 +413,9 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 		})();*/
 	}
 
+	//set to the current width and height
+	$('#update-width').val(self.w);
+	$('#update-height').val(self.h);
 	//
 	// I create and execute this anonymous function so
 	// selectedval will be private to and accessible by the .change() callback function
@@ -426,35 +429,49 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 		var selectedyval = y_label;
 		var inv = 'inv' in _labels ? _labels['inv'] : [false,false,false];
 		console.log(['inv' in _labels,'x' in _labels]);
-		$("#"+self.rootid+" input#vis-update-submit").off('click');
-		$("#"+self.rootid+" input#vis-update-submit").click(function() {
+		$("#vis-update-submit").off('click');
+		$("#vis-update-submit").click(function() {
 			var zval = '';//$("#"+self.rootid+" .zlabel select").val();
 			var yval = '';//$("#"+self.rootid+" .zlabel select").val();
 			var xval = '';//$("#"+self.rootid+" .zlabel select").val();
 
+			var width = self.w;
+			var height = self.h;
+
 			var inv_new = [false,false,false];
 			console.log(["old radio vals: ",inv]);
 			if(self.selectz) {
-				zval = $("#"+self.rootid+" .zlabel select").val(); // should be the same as before
-				inv_new[2]= $("#"+self.rootid+" input:radio[name='zlabel-radio']:checked").val() !== "";
+				zval = $("#"+self.rootid+"-form .zlabel select").val(); // should be the same as before
+				inv_new[2]= $("#"+self.rootid+"-form input:radio[name='zlabel-radio']:checked").val() !== "";
 			}
 			if(self.selecty) {
-				yval = $("#"+self.rootid+" .ylabel select").val(); // should be the same as before
-				inv_new[1]= $("#"+self.rootid+" input:radio[name='ylabel-radio']:checked").val() !== "";
+				yval = $("#"+self.rootid+"-form .ylabel select").val(); // should be the same as before
+				inv_new[1]= $("#"+self.rootid+"-form input:radio[name='ylabel-radio']:checked").val() !== "";
 			}
 			if(self.selectx) {
-				xval = $("#"+self.rootid+" .xlabel select").val(); // should be the same as before
-				inv_new[0]= $("#"+self.rootid+" input:radio[name='xlabel-radio']:checked").val() !== "";
+				xval = $("#"+self.rootid+"-form .xlabel select").val(); // should be the same as before
+				inv_new[0]= $("#"+self.rootid+"-form input:radio[name='xlabel-radio']:checked").val() !== "";
 			}
+
+			var neww = $('#update-width').val();
+			var newh = $('#update-height').val();
+
 			console.log(["selected options", zval,yval,xval]);
 			console.log(["new radio vals: ",inv_new]);
+			console.log(["new dims:",neww,newh]);
 			// if the values haven't changed
 			if ((!self.selectz || ((zval === selectedzval) && (inv[2] === inv_new[2]))) 
 				&& (!self.selecty || ((yval === selectedyval) && (inv[1] === inv_new[1]))) 
-				&& (!self.selectx || ((xval === selectedxval)  && (inv[0] === inv_new[0])))) return false;
+				&& (!self.selectx || ((xval === selectedxval)  && (inv[0] === inv_new[0])))
+				&& (width === neww)
+				&& (height === newh)) return false;
 			selectedxval = xval;
 			selectedyval = yval;
 			selectedzval = zval;
+			width = neww;
+			height = newh;
+			opts['w'] = width;
+			opts['h'] = height;
 			for(var i = 0; i <= 2; i++) {
 				inv[i]= inv_new[i];
 			}
@@ -481,7 +498,13 @@ QVis.Graph.prototype.mini_render = function(_data, _labels,_types, opts) {
 	this.map.append('<div></div>');
 	this.brush = null;
 
+	this.update_opts(opts); // if new options are passed, update the options
+
 	var self = this;
+
+	//set to the current width and height
+	$('#update-width').val(self.w);
+	$('#update-height').val(self.h);
 
 	//
 	// I create and execute this anonymous function so
@@ -494,10 +517,13 @@ QVis.Graph.prototype.mini_render = function(_data, _labels,_types, opts) {
 		var selectedzval = self.labelsfrombase.z_label; // get the previous values
 		var selectedxval = self.labelsfrombase.x_label;
 		var selectedyval = self.labelsfrombase.y_label;
+		var width = self.w;
+		var height = self.h;
 		var inv = 'inv' in _labels ? _labels['inv'] : [false,false,false];
 		console.log(['inv' in _labels,'x' in _labels]);
-		$("#"+self.rootid+" input#vis-update-submit").off('click');
-		$("#"+self.rootid+" input#vis-update-submit").click(function() {
+		$("#vis-update-submit").off('click');
+		$("#vis-update-submit").click(function() {
+			console.log("got in update function");
 			var zval = '';//$("#"+self.rootid+" .zlabel select").val();
 			var yval = '';//$("#"+self.rootid+" .zlabel select").val();
 			var xval = '';//$("#"+self.rootid+" .zlabel select").val();
@@ -505,26 +531,39 @@ QVis.Graph.prototype.mini_render = function(_data, _labels,_types, opts) {
 			var inv_new = [false,false,false];
 			console.log(["old radio vals: ",inv]);
 			if(self.selectz) {
-				zval = $("#"+self.rootid+" .zlabel select").val(); // should be the same as before
-				inv_new[2]= $("#"+self.rootid+" input:radio[name='zlabel-radio']:checked").val() !== "";
+				zval = $("#"+self.rootid+"-form .zlabel select").val(); // should be the same as before
+				inv_new[2]= $("#"+self.rootid+"-form input:radio[name='zlabel-radio']:checked").val() !== "";
 			}
 			if(self.selecty) {
-				yval = $("#"+self.rootid+" .ylabel select").val(); // should be the same as before
-				inv_new[1]= $("#"+self.rootid+" input:radio[name='ylabel-radio']:checked").val() !== "";
+				yval = $("#"+self.rootid+"-form .ylabel select").val(); // should be the same as before
+				inv_new[1]= $("#"+self.rootid+"-form input:radio[name='ylabel-radio']:checked").val() !== "";
 			}
 			if(self.selectx) {
-				xval = $("#"+self.rootid+" .xlabel select").val(); // should be the same as before
-				inv_new[0]= $("#"+self.rootid+" input:radio[name='xlabel-radio']:checked").val() !== "";
+				xval = $("#"+self.rootid+"-form .xlabel select").val(); // should be the same as before
+				inv_new[0]= $("#"+self.rootid+"-form input:radio[name='xlabel-radio']:checked").val() !== "";
 			}
+
+
+			var neww = $('#update-width').val();
+			var newh = $('#update-height').val();
+
 			console.log(["selected options", zval,yval,xval]);
 			console.log(["new radio vals: ",inv_new]);
+			console.log(["new dims:",neww,newh]);
 			// if the values haven't changed
 			if ((!self.selectz || ((zval === selectedzval) && (inv[2] === inv_new[2]))) 
 				&& (!self.selecty || ((yval === selectedyval) && (inv[1] === inv_new[1]))) 
-				&& (!self.selectx || ((xval === selectedxval)  && (inv[0] === inv_new[0])))) return false;
+				&& (!self.selectx || ((xval === selectedxval)  && (inv[0] === inv_new[0])))
+				&& (width === neww)
+				&& (height === newh)) return false;
 			selectedxval = xval;
 			selectedyval = yval;
 			selectedzval = zval;
+			width = neww;
+			height = newh;
+
+			opts['w'] = width;
+			opts['h'] = height;
 			for(var i = 0; i <= 2; i++) {
 				inv[i]= inv_new[i];
 			}
@@ -534,8 +573,6 @@ QVis.Graph.prototype.mini_render = function(_data, _labels,_types, opts) {
 			var newlabels = {"z" : zval,"y": yval, "x":xval, "names" : _labels.names,'dimnames':_labels.dimnames,'dimwidths':_labels.dimwidths,'dimbases':_labels.dimbases,
 				"max":self.max,"min":self.min, "inv":inv	};
 			
-			// TODO: this is the wrong _data variable! where is the updated one?
-			console.log("blah blah blah blah blah");
 			self.render(_data, newlabels,_types, opts);
 			return false;
 		});
@@ -687,6 +724,7 @@ QVis.Graph.prototype.defaultColor = function(d) {
 }
 
 QVis.Graph.prototype.drawRects = function(container,_data,_types,xscale,yscale,x_label,y_label,width,height,color) {
+	var start = Math.round((new Date().getTime())/1000);
 	var temp = this;
 	/*
 	var range = 1000;
@@ -725,8 +763,8 @@ QVis.Graph.prototype.drawRects = function(container,_data,_types,xscale,yscale,x
 			.attr('fill', color(_data[drawindex]))
 			.attr('label', drawindex);
 	}
-*/
 
+*/
 	container.selectAll('rect')
 		.data(_data)
 	.enter().append('rect')
@@ -736,10 +774,30 @@ QVis.Graph.prototype.drawRects = function(container,_data,_types,xscale,yscale,x
 		.attr('height', function(d) { return height(temp.get_data_obj(d[x_label],_types[x_label]))})
 		.attr('fill', function(d) { return color(d);})
 		.attr('label', function(d,i) {return "("+temp.get_data_obj(d[y_label],_types[y_label])+","+temp.get_data_obj(d[x_label],_types[x_label])+") = "+color(d);});
+
 /*
 	container.selectAll('rect')
 		.on("click",function(d,i){console.log(d3.mouse(this))});
 */
+	var end = Math.round((new Date().getTime())/1000);
+	console.log("got here");
+	console.log(["draw rect duration",end-start]);
+}
+
+QVis.Graph.prototype.drawRectsCanvas = function(ctx,_data,_types,xscale,yscale,x_label,y_label,width,height,color) {
+	//var ctx = canvas.getContext('2d');
+	var temp = this;
+	var start = Math.round((new Date().getTime())/1000);
+	for(var drawindex = 0; drawindex < _data.length; drawindex++) {
+		ctx.fillStyle = color(_data[drawindex]);
+		ctx.fillRect(xscale(temp.get_data_obj(_data[drawindex][x_label],_types[x_label])),
+			yscale(temp.get_data_obj(_data[drawindex][y_label],_types[y_label])),
+			width(temp.get_data_obj(_data[drawindex][x_label],_types[x_label])),
+			height(temp.get_data_obj(_data[drawindex][x_label],_types[x_label]))
+		);
+	}
+	var end = Math.round((new Date().getTime())/1000);
+	console.log(["draw rect duration",end-start]);
 }
 
 QVis.Graph.prototype.drawLines = function(container,_data,_types,xscale,yscale) {

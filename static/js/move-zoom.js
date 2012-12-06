@@ -212,6 +212,7 @@ $(document).ready(function() {
 		if(zoom >= max_zoom) {
 			zoom = max_zoom - 1;
 		}
+		console.log(["zoom",zoom,"max_zoom",max_zoom]);
 		if(zoom != current_zoom) { // if we're actually going somewhere else
 			//var temp_id = build_index(x,y,x_label,y_label);
 			//console.log(["temp id: ",temp_id]);
@@ -239,13 +240,19 @@ $(document).ready(function() {
 		resolution_lvl = $('#resolution-lvl-menu').val();
 		console.log("resolution: "+resolution_lvl);
 		console.log(["script root",$SCRIPT_ROOT]);
+		$('#error_message').remove();
+		$('#resulting-plot-header').removeClass('show');
+		$('#aggplot').removeClass('show');
+		$('#aggplot-form').removeClass('show');
+		$('#nav').removeClass('show');
 		$.getJSON($SCRIPT_ROOT+'/fetch-first-tile',{query: querytext,data_threshold:resolution_lvl},function(jsondata){
 			console.log(jsondata);
-			$('#error_message').remove();
 			if(!("error" in jsondata)) {
 				draw_graph(jsondata);
 				$('#resulting-plot-header').addClass('show');
+				$('#nav').addClass('show');
 				$('#aggplot').addClass('show');
+				$('#aggplot-form').addClass('show');
 
 				// set index back to 0
 				current_id = new Array(numdims);
@@ -254,8 +261,6 @@ $(document).ready(function() {
 				//mapping of labels to id numbers
 				indexmap = jsondata['indexes'];
 			} else {
-				$('#resulting-plot-header').removeClass('show');
-				$('#aggplot').removeClass('show');
 				console.log(["error!!!!! OMGOMGOMG",jsondata['error'],jsondata['error']['args'][0].indexOf("\n")]);
 				var error_args = jsondata['error']['args'][0].replace(/\n/g,"<br>");
 				error_args = error_args.replace(/ /g,"&nbsp");
@@ -310,9 +315,10 @@ $(document).ready(function() {
 			once += 1;
 			(function() {
 				var mini_render = renderagg.mini_render;
+				if($USE_CANVAS) { mini_render = renderagg.mini_render_canvas;}
 				renderagg.mini_render = function(_data, _labels,_types, opts) {
 					mini_render.apply(this,[_data, _labels,_types, opts]);
-					console.log("got here in mousclick thing");
+					console.log("got here in mouseclick thing");
 					//$('svg rect').off();
 					//$('svg rect').unbind();
 					$('#mouseclick_rect').off();
@@ -329,7 +335,7 @@ $(document).ready(function() {
 
 			})();
 		}
-		renderagg.mini_render(data, labels,types);
+		renderagg.mini_render(data, labels, types, opts);
 
 /*
 		renderagg.mini_render(data, labels,types);
@@ -430,9 +436,10 @@ $(document).ready(function() {
 			once += 1;
 			(function() {
 				var render = renderagg.render;
+				if($USE_CANVAS) { render = renderagg.render_canvas;}
 				renderagg.render = function(_data, _labels,_types, _opts) {
 					render.apply(this,[_data, _labels,_types, _opts]);
-					console.log("got here in mousclick thing");
+					console.log("got here in mouseclick thing");
 					//$('svg rect').off();
 					//$('svg rect').unbind();
 					$('#mouseclick_rect').off();
@@ -449,7 +456,7 @@ $(document).ready(function() {
 			})();
 		}
 
-		renderagg.render(data, labels,types);
+		renderagg.render(data, labels,types, opts);
 		console.log(["after render call:",current_id,current_zoom]);
 	}
 
