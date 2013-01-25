@@ -1,1 +1,6 @@
-scidb_server_interface.pyc
+# python files
+*.pyc
+
+#config file
+config.txt
+
