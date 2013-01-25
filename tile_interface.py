@@ -2,6 +2,8 @@ import scalrr_back_data as sbdata
 import scidb_server_interface as sdbi
 import math
 
+DEBUG_PRINT = False
+
 def getTileByIDXY_Labels(tile_xid,tile_yid,x_label,y_label,l,user_id):
 	tile_info = {'type':'xy','tile_xid':tile_xid,'tile_yid':tile_yid,'x_label':x_label,'y_label':y_label}
 	return getTileHelper(tile_info,l,user_id)
@@ -59,7 +61,8 @@ def getTileHelper(tile_info,l,user_id):
 			if tsize <= k: # if k happens to be larger than the total results
 				levels = 1
 			else: # round up to include the topmost level
-				levels = math.ceil(math.log(tsize)/math.log(k))+1
+				#levels = math.ceil(math.log(tsize)/math.log(k))+1
+				levels = math.ceil(math.log(tsize)/(math.log(k)*saved_qpresults['numdims']*math.log(sbdata.default_diff)))+1 # need to account for zoom diff
 			sbdata.backend_metadata[user_id]['levels'] = levels # store this computed value
 			sbdata.backend_metadata[user_id]['data_threshold'] = k
 	setup_aggr_options = {'afl':False,'saved_qpresults':saved_qpresults}
@@ -74,6 +77,59 @@ def getTileHelper(tile_info,l,user_id):
 	total_tiles = queryresultobj[1]['total_tiles']
 	total_tiles_root = queryresultobj[1]['total_tiles_root']
 	print "total_tiles_root:",total_tiles_root
+	sdbioptions={'dimnames':saved_qpresults['dims']}
+	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
+	saved_qpresults = queryresultobj[1] # don't need local saved_qpresults anymore, so reuse
+	# get the new dim info
+	queryresultarr['dimnames'] = saved_qpresults['dims']
+	queryresultarr['dimbases'] = saved_qpresults['dimbases']
+	queryresultarr['dimwidths'] = saved_qpresults['dimwidths']
+	queryresultarr['saved_qpresults'] = saved_qpresults
+	queryresultarr['numdims'] = saved_qpresults['numdims']
+	queryresultarr['indexes'] = saved_qpresults['indexes']
+	queryresultarr['max_zoom'] = levels
+	queryresultarr['total_tiles'] = total_tiles
+	queryresultarr['total_xtiles'] = saved_qpresults['total_xtiles']
+	queryresultarr['total_ytiles'] = saved_qpresults['total_ytiles']
+	queryresultarr['future_xtiles'] = saved_qpresults['future_xtiles']
+	queryresultarr['future_ytiles'] = saved_qpresults['future_ytiles']
+	queryresultarr['total_tiles_root'] = total_tiles_root
+	queryresultarr['zoom_diff'] = sbdata.default_diff
+	queryresultarr['total_xtiles_exact'] = saved_qpresults['total_xtiles_exact']
+	queryresultarr['total_ytiles_exact'] = saved_qpresults['total_ytiles_exact']
+	queryresultarr['future_xtiles_exact'] = saved_qpresults['future_xtiles_exact']
+	queryresultarr['future_ytiles_exact'] = saved_qpresults['future_ytiles_exact']
+	sdbi.scidbCloseConn(db)
+	return queryresultarr
+
+def getTileNoUser(tile_info,orig_query,saved_qpresults,l,levels,k):
+	db = sdbi.scidbOpenConn()
+	xbase = 0
+	ybase = 0
+	if len(saved_qpresults['dimbases']) > 0: # adjust bases for array if possible
+		xbase = int(saved_qpresults['dimbases'][saved_qpresults['dims'][0]])
+		ybase = int(saved_qpresults['dimbases'][saved_qpresults['dims'][1]])
+	xdim = None
+	ydim = None
+	if ('x_label' in tile_info) and ('y_label' in tile_info):
+		xdim = saved_qpresults['indexes'][tile_info['x_label']]
+		ydim = saved_qpresults['indexes'][tile_info['y_label']]
+	if DEBUG_PRINT: print "xdim:",xdim,",ydim:",ydim
+	x = saved_qpresults['dimwidths'][saved_qpresults['dims'][xdim]]
+	y = saved_qpresults['dimwidths'][saved_qpresults['dims'][ydim]]
+	n = saved_qpresults['numdims']
+	setup_aggr_options = {'afl':False,'saved_qpresults':saved_qpresults}
+	aggr_options = setup_reduce_type('AGGR',setup_aggr_options)
+	aggr_options['db'] = db
+	if tile_info['type'] == "center":
+		queryresultobj = sdbi.getTile(orig_query,tile_info['cx'],tile_info['cy'],l,levels-1,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
+	elif tile_info['type'] == "xy":
+		queryresultobj = sdbi.getTileByIDXY(orig_query,n,xdim,ydim,tile_info['tile_xid'],tile_info['tile_yid'],l,levels-1,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
+	else:
+		queryresultobj = sdbi.getTileByID(orig_query,tile_info['tile_id'],l,levels-1,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
+	total_tiles = queryresultobj[1]['total_tiles']
+	total_tiles_root = queryresultobj[1]['total_tiles_root']
+	if DEBUG_PRINT: print "total_tiles_root:",total_tiles_root
 	sdbioptions={'dimnames':saved_qpresults['dims']}
 	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
 	saved_qpresults = queryresultobj[1] # don't need local saved_qpresults anymore, so reuse

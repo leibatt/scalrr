@@ -8,6 +8,7 @@ import simplejson as json
 import math
 from datetime import datetime
 
+DEBUG_PRINT = False
 USE_NEW_SYNTAX = False
 LOGICAL_PHYSICAL = "explain_physical"
 RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','FILTER':'filter','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
@@ -26,8 +27,8 @@ try:
 	for i in range(len(BAD_WORDS)):
 		BAD_WORDS[i] = re.sub(r"\n","",BAD_WORDS[i])
 except Exception as e:
-	print "error loading",BAD_WORDS_FILE,"!"
-	print e
+	if DEBUG_PRINT: print "error loading",BAD_WORDS_FILE,"!"
+	if DEBUG_PRINT: print e
 
 #db = 0
 
@@ -45,7 +46,7 @@ def scidbCloseConn(db):
 
 #check for dangerous queries
 def has_bad_words(query):
-	#print "bad words: ",BAD_WORDS
+	#if DEBUG_PRINT: print "bad words: ",BAD_WORDS
 	if ";" in query:
 		return {'error':{'type':"unsafe query",'args':("no semicolons allowed",)}}
 	if BAD_WORDS is None:
@@ -75,7 +76,7 @@ def getTile(orig_query,cx,cy,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_optio
 	upper_y = ybase + int(math.ceil(cy + .5*tile_y))
 	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
         newquery = str(newquery)
-	print "newquery: ",newquery
+	if DEBUG_PRINT: print "newquery: ",newquery
 	sdbioptions = {'db':aggregate_options['db'],'afl':False}
 	qpresults = verifyQuery(newquery,sdbioptions)
 	sdbioptions['reduce_res'] = qpresults['size'] > threshold
@@ -114,7 +115,7 @@ def getTileByID(orig_query,tile_id,l,max_l,d,x,xbase,y,ybase,threshold,aggregate
 	upper_y = ybase + lower_y+int(tile_y)
 	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
         newquery = str(newquery)
-	print "newquery: ",newquery
+	if DEBUG_PRINT: print "newquery: ",newquery
 	sdbioptions = {'db':aggregate_options['db'],'afl':False}
 	qpresults = verifyQuery(newquery,sdbioptions)
 	sdbioptions['reduce_res'] = qpresults['size'] > threshold
@@ -138,7 +139,7 @@ def getTileByID(orig_query,tile_id,l,max_l,d,x,xbase,y,ybase,threshold,aggregate
 #mxn = original array dimensions
 #TODO: just pass qpresults!!!!!
 def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate_options): # zero-based indexing
-	print "tile id request: (",tile_id,")"
+	if DEBUG_PRINT: print "tile id request: (",tile_id,")"
 	root_threshold = math.ceil(math.pow(threshold,1.0/n)) # assume the tiles are squares
 	#orig_query = re.sub(r"[^\\](\'|\")","\\\1",orig_query) #escape single and double quotes
 	#orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
@@ -161,16 +162,16 @@ def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate
 		if upper[i] > (widths[i]+bases[i]-1):
 			upper[i] = bases[i]+widths[i]-1
 			total_bottomtiles_here = total_tiles[i] - (total_tiles_l[i]-1)*bottomtiles_per_currenttile
-			print "total_bottomtiles_here: ",total_bottomtiles_here
+			if DEBUG_PRINT: print "total_bottomtiles_here: ",total_bottomtiles_here
 			future_tiles[i] = math.ceil(total_bottomtiles_here/bottomtiles_per_currenttile_plus1level)
 		future_tiles_exact[i] = 1.0*(upper[i]-lower[i])/max(tile_width/2.0,root_threshold)
-	print "level: ",l,", total levels: ",max_l
-	print "total bottomtiles: ",total_tiles
-	print "root_threshold: ",root_threshold
-	print "bottomtiles_per_currenttile: ",bottomtiles_per_currenttile
-	print "bottomtiles_per_currenttile_plus1level: ",bottomtiles_per_currenttile_plus1level
-	print "current_tiles: ",total_tiles_l
-	print "future_tiles: ",future_tiles
+	if DEBUG_PRINT: print "level: ",l,", total levels: ",max_l
+	if DEBUG_PRINT: print "total bottomtiles: ",total_tiles
+	if DEBUG_PRINT: print "root_threshold: ",root_threshold
+	if DEBUG_PRINT: print "bottomtiles_per_currenttile: ",bottomtiles_per_currenttile
+	if DEBUG_PRINT: print "bottomtiles_per_currenttile_plus1level: ",bottomtiles_per_currenttile_plus1level
+	if DEBUG_PRINT: print "current_tiles: ",total_tiles_l
+	if DEBUG_PRINT: print "future_tiles: ",future_tiles
 	newquery = "select * from subarray(("+orig_query+")"
 	for i in range(n):
 		newquery += "," + str(lower[i])
@@ -179,17 +180,17 @@ def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate
 	newquery += ")"
 	#newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
         newquery = str(newquery)
-	print "newquery: ",newquery
+	if DEBUG_PRINT: print "newquery: ",newquery
 	sdbioptions = {'db':aggregate_options['db'],'afl':False}
 	qpresults = verifyQuery(newquery,sdbioptions)
-	#print "qpresults:",qpresults
+	#if DEBUG_PRINT: print "qpresults:",qpresults
 	sdbioptions['reduce_res'] = True #qpresults['size'] > threshold
 	#if sdbioptions['reduce_res']:
 	aggregate_options['qpresults'] = qpresults
 	aggregate_options['resolution'] = threshold
 	aggregate_options['tile'] = True
 	sdbioptions['reduce_options'] = aggregate_options
-	print "expected size:",qpresults['size']
+	if DEBUG_PRINT: print "expected size:",qpresults['size']
 	result = executeQuery(newquery,sdbioptions)
 	if 'error' in result:
 		return result
@@ -206,7 +207,7 @@ def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate
 #mxn = original array dimensions
 #TODO: just pass qpresults!!!!!
 def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,threshold,aggregate_options): # zero-based indexing
-	print "tile id request: (",tile_xid,",",tile_yid,")"
+	if DEBUG_PRINT: print "tile id request: (",tile_xid,",",tile_yid,")"
 	root_threshold = math.ceil(math.sqrt(threshold)) # assume the tiles are squares
 	#orig_query = re.sub(r"[^\\](\'|\")","\\\1",orig_query) #escape single and double quotes
 	#orig_query = re.sub("(\'|\")","\\\1",orig_query) #escape single and double quotes
@@ -217,17 +218,17 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 	total_ytiles_l = math.ceil(total_ytiles/bottomtiles_per_currenttile) # number of tiles along the y axis on the current level
 	total_xtiles_lexact = 1.0*total_xtiles/bottomtiles_per_currenttile
 	total_ytiles_lexact = 1.0*total_ytiles/bottomtiles_per_currenttile
-	print "level: ",l,", total levels: ",max_l
-	print "total bottomtiles x: ",total_xtiles
-	print "total bottomtiles y: ",total_ytiles
-	print "root_threshold: ",root_threshold
+	if DEBUG_PRINT: print "level: ",l,", total levels: ",max_l
+	if DEBUG_PRINT: print "total bottomtiles x: ",total_xtiles
+	if DEBUG_PRINT: print "total bottomtiles y: ",total_ytiles
+	if DEBUG_PRINT: print "root_threshold: ",root_threshold
 	total_tiles = total_xtiles_l * total_ytiles_l
 	if tile_xid < 0 or tile_xid >= total_xtiles_l: #default, get a middle tile
 		tile_xid = int(total_xtiles_l/2)
 	if tile_yid < 0 or tile_yid >= total_ytiles_l: #default, get a middle tile
 		tile_yid = int(total_ytiles_l/2)
 	tile_width = root_threshold*math.pow(d,max_l-l) # figure out tile dimensions
-	print "tile width:",tile_width
+	if DEBUG_PRINT: print "tile width:",tile_width
 	# get future info about the tile
 	lower_x = int(xbase + tile_width*tile_xid)
 	lower_y = int(ybase + tile_width*tile_yid)
@@ -238,27 +239,27 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 	future_ytiles = d if tile_width > root_threshold else 1 # how many tiles at the next zoom level are in this tile along the y axis
 	future_xtiles_exact = 1.0*(upper_x-lower_x)/max(tile_width/2.0,root_threshold)
 	future_ytiles_exact = 1.0*(upper_y-lower_y)/max(tile_width/2.0,root_threshold)
-	print "bottomtiles_per_currenttile: ",bottomtiles_per_currenttile
-	print "bottomtiles_per_currenttile_plus1level: ",bottomtiles_per_currenttile_plus1level
+	if DEBUG_PRINT: print "bottomtiles_per_currenttile: ",bottomtiles_per_currenttile
+	if DEBUG_PRINT: print "bottomtiles_per_currenttile_plus1level: ",bottomtiles_per_currenttile_plus1level
 	if (upper_x > (x + xbase-1)): # if this tile contains less than d tiles at the next zoom level (edge case)
 		total_bottomtiles_x_here = total_xtiles - (1.0*total_xtiles_l-1)*bottomtiles_per_currenttile
-		print "total_bottomtiles_x_here: ",total_bottomtiles_x_here
+		if DEBUG_PRINT: print "total_bottomtiles_x_here: ",total_bottomtiles_x_here
 		future_xtiles_exact2 = total_bottomtiles_x_here/bottomtiles_per_currenttile_plus1level
 		future_xtiles = math.ceil(future_xtiles_exact2)
-	print "upper_y:",upper_y,"y:",y,"ybase:",ybase
+	if DEBUG_PRINT: print "upper_y:",upper_y,"y:",y,"ybase:",ybase
 	if (upper_y > (y + ybase-1)): # if this tile contains less than d tiles at the next zoom level (edge case)
 		total_bottomtiles_y_here = total_ytiles - (1.0*total_ytiles_l-1)*bottomtiles_per_currenttile
-		print "total_bottomtiles_y_here: ",total_bottomtiles_y_here
+		if DEBUG_PRINT: print "total_bottomtiles_y_here: ",total_bottomtiles_y_here
 		future_ytiles_exact2 = total_bottomtiles_y_here/bottomtiles_per_currenttile_plus1level
 		future_ytiles = math.ceil(future_ytiles_exact2)
-	print "current_xtiles: ",total_xtiles_l
-	print "current_ytiles: ",total_ytiles_l
-	print "current_xtiles_exact: ",total_xtiles_l
-	print "current_ytiles_exact: ",total_ytiles_l
-	print "future_xtiles_exact: ",future_xtiles_exact
-	print "future_ytiles_exact: ",future_ytiles_exact
-	print "future_xtiles: ",future_xtiles
-	print "future_ytiles: ",future_ytiles
+	if DEBUG_PRINT: print "current_xtiles: ",total_xtiles_l
+	if DEBUG_PRINT: print "current_ytiles: ",total_ytiles_l
+	if DEBUG_PRINT: print "current_xtiles_exact: ",total_xtiles_l
+	if DEBUG_PRINT: print "current_ytiles_exact: ",total_ytiles_l
+	if DEBUG_PRINT: print "future_xtiles_exact: ",future_xtiles_exact
+	if DEBUG_PRINT: print "future_ytiles_exact: ",future_ytiles_exact
+	if DEBUG_PRINT: print "future_xtiles: ",future_xtiles
+	if DEBUG_PRINT: print "future_ytiles: ",future_ytiles
 	newquery = "select * from subarray(("+orig_query+")"
 	for i in range(n):
 		if i == xid:
@@ -277,10 +278,10 @@ def getTileByIDXY(orig_query,n,xid,yid,tile_xid,tile_yid,l,max_l,d,x,xbase,y,yba
 	newquery += ")"
 	#newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
         newquery = str(newquery)
-	print "newquery: ",newquery
+	if DEBUG_PRINT: print "newquery: ",newquery
 	sdbioptions = {'db':aggregate_options['db'],'afl':False}
 	qpresults = verifyQuery(newquery,sdbioptions)
-	#print "qpresults:",qpresults
+	#if DEBUG_PRINT: print "qpresults:",qpresults
 	sdbioptions['reduce_res'] = True #qpresults['size'] > threshold
 	#if sdbioptions['reduce_res']:
 	aggregate_options['qpresults'] = qpresults
@@ -324,7 +325,7 @@ def oldgetTileByIDXY(orig_query,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,thre
 	upper_y = ybase + lower_y+int(tile_ywidth)
 	newquery = "select * from subarray(("+orig_query+"),"+str(lower_x)+","+str(lower_y)+","+str(upper_x)+","+str(upper_y)+")"
         newquery = str(newquery)
-	print "newquery: ",newquery
+	if DEBUG_PRINT: print "newquery: ",newquery
 	sdbioptions = {'db':aggregate_options['db'],'afl':False}
 	qpresults = verifyQuery(newquery,sdbioptions)
 	sdbioptions['reduce_res'] = qpresults['size'] > threshold
@@ -339,6 +340,71 @@ def oldgetTileByIDXY(orig_query,tile_xid,tile_yid,l,max_l,d,x,xbase,y,ybase,thre
 	result[1]['total_tiles'] = total_tiles*total_tiles
 	result[1]['total_tiles_root'] = total_tiles
 	return result
+
+
+#get exact tile information for every level
+def get_complete_tile_metadata(threshold,zoom_diff,saved_qpresults):
+	if DEBUG_PRINT: print "hello"
+	all_info = None
+	level_info = {}
+
+	# total levels starts at 1
+	total_levels = 1
+	total_tiles = 1
+	dimnames = saved_qpresults['dims']
+	dimwidths = saved_qpresults['dimwidths']
+
+	# for each dimension
+	for i,name in enumerate(dimnames):
+		# divide each dimension width by threshold value to get
+		# total base tiles along each dimension
+		level_info[name] = {'total_tiles':math.ceil(1.0*dimwidths[name]/threshold)}
+
+		# record base tile numbers and width of last tile (edge case)
+		# for each dimension at base level
+		level_info[name]['edge_width'] = dimwidths[name] - threshold*(level_info[name]['total_tiles'] - 1)
+
+		# record width (in cells, not tiles)
+		level_info[name]['regular_width'] = threshold
+		
+		# total tiles = product across all dimensions
+		total_tiles = total_tiles*level_info[name]['total_tiles']
+
+	all_info = [level_info]
+
+	while total_tiles > 1:
+		total_tiles = 1 # reset total_tiles
+		level_info = {} # reset level_info
+
+		# for each dimension
+		for i,name in enumerate(dimnames):
+			# divide previous level's tile count by zoom_diff
+			# round up to nearest int
+			level_info[name] = {'total_tiles':math.ceil(1.0*all_info[0][name]['total_tiles']/zoom_diff)}
+
+			# record width (in cells, not tiles)
+			# should only be larger than dim width at top level
+			level_info[name]['regular_width'] = min(all_info[0][name]['regular_width']*zoom_diff,dimwidths[name])
+
+			# record width of last tile (edge case)
+			level_info[name]['edge_width'] = dimwidths[name] - level_info[name]['regular_width']*(level_info[name]['total_tiles'] - 1)
+		
+			# total tiles = product across all dimensions
+			total_tiles = total_tiles*level_info[name]['total_tiles']
+
+		all_info.insert(0,level_info)
+
+		# add 1 to total levels (this is a new level)
+		total_levels += 1
+
+	if total_tiles == 1: # should never be less than 1
+		for i,name in enumerate(dimnames):
+			all_info[0][name]['regular_width'] = all_info[0][name]['edge_width']
+
+		return {'total_levels':total_levels,'level_info':all_info,'dimbases':saved_qpresults['dimbases'].copy()}
+		
+	else: # but just in case, don't return bad info
+		return None
 	
 
 #options: {'afl':True/False}
@@ -359,7 +425,7 @@ def verifyQuery(query,options):
 #required options: reduce_res, reduce_options if reduce_res is true, afl if reduce_res is false
 def executeQuery(query,options):
 	db = options['db']
-	print  "executing query",datetime.now()
+	if DEBUG_PRINT: print  "executing query",datetime.now()
 	final_query = query
 	if(options['reduce_res']): #reduction requested
 		if 'resolution' in options:
@@ -368,8 +434,8 @@ def executeQuery(query,options):
 		options['reduce_options']['db'] = db
 		return reduce_resolution(query,options['reduce_options'])
 	else:
-		print  "running original query."
-		#print  "final query:",final_query#,"\nexecuting query",datetime.now()
+		if DEBUG_PRINT: print  "running original query."
+		#if DEBUG_PRINT: print  "final query:",final_query#,"\nexecuting query",datetime.now()
 		result = []
 		try:			
 			if options['afl']:
@@ -396,14 +462,14 @@ def query_optimizer(query,options):
 		queryplan_query = LOGICAL_PHYSICAL+"('"+query+"','afl')"
 	else:
 		queryplan_query = LOGICAL_PHYSICAL+"('"+query+"','aql')"
-	#print  "queryplan query: "
-	#print  queryplan_query
+	#if DEBUG_PRINT: print  "queryplan query: "
+	#if DEBUG_PRINT: print  queryplan_query
 	optimizer_answer = None
 	try:
 		optimizer_answer = db.executeQuery(queryplan_query,'afl')
 	except Exception as e:
 		return {'error':{'type':str(type(e)),'args':e.args}}
-	#print  optimizer_answer
+	#if DEBUG_PRINT: print  optimizer_answer
 	# flatten the list into one big string, and then split on '\n'
 	optimizer_answer_array = getOneAttrArrFromQuery(optimizer_answer,"")[0].split('\n') #should return array with one item (the query plan)
 	# find the line with the first instance of 'schema' in the front
@@ -417,7 +483,7 @@ def check_query_plan(queryplan):
 	queryplan = str(queryplan)
 	dim_string = queryplan[queryplan.find("[")+1:queryplan.find("]")]
 	dim_array = dim_string.split(',')
-	#print  dim_array
+	#if DEBUG_PRINT: print  dim_array
 	dims = 0
 	size = 1
 	names = []
@@ -431,7 +497,7 @@ def check_query_plan(queryplan):
 		#if (i % 3) == 0:
 		if "=" in s:
 			# split on equals, get the range, split on ':'
-			#print  "s:",s
+			#if DEBUG_PRINT: print  "s:",s
 			rangeval = s.split('=')[1]
 			name = s.split('=')[0]
 			if name.find("(") >= 0:
@@ -497,7 +563,7 @@ def build_cast(saved_qpresults):
 def daggregate(query,options):
 	saved_qpresults = options['saved_qpresults']
 	cast = build_cast(saved_qpresults)
-	print "cast:",cast
+	if DEBUG_PRINT: print "cast:",cast
 	final_query = query
 	if 'threshold' in options:
 		threshold = options['threshold']
@@ -511,9 +577,9 @@ def daggregate(query,options):
 
 	#make the new query an aql query so we can rename the aggregates easily
 	attraggs = ""
-	#print  "options attrtypes: ",options['attrtypes']
+	#if DEBUG_PRINT: print  "options attrtypes: ",options['attrtypes']
 	for i in range(len(attrs)):
-		#print  "attr type: ",options['attrtypes'][i]
+		#if DEBUG_PRINT: print  "attr type: ",options['attrtypes'][i]
 		if (options['attrtypes'][i] == "int32") or (options['attrtypes'][i] == "int64") or (options['attrtypes'][i] == "double"): # make sure types can be aggregated
 			if attraggs != "":
 				attraggs += ", "
@@ -541,7 +607,7 @@ def daggregate(query,options):
 				else:
 					defaultchunkval = AGGR_CHUNK_DEFAULT
 			defaultchunkval = int(math.ceil(defaultchunkval)) # round up
-			print "chunk size:",defaultchunkval,"quotient:",quotient,",size:",options['qpsize'],",threshold:",threshold
+			if DEBUG_PRINT: print "chunk size:",defaultchunkval,"quotient:",quotient,",size:",options['qpsize'],",threshold:",threshold
 			chunks += saved_qpresults['truedims'][0]+" "+str(defaultchunkval)
 			#chunks += options['dimnames'][0]+" "+ str(defaultchunkval)
 			for i in range(1,dimension) :
@@ -557,7 +623,7 @@ def daggregate(query,options):
 		elif dimension > 0: # otherwise do default chunks
 			quotient = 1.0*options['qpsize']/threshold # approximate number of base tiles
 			defaultchunkval = math.pow(quotient,1.0/dimension)
-			print "chunk size:",defaultchunkval,"quotient:",quotient,",size:",options['qpsize'],",threshold:",threshold
+			if DEBUG_PRINT: print "chunk size:",defaultchunkval,"quotient:",quotient,",size:",options['qpsize'],",threshold:",threshold
 			if quotient < 1.0:
 				if ('tile' in options) and options['tile']:
 					defaultchunkval = TILE_AGGR_CHUNK_DEFAULT
@@ -575,7 +641,7 @@ def daggregate(query,options):
 	#if ('fillzeros' in options) and (options['fillzeroes']): # fill nulls with zeros
 	#	
 	#final_query = "regrid(("+final_query+"),"+chunks+","+attraggs+")" # afl
-	print  "final query:",final_query
+	if DEBUG_PRINT: print  "final query:",final_query
 	#result = []
 	#result = db.executeQuery(final_query,'aql')
 	#return result
@@ -591,7 +657,7 @@ def dsample(query,options):
 	elif 'threshold' in options:
 		threshold = options['threshold']
 		probability = min([1,threshold * 1.0 / 7576])#options['qpsize']])
-		print "threshold: ",threshold
+		if DEBUG_PRINT: print "threshold: ",threshold
 	else:
 		probability = min([1,D3_DATA_THRESHOLD * 1.0 / options['qpsize']])
 	probability = str(probability);
@@ -601,7 +667,7 @@ def dsample(query,options):
 	#	final_query = "bernoulli(("+final_query+"), "+probability+")"
 	#else:
 	final_query = "select * from bernoulli(("+ final_query +"), "+probability+")"
-	print  "final query:",final_query#,"\nexecuting query..."
+	if DEBUG_PRINT: print  "final query:",final_query#,"\nexecuting query..."
 	#if options['afl']:
 	#	result = db.executeQuery(final_query,'afl')
 	#else:
@@ -619,7 +685,7 @@ def dfilter(query, options):
 	#	final_query = "filter(("+final_query+"), "+options['predicate']+")"
 	#else:
 	final_query = "select * from ("+final_query+") where "+options['predicate']
-	#print  "final query:",final_query,"\nexecuting query..."
+	#if DEBUG_PRINT: print  "final query:",final_query,"\nexecuting query..."
 	#if options['afl']:
 	#	result = db.executeQuery(final_query,'afl')
 	#else:
@@ -634,7 +700,7 @@ def reduce_resolution(query,options):
 	db = options['db']
 	reduce_type = options['reduce_type']
 	qpresults = options['qpresults']
-	print "qpresults:",qpresults
+	if DEBUG_PRINT: print "qpresults:",qpresults
 	#add common reduce function options
 	reduce_options = {'afl':options['afl'],'qpsize':qpresults['size']}
 	if 'tile' in options:
@@ -642,7 +708,7 @@ def reduce_resolution(query,options):
 	if 'resolution' in options:
 		reduce_options['threshold'] = options['resolution']
         #query = re.sub(r"[^\\](\'|\")","\\\1",query) #escape single and double quotes
-	print "escaped query:",query
+	if DEBUG_PRINT: print "escaped query:",query
 	if reduce_type == RESTYPE['AGGR']:
 		if 'chunkdims' in options: #user specified chunk dims
 			reduce_options['chunkdims'] = options['chunkdims']
@@ -668,7 +734,7 @@ def reduce_resolution(query,options):
 		result.append(verifyQuery(newquery,{'afl':False,'db':db}))
 	except Exception as e:
 		return {'error':{'type':str(type(e)),'args':e.args}}
-	#print  result[1]
+	#if DEBUG_PRINT: print  result[1]
 	return result
 
 # function used to build a python "array" out of the given
@@ -697,12 +763,12 @@ def getOneAttrArrFromQuery(query_result,attrname):
 
 	# get arr ready
 	arr = createArray(dimlengths)
-	#print  "arr is initialized: ",str(arr)
+	#if DEBUG_PRINT: print  "arr is initialized: ",str(arr)
 	attrid = 0
 	for i in range(attrs.size()): # find the right attrid
 		if(attrs[i].getName() == attrname):
 			attrid = i
-			#print  "found attribute",attrname, ",id: %d" % attrid 
+			#if DEBUG_PRINT: print  "found attribute",attrname, ",id: %d" % attrid 
 			break
 
 	# get the iterator for this attrid
@@ -710,7 +776,7 @@ def getOneAttrArrFromQuery(query_result,attrname):
 
 	start = True
 	while not it.end():
-		#print  "iterating over items..."
+		#if DEBUG_PRINT: print  "iterating over items..."
 		currentchunk = it.getChunk()
 		# TODO: will have to fix this at some point, can't just ignore empty cells or overlaps
 		chunkiter = currentchunk.getConstIterator((scidb.swig.ConstChunkIterator.IGNORE_EMPTY_CELLS |
@@ -719,7 +785,7 @@ def getOneAttrArrFromQuery(query_result,attrname):
 		if(not start): # don't update for the first chunk
 			#update base indexes
 			dimindexesbase = updateBaseIndex(dimindexesbase,dimlengths,dimchunkintervals)
-			#printIndexes(dimindexesbase)
+			#if DEBUG_PRINT: printIndexes(dimindexesbase)
 			verifyIndexes(dimindexesbase,dimlengths)
 				
 			#reset the indexes to new base indexes
@@ -729,25 +795,25 @@ def getOneAttrArrFromQuery(query_result,attrname):
 			start = False
 
 		while not chunkiter.end():
-			#printIndexes(dimindexes)
+			#if DEBUG_PRINT: printIndexes(dimindexes)
 			verifyIndexes(dimindexes,dimlengths)
 			dataitem = chunkiter.getItem()
 			# look up the value according to its attribute's typestring
 			item = scidb.getTypedValue(dataitem, attrs[attrid].getType()) # TBD: eliminate 2nd arg, make method on dataitem
-			#print  "Data: %s" % item
+			#if DEBUG_PRINT: print  "Data: %s" % item
 
 			#insert the item
 			arr = insertItem(arr,item,dimindexes)
 			#update the indexes
 			dimindexes = updateIndexes(dimindexes,dimchunkintervals,dimindexesbase,dimlengths)
 			lastpos = chunkiter.getPosition()
-			#print  lastpos[0],",",lastpos[1], ",",lastpos[2]
+			#if DEBUG_PRINT: print  lastpos[0],",",lastpos[1], ",",lastpos[2]
 			chunkiter.increment_to_next()
-		#print  "current state of arr: ", str(arr)
+		#if DEBUG_PRINT: print  "current state of arr: ", str(arr)
 		it.increment_to_next();
 	return arr
 
-# debugging function used to print the given list of indexes
+# debugging function used to if DEBUG_PRINT: print the given list of indexes
 def printIndexes(dimlist):
 	for i in range(len(dimlist)):
 		print  "dim ", str(i), "has index %d" % dimlist[i]
@@ -794,7 +860,7 @@ def updateBaseIndex(dimindexesbase,dimlengths,dimchunkintervals):
 
 #exterior function to insert the given item in the the array using the given indexes
 def insertItem(arr,item,dimindexes):
-	#print  "inserting item %d" % item
+	#if DEBUG_PRINT: print  "inserting item %d" % item
 	return insertItemHelper(arr,item,dimindexes,0,len(dimindexes))
 
 #helper function to recursively find the appropriate list to insert the item into in the array
@@ -842,7 +908,7 @@ def getAllAttrArrFromQuery(query_result):
 
 	# get arr ready
 	arr = createArray(dimlengths)
-	#print  "arr is initialized: ",str(arr)
+	#if DEBUG_PRINT: print  "arr is initialized: ",str(arr)
 
 	its = []
 	attrnames = []
@@ -855,7 +921,7 @@ def getAllAttrArrFromQuery(query_result):
 		#get chunk iterators
 		chunkiters = []
 		for itindex in range(len(its)):
-			#print  "itindex: ",itindex
+			#if DEBUG_PRINT: print  "itindex: ",itindex
 			currentchunk =its[itindex].getChunk()
 			chunkiter = currentchunk.getConstIterator((scidb.swig.ConstChunkIterator.IGNORE_EMPTY_CELLS |
 		                                       scidb.swig.ConstChunkIterator.IGNORE_OVERLAPS))
@@ -864,7 +930,7 @@ def getAllAttrArrFromQuery(query_result):
 		if(not start): # don't update for the first chunk
 			#update base indexes
 			dimindexesbase = updateBaseIndex(dimindexesbase,dimlengths,dimchunkintervals)
-			#printIndexes(dimindexesbase)
+			#if DEBUG_PRINT: printIndexes(dimindexesbase)
 			verifyIndexes(dimindexesbase,dimlengths)
 			
 			#reset the indexes to new base indexes
@@ -874,25 +940,25 @@ def getAllAttrArrFromQuery(query_result):
 			start = False
 
 		while not chunkiters[0].end():
-			#printIndexes(dimindexes)
+			#if DEBUG_PRINT: printIndexes(dimindexes)
 			verifyIndexes(dimindexes,dimlengths)
 			item = {} #empty dictionary for the attribute values
 			for chunkiterindex in range(len(chunkiters)):
-				#print  "chunkiterindex: ",chunkiterindex
+				#if DEBUG_PRINT: print  "chunkiterindex: ",chunkiterindex
 				dataitem = chunkiters[chunkiterindex].getItem()
 				# look up the value according to its attribute's typestring
 				item[attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType()) # TBD: eliminate 2nd arg, make method on dataitem
-				#print  "Data: %s" % item
+				#if DEBUG_PRINT: print  "Data: %s" % item
 				#chunkiters[i].increment_to_next()
 			chunkiters[0].increment_to_next() # OMG THIS INCREMENTS ALL THE CHUNK ITERATOR OBJECTS
 			#lastpos = chunkiter.getPosition()
-			#print  lastpos[0],",",lastpos[1], ",",lastpos[2]
-			#print  item
+			#if DEBUG_PRINT: print  lastpos[0],",",lastpos[1], ",",lastpos[2]
+			#if DEBUG_PRINT: print  item
 			#insert the item
 			arr = insertItem(arr,item,dimindexes)
 			#update the indexes
 			dimindexes = updateIndexes(dimindexes,dimchunkintervals,dimindexesbase,dimlengths)
-			#print  "current state of arr: ", str(arr)
+			#if DEBUG_PRINT: print  "current state of arr: ", str(arr)
 		its[0].increment_to_next()
 	return arr
 
@@ -914,14 +980,14 @@ def getAllAttrArrFromQuery(query_result):
 #options: {'dimnames':[]}
 #required options: dimnames
 def getAllAttrArrFromQueryForJSON(query_result,options):
-	print  "parsing query result and building json dump",datetime.now()
+	if DEBUG_PRINT: print  "parsing query result and building json dump",datetime.now()
 	dimnames = options['dimnames']
 	desc = query_result.array.getArrayDesc()
 	dims = desc.getDimensions() # list of DimensionDesc objects
 	attrs = desc.getAttributes() # list of AttributeDesc objects
 	origarrnamelen = 0#len(desc.getName()) - 2
-	#print  "array name: ",desc.getName()
-	#print  "array name length: ",origarrnamelen
+	#if DEBUG_PRINT: print  "array name: ",desc.getName()
+	#if DEBUG_PRINT: print  "array name length: ",origarrnamelen
 
 	if(dims.size() < 1 or dims.size() != len(dimnames)):
 		return []
@@ -944,12 +1010,12 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	while not its[0].end():
 		#get chunk iterators
 		chunkiters = []
-		#print  "start"
+		#if DEBUG_PRINT: print  "start"
 		for itindex in range(len(its)):
-			#print  "itindex: ",itindex
+			#if DEBUG_PRINT: print  "itindex: ",itindex
 			#mypos = its[itindex].getPosition()
-			#print  "position:"
-			#print  mypos[0],",",mypos[1]
+			#if DEBUG_PRINT: print  "position:"
+			#if DEBUG_PRINT: print  mypos[0],",",mypos[1]
 			currentchunk =its[itindex].getChunk()
 			chunkiter = currentchunk.getConstIterator((scidb.swig.ConstChunkIterator.IGNORE_EMPTY_CELLS |
 		                                       scidb.swig.ConstChunkIterator.IGNORE_OVERLAPS))
@@ -966,10 +1032,10 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 				#dataobj["dims."+dname[:len(dname)-origarrnamelen]] = currpos[dimindex]
 				dataobj[dname[:len(dname)-origarrnamelen]] = currpos[dimindex]
 			attrobj = {} #empty dictionary for the attribute values
-			#print  "start"
+			#if DEBUG_PRINT: print  "start"
 			minval = None
 			for chunkiterindex in range(len(chunkiters)):
-				#print  "chunkiterindex: ",chunkiterindex
+				#if DEBUG_PRINT: print  "chunkiterindex: ",chunkiterindex
 				dataitem = chunkiters[chunkiterindex].getItem()
 				# look up the value according to its attribute's typestring
 				currtype = attrs[chunkiterindex].getType()
@@ -982,22 +1048,22 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 						minobj["attrs."+attrnames[chunkiterindex]] = dataitem_val
 					if (maxobj["attrs."+attrnames[chunkiterindex]] is None) or (dataitem_val > maxobj["attrs."+attrnames[chunkiterindex]]):
 						maxobj["attrs."+attrnames[chunkiterindex]] = dataitem_val
-				#print  "Data: %s" % item
+				#if DEBUG_PRINT: print  "Data: %s" % item
 				#chunkiters[i].increment_to_next()
 				#mypos = chunkiters[chunkiterindex].getPosition()
 				#myposstring = "position: "
 				#for myposi in range(len(mypos)):
 				#	myposstring += str(mypos[myposi])+", "
-				#print  myposstring
+				#if DEBUG_PRINT: print  myposstring
 				chunkiters[chunkiterindex].increment_to_next() # OMG THIS INCREMENTS ALL THE CHUNK ITERATOR OBJECTS
 			
 			#lastpos = chunkiter.getPosition()
-			#print  lastpos[0],",",lastpos[1], ",",lastpos[2]
-			#print  attrobj
+			#if DEBUG_PRINT: print  lastpos[0],",",lastpos[1], ",",lastpos[2]
+			#if DEBUG_PRINT: print  attrobj
 			#insert the item
 			arr.append(dataobj)
 			#arr.append({'dimensions':dimobj,'attributes':attrobj})
-			#print  "current state of arr: ", str(arr)
+			#if DEBUG_PRINT: print  "current state of arr: ", str(arr)
 		#its[1].increment_to_next()
 		for itindex in range(len(its)):		
 			its[itindex].increment_to_next()
@@ -1007,11 +1073,11 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 		attrname = attrnames[attri]
 		namesobj.append({'name':"attrs."+attrname,'isattr':True})
 		typesobj["attrs."+attrname] = attrs[attri].getType()
-	for dimname in dimnames:
+	for dimindex,dimname in enumerate(dimnames):
 		#ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
 		ndimname = dimname[:len(dimname)-origarrnamelen]
 		namesobj.append({'name':ndimname,'isattr':False})
-		typesobj[ndimname] = "int32"
+		typesobj[ndimname] = dims[dimindex].getType() #"int32"
 	#for attri in range(len(attrnames)):
 	#	attrname = attrnames[attri]
 	#	namesobj.append("attrs."+attrname)
@@ -1020,9 +1086,9 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	#	ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
 	#	namesobj.append(ndimname)
 	#	typesobj[ndimname] = "int32"
-	#print  typesobj
-	#print  	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
-	print  "done parsing results, returning dump-ready version",datetime.now()
+	#if DEBUG_PRINT: print  typesobj
+	#if DEBUG_PRINT: print  	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
+	if DEBUG_PRINT: print  "done parsing results, returning dump-ready version",datetime.now()
 	return {'data':arr, 'names': namesobj, 'types': typesobj,'max':maxobj,'min':minobj}
 	#return {'data': arr, 'names': {'dimnames': dimnames, 'attrnames': attrnames}}
 	
@@ -1050,7 +1116,7 @@ def getAttrArrFromQueryForJSON(query_result,options):
 	dims = desc.getDimensions() # list of DimensionDesc objects
 	attrs = desc.getAttributes() # list of AttributeDesc objects
 	origarrnamelen = len(desc.getName()) - 2
-	#print  "orig name length: ",origarrnamelen
+	#if DEBUG_PRINT: print  "orig name length: ",origarrnamelen
 
 	if(dims.size() < 1 or dims.size() != len(dimnames)):
 		return []
@@ -1066,12 +1132,12 @@ def getAttrArrFromQueryForJSON(query_result,options):
 	while not its[0].end():
 		#get chunk iterators
 		chunkiters = []
-		#print  "start"
+		#if DEBUG_PRINT: print  "start"
 		for itindex in range(len(its)):
-			#print  "itindex: ",itindex
+			#if DEBUG_PRINT: print  "itindex: ",itindex
 			#mypos = its[itindex].getPosition()
-			#print  "position:"
-			#print  mypos[0],",",mypos[1]
+			#if DEBUG_PRINT: print  "position:"
+			#if DEBUG_PRINT: print  mypos[0],",",mypos[1]
 			currentchunk =its[itindex].getChunk()
 			chunkiter = currentchunk.getConstIterator((scidb.swig.ConstChunkIterator.IGNORE_EMPTY_CELLS |
 		                                       scidb.swig.ConstChunkIterator.IGNORE_OVERLAPS))
@@ -1086,28 +1152,28 @@ def getAttrArrFromQueryForJSON(query_result,options):
 				dimobj[dname[:len(dname)-origarrnamelen]] = currpos[dimindex] # make sure you take off the array's name from each dimension
 				dataobj["dims."+dname[:len(dname)-origarrnamelen]] = currpos[dimindex]
 			attrobj = {} #empty dictionary for the attribute values
-			#print  "start"
+			#if DEBUG_PRINT: print  "start"
 			for chunkiterindex in range(len(chunkiters)):
-				#print  "chunkiterindex: ",chunkiterindex
+				#if DEBUG_PRINT: print  "chunkiterindex: ",chunkiterindex
 				dataitem = chunkiters[chunkiterindex].getItem()
 				# look up the value according to its attribute's typestring
 				attrobj[attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType()) # TBD: eliminate 2nd arg, make method on dataitem
 				dataobj["attrs."+attrnames[chunkiterindex]] = scidb.getTypedValue(dataitem, attrs[chunkiterindex].getType())
-				#print  "Data: %s" % item
+				#if DEBUG_PRINT: print  "Data: %s" % item
 				#chunkiters[i].increment_to_next()
 				#mypos = chunkiters[chunkiterindex].getPosition()
 				#myposstring = "position: "
 				#for myposi in range(len(mypos)):
 				#	myposstring += str(mypos[myposi])+", "
-				#print  myposstring
+				#if DEBUG_PRINT: print  myposstring
 				chunkiters[chunkiterindex].increment_to_next() # OMG THIS INCREMENTS ALL THE CHUNK ITERATOR OBJECTS
 			#lastpos = chunkiter.getPosition()
-			#print  lastpos[0],",",lastpos[1], ",",lastpos[2]
-			#print  attrobj
+			#if DEBUG_PRINT: print  lastpos[0],",",lastpos[1], ",",lastpos[2]
+			#if DEBUG_PRINT: print  attrobj
 			#insert the item
 			arr.append(dataobj)
 			#arr.append({'dimensions':dimobj,'attributes':attrobj})
-			#print  "current state of arr: ", str(arr)
+			#if DEBUG_PRINT: print  "current state of arr: ", str(arr)
 		#its[1].increment_to_next()
 		for itindex in range(len(its)):		
 			its[itindex].increment_to_next()
@@ -1121,8 +1187,8 @@ def getAttrArrFromQueryForJSON(query_result,options):
 		ndimname = "dims."+dimname[:len(dimname)-origarrnamelen]
 		namesobj.append({'name':ndimname,'isattr':False})
 		typesobj[ndimname] = "int32"
-	#print  typesobj
-	#print  	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
+	#if DEBUG_PRINT: print  typesobj
+	#if DEBUG_PRINT: print  	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
 	return {'data':arr, 'names': namesobj, 'types': typesobj}
 	#return {'data': arr, 'names': {'dimnames': dimnames, 'attrnames': attrnames}}
 
@@ -1193,10 +1259,10 @@ def getMultiArrFromQueryForJSON(query_result,options):
 
 #options = {'afl':myafl}
 #qpresults = verifyQuery(query,options)
-#print  qpresults
+#if DEBUG_PRINT: print  qpresults
 #options={'afl':myafl,'reduce_res':False}
 #queryresult = executeQuery(query,options) # ignore reduce_type for now
-#print  queryresult
+#if DEBUG_PRINT: print  queryresult
 #options={'dimnames':qpresults['dims']}
 #queryresultarr = getAllAttrArrFromQueryForJSON(queryresult[0],options)
 
@@ -1204,20 +1270,20 @@ def getMultiArrFromQueryForJSON(query_result,options):
 #queryresultarr = getAttrArrFromQueryForJSON(queryresult,options)
 
 #for i in range(len(queryresultarr['data'])):
-#	print  queryresultarr['data'][i]
-#	#print  "attributes: ",queryresultarr['data'][i]['attributes'],",dimensions: ",queryresultarr['data'][i]['dimensions']
+#	if DEBUG_PRINT: print  queryresultarr['data'][i]
+#	#if DEBUG_PRINT: print  "attributes: ",queryresultarr['data'][i]['attributes'],",dimensions: ",queryresultarr['data'][i]['dimensions']
 
 #options={'dimnames':qpresults['dims']}
 #queryresultarr = getMultiArrFromQueryForJSON(queryresult,options)
 
-#print  queryresultarr
+#if DEBUG_PRINT: print  queryresultarr
 
-#print  qpresults['attrs']['names']
+#if DEBUG_PRINT: print  qpresults['attrs']['names']
 #options = {'numdims':qpresults['numdims'],'afl':myafl,'attrs':qpresults['attrs']['names'],'attrtypes':qpresults['attrs']['types'], 'qpsize':qpresults['size']}
 #queryresult = daggregate(query,options)
 #options={'dimnames':qpresults['dims']}
 #queryresultarr = getAllAttrArrFromQueryForJSON(queryresult,options)
-#print  queryresultarr
+#if DEBUG_PRINT: print  queryresultarr
 
 #options = {'afl':myafl,'qpsize':qpresults['size'], 'probability':.3}
 #dsample(query,options)

@@ -134,7 +134,7 @@ g.xaxis path,g.yaxis path {
 	display: block;
 }
 
-#aggplot, #map, #canvas, #aggplot-form, #resulting-plot-header, #nav {
+#aggplot, #map, #canvas, #aggplot-form, #resulting-plot-header, #nav, #answer-select {
 	display: none;
 }
 /*
@@ -149,11 +149,7 @@ g.xaxis path,g.yaxis path {
 	position:relative;
 }
 
-#aggplot-form.show,#resulting-plot-header.show, #nav.show {
-	display: block;
-}
-
-#map.show, #canvas.show {
+#aggplot-form.show,#resulting-plot-header.show, #nav.show, #map.show, #canvas.show, #answer-select.show {
 	display: block;
 }
 
@@ -161,6 +157,11 @@ g.xaxis path,g.yaxis path {
 	position: absolute;
 	top: 0;
 	left: 0;
+}
+
+#answer-select-checked-yes.highlight,#answer-select-checked-no.highlight {
+	color: blue;
+	font-weight:bold;
 }
 
 /*

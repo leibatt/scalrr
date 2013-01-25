@@ -39,10 +39,11 @@
 		<label for="resolution-lvl">Resolution</label>
 		<select name="resolution-lvl" id="resolution-lvl-menu">
 			<option value="0">default</option>
-			<option value="1000">1000</option>
-			<option value="10000">10000</option>
-			<option value="40000">40000</option>
-			<option value="100000">100000</option>
+			<option value="2500">50x50</option>
+			<option value="10000">100x100</option>
+			<option value="40000">200x200</option>
+			<option value="250000">500x500</option>
+			<option value="1000000">1000x1000</option>
 		</select>
 		<input type="submit" id="sql-query-submit" value="Submit Query"></input>
 	</form>
@@ -61,6 +62,12 @@
 			<div></div>
 		</div>
 	</div>
+	<form id="answer-select">
+		<label for="answer-select-checkox" id="answer-select-checkbox-label">This subarray meets the requirements:</label>
+		<input id="answer-select-checkbox" name="answer-select" type="checkbox"/>
+		[<span id="answer-select-checked-yes">yes</span>,
+		<span id="answer-select-checked-no" >no</span>]
+	</form>
 	<form id="aggplot-form">
 		<div name="xlabel" class="xlabel">
 			<label for="xaxis-select" id="xlabel-select">x Axis: </label>

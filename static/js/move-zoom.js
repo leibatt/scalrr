@@ -245,6 +245,7 @@ $(document).ready(function() {
 		$('#aggplot').removeClass('show');
 		$('#aggplot-form').removeClass('show');
 		$('#nav').removeClass('show');
+		$('#answer-select').removeClass('show');
 		$.getJSON($SCRIPT_ROOT+'/fetch-first-tile',{query: querytext,data_threshold:resolution_lvl},function(jsondata){
 			console.log(jsondata);
 			if(!("error" in jsondata)) {
@@ -252,6 +253,21 @@ $(document).ready(function() {
 				$('#resulting-plot-header').addClass('show');
 				$('#nav').addClass('show');
 				$('#aggplot').addClass('show');
+				$('#answer-select').addClass('show');
+				$('#answer-select-checkbox').on('click',function() {
+					console.log("checking answer select checkbox");
+					$('#answer-select-checked-yes').toggleClass('highlight');
+					$('#answer-select-checked-no').toggleClass('highlight');
+				/*
+					if ($('#answer-select-checkbox').is(':checked')) {
+						$('#answer-select-checked-yes').addClass('highlight');
+						$('#answer-select-checked-no').removeClass('highlight');
+					} else {
+						$('#answer-select-checked-yes').removeClass('highlight');
+						$('#answer-select-checked-no').addClass('highlight');
+					}
+				*/
+				});
 				$('#aggplot-form').addClass('show');
 
 				// set index back to 0
@@ -357,16 +373,6 @@ $(document).ready(function() {
 	}
 
 	function draw_graph(jsondata) {
-/*
-		$('#error_message').remove();
-		if('error' in jsondata) {
-			console.log("error!!!!! OMGOMGOMG");
-			var error_string = "<div id=\"error_message\"><p>An error occured in running your query:</p>";
-			error_string = error_string + "<p>"+jsondata['error']['args']+"</p></div>";
-			$("#resulting-plot-header").before($(error_string));
-			return false;
-		}
-*/
 		menutype = $('#vis-type-menu').val();
 		var opts = {overlap:-0, r:1.5};
 		var use_dims = false;
