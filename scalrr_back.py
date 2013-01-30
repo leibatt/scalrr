@@ -285,7 +285,11 @@ def fetch_first_tile2(userquery,options):
 	#get tile
 	base_id = [0] * saved_qpresults['numdims']
 	print "base id:",base_id
-	tile = ti.getTileByIDN(base_id,0,user_id)
+	if 'usenumpy' in options:
+		usenumpy = options['usenumpy']
+	else:
+		usenumpy = False
+	tile = ti.getTileByIDN(base_id,0,user_id,usenumpy)
 	if 'error' in tile:
 		return tile
 	#save tile info
@@ -343,7 +347,11 @@ def fetch_tile2(tile_id,level,options):
 	#otherwise go get the tile	
 	if tile is None:
 		print "tile not found, fetching from database"
-		tile = ti.getTileByIDN(tile_id,level,user_id)
+		if 'usenumpy' in options:
+			usenumpy = options['usenumpy']
+		else:
+			usenumpy = False
+		tile = ti.getTileByIDN(tile_id,level,user_id,usenumpy)
 	if 'error' in tile:
 		return tile
 	with sbdata.user_history_lock: # add tile to history

@@ -1,9 +1,11 @@
 import json
 import scidb_server_interface as sdbi
+import scidb_server_interface_numpy as sdbinp
 import tile_interface as ti
 import math
 
-DEBUG_PRINT = False
+DEBUG_PRINT = True
+USE_NUMPY = True
 
 def compare_tiles(query,threshold,zoom_diff,x_label,y_label):
 	db = sdbi.scidbOpenConn()
@@ -32,7 +34,7 @@ def compare_tiles(query,threshold,zoom_diff,x_label,y_label):
 
 	tile_metadata = sdbi.get_complete_tile_metadata(root_k,zoom_diff,saved_qpresults)
 	if DEBUG_PRINT: print "tile metadata:",tile_metadata
-	if DEBUG_PRINT: return
+	
 	#_id = [0,0]
 	#tile = ti.getTileNoUser(_id,query,saved_qpresults,levels,threshold)
 	#if 'error' in tile:
@@ -44,10 +46,12 @@ def compare_tiles(query,threshold,zoom_diff,x_label,y_label):
 			for yid in range(0,total_tiles_root):
 				#get tile
 				tile_info = {'type':'xy','tile_xid':xid,'tile_yid':yid,'x_label':x_label,'y_label':y_label}
-				tile = ti.getTileNoUser(tile_info,query,saved_qpresults,l,levels,threshold)
+				tile = ti.getTileNoUser(tile_info,query,saved_qpresults,l,levels,threshold,USE_NUMPY)
 				if 'error' in tile:
 					print 'error found, reeturning error:',tile
 					return tile
+				#stats = tile['stats']
+				#if DEBUG_PRINT: print stats
 				if yid+1 < total_tiles_root:
 					for yid2 in range(yid+1,total_tiles_root):
 						#if DEBUG_PRINT: print "comparing tile (lvl:",l,", x:",xid,", y:",yid,") and tile (lvl:",l,", x:",xid,", y:",yid2,")"
@@ -55,7 +59,7 @@ def compare_tiles(query,threshold,zoom_diff,x_label,y_label):
 						tile_info['tile_xid']=xid
 						tile_info['tile_yid']=yid2
 						#get other tile
-						newtile = ti.getTileNoUser(tile_info,query,saved_qpresults,l,levels,threshold)
+						newtile = ti.getTileNoUser(tile_info,query,saved_qpresults,l,levels,threshold,USE_NUMPY)
 						if 'error' in newtile:
 							print 'error found, reeturning error:',newtile
 							return newtile
@@ -68,7 +72,7 @@ def compare_tiles(query,threshold,zoom_diff,x_label,y_label):
 							tile_info['tile_xid']=xid2
 							tile_info['tile_yid']=yid2
 							#get other tile
-							newtile = ti.getTileNoUser(tile_info,query,saved_qpresults,l,levels,threshold)
+							newtile = ti.getTileNoUser(tile_info,query,saved_qpresults,l,levels,threshold,USE_NUMPY)
 							if 'error' in newtile:
 								print 'error found, reeturning error:',newtile
 								return newtile
@@ -78,4 +82,5 @@ def compare(tile1,tile2):
 	x = 1
 
 
-compare_tiles("select * from test3",100,zoom_diff=2,x_label="dims.xtest3",y_label="dims.ytest3")
+#compare_tiles("select * from test3",100,zoom_diff=2,x_label="dims.xtest3",y_label="dims.ytest3")
+compare_tiles("select * from us1000",100,zoom_diff=2,x_label="dims.xus1000",y_label="dims.yus1000")

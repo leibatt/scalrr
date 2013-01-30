@@ -80,6 +80,9 @@ QVis.HeatMap.prototype.render_canvas = function(_data, _labels,_types, opts) {
 		.attr("x", 0)
 		.attr("y", 0);
 
+	this.addStatsHist1(_data, _labels,_types, opts);
+	this.addStatsHist2(_data, _labels,_types, opts);
+
 	//console.log("width:"+(self.w-2*self.px)/_labels.dimwidths[xdimname]);
 	//console.log("height:"+(self.h-2*self.py)/_labels.dimwidths[ydimname]);
 	//just testing the rects function
@@ -185,7 +188,7 @@ QVis.HeatMap.prototype.mini_render_canvas = function(_data, _labels,_types, opts
 	//call the original mini_render function
 	QVis.HeatMap.base.mini_render.call(this,_data,_labels,_types,opts);
 	if(this.canvas){
-		this.canvas.width = this.canvas.width;
+		this.canvas.width = this.canvas.width; // clear the canvas
 	}
 
 	//console.log("got here");
@@ -236,6 +239,10 @@ QVis.HeatMap.prototype.mini_render_canvas = function(_data, _labels,_types, opts
 		.attr("height",  this.h-this.py)
 		.attr("x", 0)
 		.attr("y", 0);
+
+
+	this.addStatsHist1(_data, _labels,_types, opts);
+	this.addStatsHist2(_data, _labels,_types, opts);
 
 	//console.log("width:"+(self.w-2*self.px)/_labels.dimwidths[xdimname]);
 	//console.log("height:"+(self.h-2*self.py)/_labels.dimwidths[ydimname]);

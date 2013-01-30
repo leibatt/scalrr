@@ -17,8 +17,8 @@ QVis.Graph = function(rootid,opts) {
 
 	this.h = opts['h'] || 800;
 	this.w = opts['w'] || 1100;
-	this.px = 80;
-	this.py = 30;
+	this.px = 0;//80;
+	this.py = 0;//30;
 }
 
 //error reporting function

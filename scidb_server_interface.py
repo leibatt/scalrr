@@ -9,7 +9,7 @@ import math
 from datetime import datetime
 
 DEBUG_PRINT = False
-USE_NEW_SYNTAX = False
+USE_NEW_SYNTAX = True
 LOGICAL_PHYSICAL = "explain_physical"
 RESTYPE = {'AGGR': 'aggregate', 'SAMPLE': 'sample','OBJSAMPLE': 'samplebyobj','FILTER':'filter','OBJAGGR': 'aggregatebyobj', 'BSAMPLE': 'biased_sample'}
 AGGR_CHUNK_DEFAULT = 1
@@ -729,6 +729,7 @@ def reduce_resolution(query,options):
 		raise Exception('reduce_type not recognized by scidb interface api')
 	result =[]
         newquery = str(newquery)
+	if DEBUG_PRINT: print "new query:",newquery
 	try:
 		result.append(db.executeQuery(newquery,'aql'))
 		result.append(verifyQuery(newquery,{'afl':False,'db':db}))
@@ -1089,6 +1090,7 @@ def getAllAttrArrFromQueryForJSON(query_result,options):
 	#if DEBUG_PRINT: print  typesobj
 	#if DEBUG_PRINT: print  	json.dumps({'data':arr, 'names': namesobj, 'types': typesobj})
 	if DEBUG_PRINT: print  "done parsing results, returning dump-ready version",datetime.now()
+	if DEBUG_PRINT: print arr
 	return {'data':arr, 'names': namesobj, 'types': typesobj,'max':maxobj,'min':minobj}
 	#return {'data': arr, 'names': {'dimnames': dimnames, 'attrnames': attrnames}}
 	

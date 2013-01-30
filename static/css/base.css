@@ -134,7 +134,8 @@ g.xaxis path,g.yaxis path {
 	display: block;
 }
 
-#aggplot, #map, #canvas, #aggplot-form, #resulting-plot-header, #nav, #answer-select {
+#outer-aggplot, #aggplot, #map, #canvas, #aggplot-form, #resulting-plot-header, #nav, #answer-select, #histogram-container,
+canvas#hist1, canvas#hist2 {
 	display: none;
 }
 /*
@@ -144,16 +145,27 @@ g.xaxis path,g.yaxis path {
 }
 */
 
+#outer-aggplot.show {
+	display:inline-block;
+}
+
 #aggplot.show {
-	display: block;
+	display: inline-block;
 	position:relative;
 }
 
-#aggplot-form.show,#resulting-plot-header.show, #nav.show, #map.show, #canvas.show, #answer-select.show {
+
+#aggplot-form.show,#resulting-plot-header.show, #nav.show, #map.show, #canvas.show, #answer-select.show,
+canvas#hist1.show {
 	display: block;
 }
 
-#canvas.show, #svg_aggplot {
+canvas#hist2.show {
+	display: inline-block;
+}
+
+/*
+#canvas.show, */#svg_aggplot {
 	position: absolute;
 	top: 0;
 	left: 0;

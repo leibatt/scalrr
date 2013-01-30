@@ -46,6 +46,7 @@ def connect_to_backend():
             session['backend_conn'] = ws
         except Exception as e:
             app.logger.error('error occurred connecting to backend:\n'+str(type(e)))
+            app.logger.error(str(e))
     if ('backend_conn' not in session) or (session['backend_conn'] is None):
         app.logger.warning('could not open connection to \''+CONN_STRING+'\'')
 
@@ -89,16 +90,31 @@ def get_data2():
     session['user_id'] = str(uuid.uuid4())
     return render_template('canvas.html')
 
+@app.route('/canvas-with-histograms/', methods=["POST", "GET"])
+def get_data2():
+    session['user_id'] = str(uuid.uuid4())
+    return render_template('canvas-with-histograms.html')
+
 @app.route('/fetch-first-tile',methods=["POST", "GET"])
 def fetch_first_tile():
     app.logger.info("got fetch first tile request")
     query = request.args.get('query',"",type=str)
     data_threshold = request.args.get('data_threshold',0,type=int)
     options = {'user_id':session['user_id']}
+    session['usenumpy'] = request.args.get('usenumpy',False,type=bool)
     if data_threshold > 0:
 	options['data_threshold'] = data_threshold
+    if session['usenumpy']:
+        options['usenumpy'] = False
     server_request = {'query':query,'options':options,'function':'fetch_first_tile'}
-    queryresultarr = send_request(server_request)
+    try:
+        queryresultarr = send_request(server_request)
+    except WebSocketConnectionClosedException as e: # uh oh, backend did something bad
+        app.logger.info("backend unexpectedly closed while trying to retrieve data:")
+        queryresultarr = {'error':{'type':str(type(e)),'args':e.args}}
+    except Exception as e:
+        app.logger.info("error occurred while trying to retrieve data:")
+        queryresultarr = {'error':{'type':str(type(e)),'args':e.args}}
     if 'error' not in queryresultarr: # error happened
         app.logger.info("result length: "+str(len(queryresultarr['data'])))
     #print >> sys.stderr, json.dumps(queryresultarr)
@@ -116,8 +132,17 @@ def fetch_tile():
     y_label = request.args.get('y_label',"",type=str)
     level = request.args.get('level',"",type=int)
     options = {'user_id':session['user_id']}
+    if session['usenumpy']:
+        options['usenumpy'] = False
     server_request = {'options':options,'tile_xid':tile_xid,'tile_yid':tile_yid,'tile_id':tile_id,'level':level,'y_label':y_label,'x_label':x_label,'function':'fetch_tile'}
-    queryresultarr = send_request(server_request)
+    try:
+        queryresultarr = send_request(server_request)
+    except WebSocketConnectionClosedException as e: # uh oh, backend did something bad
+        app.logger.info("backend unexpectedly closed while trying to retrieve data:")
+        queryresultarr = {'error':{'type':str(type(e)),'args':e.args}}
+    except Exception as e:
+        app.logger.info("error occurred while trying to retrieve data:")
+        queryresultarr = {'error':{'type':str(type(e)),'args':e.args}}
     if 'saved_qpresults' in queryresultarr:
         session['saved_qpresults'] = queryresultarr['saved_qpresults']
     app.logger.info("result length: "+str(len(queryresultarr['data'])))
@@ -134,7 +159,14 @@ def get_data_ajax():
     #requests from this url always happen at the beginning of a user session
     options['user_id'] = session['user_id']
     server_request = {'query':query,'options':options,'function':'query_execute'}
-    queryresultarr = send_request(server_request)
+    try:
+        queryresultarr = send_request(server_request)
+    except WebSocketConnectionClosedException as e: # uh oh, backend did something bad
+        app.logger.info("backend unexpectedly closed while trying to retrieve data:")
+        queryresultarr = {'error':{'type':str(type(e)),'args':e.args}}
+    except Exception as e:
+        app.logger.info("error occurred while trying to retrieve data:")
+        queryresultarr = {'error':{'type':str(type(e)),'args':e.args}}
     if 'saved_qpresults' in queryresultarr:
         session['saved_qpresults'] = queryresultarr['saved_qpresults']
     #print >> sys.stderr, queryresultarr
@@ -152,7 +184,14 @@ def get_data_ajax_noreduction():
     else:
         options['saved_qpresults'] = None
     server_request = {'query':query,'options':options,'function':'query_execute'}
-    queryresultarr = send_request(server_request)
+    try:
+        queryresultarr = send_request(server_request)
+    except WebSocketConnectionClosedException as e: # uh oh, backend did something bad
+        app.logger.info("backend unexpectedly closed while trying to retrieve data:")
+        queryresultarr = {'error':{'type':str(type(e)),'args':e.args}}
+    except Exception as e:
+        app.logger.info("error occurred while trying to retrieve data:")
+        queryresultarr = {'error':{'type':str(type(e)),'args':e.args}}
     if 'saved_qpresults' in queryresultarr:
         session['saved_qpresults'] = queryresultarr['saved_qpresults']
     app.logger.info("result length: "+str(len(queryresultarr['data'])))
@@ -175,7 +214,14 @@ def get_data_ajax_reduce():
     if predicate != "":
 	options['predicate'] = predicate
     server_request = {'query':query,'options':options,'function':'query_execute'}
-    queryresultarr = send_request(server_request)
+    try:
+        queryresultarr = send_request(server_request)
+    except WebSocketConnectionClosedException as e: # uh oh, backend did something bad
+        app.logger.info("backend unexpectedly closed while trying to retrieve data:")
+        queryresultarr = {'error':{'type':str(type(e)),'args':e.args}}
+    except Exception as e:
+        app.logger.info("error occurred while trying to retrieve data:")
+        queryresultarr = {'error':{'type':str(type(e)),'args':e.args}}
     app.logger.info("result length: "+str(len(queryresultarr['data'])))
     if 'saved_qpresults' in queryresultarr:
         session['saved_qpresults'] = queryresultarr['saved_qpresults']

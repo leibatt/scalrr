@@ -1,5 +1,6 @@
 import scalrr_back_data as sbdata
 import scidb_server_interface as sdbi
+import scidb_server_interface_numpy as sdbinp
 import math
 
 DEBUG_PRINT = False
@@ -13,10 +14,10 @@ def getTileByIDXY(tile_xid,tile_yid,l,user_id):
 	return getTileHelper(tile_info,l,user_id)
 
 
-def getTileByIDN(tile_id,l,user_id):
-	print "calling getTileByIDN"
+def getTileByIDN(tile_id,l,user_id,usenumpy=False):
+	if DEBUG_PRINT: print "calling getTileByIDN"
 	tile_info = {'type':'n','tile_id':tile_id}
-	return getTileHelper2(tile_info,l,user_id)
+	return getTileHelper2(tile_info,l,user_id,usenumpy)
 
 #   y-------->
 #x  0  1  2 ...
@@ -32,7 +33,7 @@ def getTile(cx,cy,l,user_id):
 	tile_info = {'type':'center','cx':cx,'cy':cy}
 	return getTileHelper(tile_info,l,user_id)
 
-def getTileHelper(tile_info,l,user_id):
+def getTileHelper(tile_info,l,user_id,usenumpy=False):
 	db = sdbi.scidbOpenConn()
 	with sbdata.metadata_lock:
 		orig_query = sbdata.backend_metadata[user_id]['orig_query']
@@ -47,7 +48,7 @@ def getTileHelper(tile_info,l,user_id):
 		if ('x_label' in tile_info) and ('y_label' in tile_info):
 			xdim = saved_qpresults['indexes'][tile_info['x_label']]
 			ydim = saved_qpresults['indexes'][tile_info['y_label']]
-		print "xdim:",xdim,",ydim:",ydim
+		if DEBUG_PRINT: print "xdim:",xdim,",ydim:",ydim
 		x = saved_qpresults['dimwidths'][saved_qpresults['dims'][xdim]]
 		y = saved_qpresults['dimwidths'][saved_qpresults['dims'][ydim]]
 		k = sbdata.backend_metadata[user_id]['data_threshold']
@@ -56,7 +57,7 @@ def getTileHelper(tile_info,l,user_id):
 		if levels == 0: # need to compute # of levels
 			root_k = math.ceil(math.pow(k,1.0/n))
 			k = root_k ** 2 ## adjust to make it a nice power
-			print "*************threshold:",k
+			if DEBUG_PRINT: print "*************threshold:",k
 			tsize = saved_qpresults['size'] # get the size of the result
 			if tsize <= k: # if k happens to be larger than the total results
 				levels = 1
@@ -76,9 +77,12 @@ def getTileHelper(tile_info,l,user_id):
 		queryresultobj = sdbi.getTileByID(orig_query,tile_info['tile_id'],l,levels-1,sbdata.default_diff,x,xbase,y,ybase,k,aggr_options)
 	total_tiles = queryresultobj[1]['total_tiles']
 	total_tiles_root = queryresultobj[1]['total_tiles_root']
-	print "total_tiles_root:",total_tiles_root
+	if DEBUG_PRINT: print "total_tiles_root:",total_tiles_root
 	sdbioptions={'dimnames':saved_qpresults['dims']}
-	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
+	if usenumpy:
+		queryresultarr = sdbinp.getAllAttrArrFromQueryForNP(queryresultobj[0])
+	else:  # only get info for some attrs
+		queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
 	saved_qpresults = queryresultobj[1] # don't need local saved_qpresults anymore, so reuse
 	# get the new dim info
 	queryresultarr['dimnames'] = saved_qpresults['dims']
@@ -102,7 +106,7 @@ def getTileHelper(tile_info,l,user_id):
 	sdbi.scidbCloseConn(db)
 	return queryresultarr
 
-def getTileNoUser(tile_info,orig_query,saved_qpresults,l,levels,k):
+def getTileNoUser(tile_info,orig_query,saved_qpresults,l,levels,k,usenumpy=False,desired_attrs=None):
 	db = sdbi.scidbOpenConn()
 	xbase = 0
 	ybase = 0
@@ -131,7 +135,13 @@ def getTileNoUser(tile_info,orig_query,saved_qpresults,l,levels,k):
 	total_tiles_root = queryresultobj[1]['total_tiles_root']
 	if DEBUG_PRINT: print "total_tiles_root:",total_tiles_root
 	sdbioptions={'dimnames':saved_qpresults['dims']}
-	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
+	if usenumpy:
+		if desired_attrs is None: # only get numpy data for
+			queryresultarr = sdbinp.getAllAttrArrFromQueryForNP(queryresultobj[0])
+		else:  # only get info for some attrs
+			queryresultarr = sdbinp.getAllAttrArrFromQueryForNP(queryresultobj[0],desired_attrs)
+	else:
+		queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
 	saved_qpresults = queryresultobj[1] # don't need local saved_qpresults anymore, so reuse
 	# get the new dim info
 	queryresultarr['dimnames'] = saved_qpresults['dims']
@@ -155,7 +165,7 @@ def getTileNoUser(tile_info,orig_query,saved_qpresults,l,levels,k):
 	sdbi.scidbCloseConn(db)
 	return queryresultarr
 
-def getTileHelper2(tile_info,l,user_id):
+def getTileHelper2(tile_info,l,user_id,usenumpy=False):
 	db = sdbi.scidbOpenConn()
 	with sbdata.metadata_lock:
 		tile_id = tile_info['tile_id']
@@ -173,17 +183,17 @@ def getTileHelper2(tile_info,l,user_id):
 		if levels == 0: # need to compute # of levels
 			root_k = math.ceil(math.pow(k,1.0/n))
 			k = root_k ** 2
-			print "root_k:",root_k,"d:",sbdata.default_diff
+			if DEBUG_PRINT: print "root_k:",root_k,"d:",sbdata.default_diff
 			for i in range(n):
 				w_i = widths[i]
-				print "w_i:",w_i
+				if DEBUG_PRINT: print "w_i:",w_i
 				l_i = 1
 				if w_i > root_k:
 					t_i = math.ceil(w_i/root_k) # number of base level tiles
-					print "t_i:",t_i
-					print "log t_i:",math.log(t_i),"log d:",math.log(sbdata.default_diff)
+					if DEBUG_PRINT: print "t_i:",t_i
+					if DEBUG_PRINT: print "log t_i:",math.log(t_i),"log d:",math.log(sbdata.default_diff)
 					l_i = math.ceil(math.log(t_i)/math.log(sbdata.default_diff))+1
-					print "l_i:",l_i,"levels:",levels
+					if DEBUG_PRINT: print "l_i:",l_i,"levels:",levels
 				if l_i > levels:
 					levels = l_i
 			sbdata.backend_metadata[user_id]['levels'] = levels # store this computed value
@@ -198,9 +208,16 @@ def getTileHelper2(tile_info,l,user_id):
 		return queryresultobj
 	#total_tiles = queryresultobj[1]['total_tiles']
 	#total_tiles_root = queryresultobj[1]['total_tiles_root']
-	#print "total_tiles_root:",total_tiles_root
+	#if DEBUG_PRINT: print "total_tiles_root:",total_tiles_root
 	sdbioptions={'dimnames':saved_qpresults['dims']}
-	queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
+	if usenumpy:
+		queryresultarr = sdbinp.getAllAttrArrFromQueryForNP(queryresultobj[0])
+		data = sdbinp.arrs_to_json(queryresultarr['data'])
+		queryresultarr['data'] = data
+		stats = sdbinp.stats_to_json(queryresultarr['stats'])
+		queryresultarr['stats'] = stats
+	else:
+		queryresultarr = sdbi.getAllAttrArrFromQueryForJSON(queryresultobj[0],sdbioptions)
 	saved_qpresults = queryresultobj[1] # don't need local saved_qpresults anymore, so reuse
 	# get the new dim info
 	queryresultarr['dimnames'] = saved_qpresults['dims']
@@ -214,7 +231,7 @@ def getTileHelper2(tile_info,l,user_id):
 	queryresultarr['total_tiles'] = saved_qpresults['total_tiles']
 	queryresultarr['future_tiles'] = saved_qpresults['future_tiles']
 	queryresultarr['future_tiles_exact'] = saved_qpresults['future_tiles_exact']
-	print "indexes:",saved_qpresults['indexes']
+	if DEBUG_PRINT: print "indexes:",saved_qpresults['indexes']
 	sdbi.scidbCloseConn(db)
 	return queryresultarr
 
