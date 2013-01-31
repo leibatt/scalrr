@@ -74,11 +74,11 @@ def process_request(inputstring):
     elif request['function'] == "fetch_tile":
 	print "got here"
         options = request['options']
-        tile_xid = int(request['tile_xid'])
-        tile_yid = int(request['tile_yid'])
+        #tile_xid = int(request['tile_xid'])
+        #tile_yid = int(request['tile_yid'])
 	tile_id=request['tile_id']
-	x_label = request['x_label']
-	y_label = request['y_label']
+	#x_label = request['x_label']
+	#y_label = request['y_label']
 	level = int(request['level'])
         print "fetching tile"
         #response = fetch_tile(tile_xid,tile_yid,x_label,y_label,level,options)
