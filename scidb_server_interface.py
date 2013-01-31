@@ -166,6 +166,7 @@ def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate
 			if DEBUG_PRINT: print "total_bottomtiles_here: ",total_bottomtiles_here
 			future_tiles[i] = math.ceil(total_bottomtiles_here/bottomtiles_per_currenttile_plus1level)
 		future_tiles_exact[i] = 1.0*(upper[i]-lower[i])/max(tile_width/2.0,root_threshold)
+		if DEBUG_PRINT: print "upper:",upper[i]
 	if DEBUG_PRINT: print "level: ",l,", total levels: ",max_l
 	if DEBUG_PRINT: print "total bottomtiles: ",total_tiles
 	if DEBUG_PRINT: print "root_threshold: ",root_threshold
