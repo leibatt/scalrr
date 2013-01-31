@@ -42,7 +42,8 @@ QVis.HeatMap.prototype.render_canvas = function(_data, _labels,_types, opts) {
 	//console.log(_labels.dimbases[ydimname]);
 	//console.log(_labels.dimwidths[ydimname]);
 	//console.log(Number(_labels.dimwidths[ydimname]+_labels.dimbases[ydimname]));
-	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer.GnBu[9]);
+	console.log("color scheme in heatmap:"+this.colorscheme);
+	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer[this.colorscheme][9]);
 	if((self.labelsfrombase.z_label in this.min) && (self.labelsfrombase.z_label in this.max)) {
 		if(this.inv[2]){
 			self.zscale.domain([this.max[self.labelsfrombase.z_label],this.min[self.labelsfrombase.z_label]]);
@@ -80,8 +81,8 @@ QVis.HeatMap.prototype.render_canvas = function(_data, _labels,_types, opts) {
 		.attr("x", 0)
 		.attr("y", 0);
 
-	this.addStatsHist1(_data, _labels,_types, opts);
-	this.addStatsHist2(_data, _labels,_types, opts);
+	//this.addStatsHist1(_data, _labels,_types, opts);
+	//this.addStatsHist2(_data, _labels,_types, opts);
 
 	//console.log("width:"+(self.w-2*self.px)/_labels.dimwidths[xdimname]);
 	//console.log("height:"+(self.h-2*self.py)/_labels.dimwidths[ydimname]);
@@ -129,7 +130,7 @@ QVis.HeatMap.prototype.render = function(_data, _labels,_types, opts) {
 	//console.log(_labels.dimbases[ydimname]);
 	//console.log(_labels.dimwidths[ydimname]);
 	//console.log(Number(_labels.dimwidths[ydimname]+_labels.dimbases[ydimname]));
-	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer.GnBu[9]);
+	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer[this.colorscheme][9]);
 	if((self.labelsfrombase.z_label in this.min) && (self.labelsfrombase.z_label in this.max)) {
 		if(this.inv[2]){
 			self.zscale.domain([this.max[self.labelsfrombase.z_label],this.min[self.labelsfrombase.z_label]]);
@@ -202,7 +203,7 @@ QVis.HeatMap.prototype.mini_render_canvas = function(_data, _labels,_types, opts
 	//console.log(_labels.dimbases[ydimname]);
 	//console.log(_labels.dimwidths[ydimname]);
 	//console.log(Number(_labels.dimwidths[ydimname]+_labels.dimbases[ydimname]));
-	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer.GnBu[9]);
+	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer[this.colorscheme][9]);
 	if((self.labelsfrombase.z_label in this.min) && (self.labelsfrombase.z_label in this.max)) {
 		if(this.inv[2]){
 			self.zscale.domain([this.max[self.labelsfrombase.z_label],this.min[self.labelsfrombase.z_label]]);
@@ -241,8 +242,8 @@ QVis.HeatMap.prototype.mini_render_canvas = function(_data, _labels,_types, opts
 		.attr("y", 0);
 
 
-	this.addStatsHist1(_data, _labels,_types, opts);
-	this.addStatsHist2(_data, _labels,_types, opts);
+	//this.addStatsHist1(_data, _labels,_types, opts);
+	//this.addStatsHist2(_data, _labels,_types, opts);
 
 	//console.log("width:"+(self.w-2*self.px)/_labels.dimwidths[xdimname]);
 	//console.log("height:"+(self.h-2*self.py)/_labels.dimwidths[ydimname]);
@@ -282,7 +283,7 @@ QVis.HeatMap.prototype.mini_render = function(_data, _labels,_types, opts) {
 	//console.log(_labels.dimbases[ydimname]);
 	//console.log(_labels.dimwidths[ydimname]);
 	//console.log(Number(_labels.dimwidths[ydimname]+_labels.dimbases[ydimname]));
-	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer.GnBu[9]);
+	self.zscale = this.createScale(_data,_types,self.labelsfrombase.z_label,this.w,this.px,this.inv[2]/*true*/,true).range(colorbrewer[this.colorscheme][9]);
 	if((self.labelsfrombase.z_label in this.min) && (self.labelsfrombase.z_label in this.max)) {
 		if(this.inv[2]){
 			self.zscale.domain([this.max[self.labelsfrombase.z_label],this.min[self.labelsfrombase.z_label]]);

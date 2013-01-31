@@ -57,7 +57,7 @@ g {
 	padding-right: 10px;
 }
 
-div.xlabel, div.ylabel, div.zlabel,form div.width,form div.height {
+div.xlabel, div.ylabel, div.zlabel,div.colorscheme,form div.width,form div.height {
 	margin: 10px;
 	text-align: center;
 }

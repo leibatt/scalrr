@@ -17,6 +17,7 @@ QVis.Graph = function(rootid,opts) {
 
 	this.h = opts['h'] || 800;
 	this.w = opts['w'] || 1100;
+	this.colorscheme = opts['color'] || "GnBu";
 	this.px = 0;//80;
 	this.py = 0;//30;
 }
@@ -34,8 +35,9 @@ QVis.Graph.prototype.update_opts = function (opts) {
 	if (!opts) return;
 	this.overlap = opts['overlap'] || this.overlap || -2;
 	this.r = opts['r'] || this.r || 1.5;
-	this.h = opts['h'] || this.h || 600;
-	this.w = opts['w'] || this.w || 900;		
+	this.h = opts['h'] || this.h || 800;
+	this.w = opts['w'] || this.w || 1100;	
+	this.colorscheme = opts['color'] || "GnBu";	
 }
 
 //data wrapper function
@@ -437,9 +439,11 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 
 			var width = self.w;
 			var height = self.h;
+			var color = self.colorscheme;
 
 			var inv_new = [false,false,false];
 			console.log(["old radio vals: ",inv]);
+			console.log(["old color scheme:",color]);
 			if(self.selectz) {
 				zval = $("#"+self.rootid+"-form .zlabel select").val(); // should be the same as before
 				inv_new[2]= $("#"+self.rootid+"-form input:radio[name='zlabel-radio']:checked").val() !== "";
@@ -455,23 +459,28 @@ QVis.Graph.prototype.render = function(_data, _labels,_types, opts) {
 
 			var neww = $('#update-width').val();
 			var newh = $('#update-height').val();
+			var newcolor = $('#color-scheme').val();
 
 			console.log(["selected options", zval,yval,xval]);
 			console.log(["new radio vals: ",inv_new]);
 			console.log(["new dims:",neww,newh]);
+			console.log(["new color scheme:",newcolor]);
 			// if the values haven't changed
 			if ((!self.selectz || ((zval === selectedzval) && (inv[2] === inv_new[2]))) 
 				&& (!self.selecty || ((yval === selectedyval) && (inv[1] === inv_new[1]))) 
 				&& (!self.selectx || ((xval === selectedxval)  && (inv[0] === inv_new[0])))
 				&& (width === neww)
-				&& (height === newh)) return false;
+				&& (height === newh)
+				&& (color === newcolor)) return false;
 			selectedxval = xval;
 			selectedyval = yval;
 			selectedzval = zval;
 			width = neww;
 			height = newh;
+			color = newcolor;
 			opts['w'] = width;
 			opts['h'] = height;
+			opts['color'] = color;
 			for(var i = 0; i <= 2; i++) {
 				inv[i]= inv_new[i];
 			}
@@ -519,6 +528,7 @@ QVis.Graph.prototype.mini_render = function(_data, _labels,_types, opts) {
 		var selectedyval = self.labelsfrombase.y_label;
 		var width = self.w;
 		var height = self.h;
+		var color = self.colorscheme;
 		var inv = 'inv' in _labels ? _labels['inv'] : [false,false,false];
 		console.log(['inv' in _labels,'x' in _labels]);
 		$("#vis-update-submit").off('click');
@@ -546,24 +556,28 @@ QVis.Graph.prototype.mini_render = function(_data, _labels,_types, opts) {
 
 			var neww = $('#update-width').val();
 			var newh = $('#update-height').val();
+			var newcolor = $('#color-scheme').val();
 
 			console.log(["selected options", zval,yval,xval]);
 			console.log(["new radio vals: ",inv_new]);
 			console.log(["new dims:",neww,newh]);
+			console.log(["new color scheme:",newcolor]);
 			// if the values haven't changed
 			if ((!self.selectz || ((zval === selectedzval) && (inv[2] === inv_new[2]))) 
 				&& (!self.selecty || ((yval === selectedyval) && (inv[1] === inv_new[1]))) 
 				&& (!self.selectx || ((xval === selectedxval)  && (inv[0] === inv_new[0])))
 				&& (width === neww)
-				&& (height === newh)) return false;
+				&& (height === newh)
+				&& (color === newcolor)) return false;
 			selectedxval = xval;
 			selectedyval = yval;
 			selectedzval = zval;
 			width = neww;
 			height = newh;
-
+			color = newcolor;
 			opts['w'] = width;
 			opts['h'] = height;
+			opts['color'] = color;
 			for(var i = 0; i <= 2; i++) {
 				inv[i]= inv_new[i];
 			}

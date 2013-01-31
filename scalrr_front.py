@@ -91,7 +91,7 @@ def get_data2():
     return render_template('canvas.html')
 
 @app.route('/canvas-with-histograms/', methods=["POST", "GET"])
-def get_data2():
+def get_data2_histograms():
     session['user_id'] = str(uuid.uuid4())
     return render_template('canvas-with-histograms.html')
 
