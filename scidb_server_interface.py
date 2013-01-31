@@ -154,6 +154,7 @@ def getTileByIDN(orig_query,n,tile_id,l,max_l,d,bases,widths,threshold,aggregate
 	bottomtiles_per_currenttile_plus1level = math.pow(d,max_l-min(l+1,max_l))
 	tile_width = root_threshold*math.pow(d,max_l-l) # figure out tile dimensions
 	for i in range(n):
+		if DEBUG_PRINT: print "range width:",widths[i]
 		total_tiles[i] = math.ceil(1.0*widths[i]/root_threshold) # number of tiles along dimension i on the lowest level
 		total_tiles_l[i] = math.ceil(1.0*total_tiles[i]/bottomtiles_per_currenttile)
 		total *= total_tiles_l[i]
@@ -489,6 +490,7 @@ def check_query_plan(queryplan):
 	names = []
 	truenames = []
 	bases= {}
+	uppers = {}
 	widths = {}
 	indexes = {}
 	chunkwidths = {}
@@ -506,12 +508,14 @@ def check_query_plan(queryplan):
 				name = "dims."+name
 				rangewidth = int(rangeval)
 				bases[name] = 1 #1 by default
+				uppers[name] = rangewidth
 			else:
 				truenames.append(name)
 				name = "dims."+name
 				rangevals = rangeval.split(':')
 				rangewidth = int(rangevals[1]) - int(rangevals[0]) + 1
-				bases[name]=int(rangevals[0]);
+				bases[name]=int(rangevals[0])
+				uppers[name] = int(rangevals[1])
 			names.append(name)
 			indexes[name] = dims
 			chunkwidths[name] = int(dim_array[i+1])
@@ -520,7 +524,7 @@ def check_query_plan(queryplan):
 			dims += 1
 			widths[name] =rangewidth;
 	return {'size': size, 'numdims': dims,'truedims':truenames, 'dims': names, 'indexes':indexes, 'attrs':get_attrs(queryplan)
-		,'dimbases':bases,'dimwidths':widths,'chunkwidths':chunkwidths,'chunkoverlaps':chunkoverlaps}
+		,'dimbases':bases,'dimwidths':widths,'chunkwidths':chunkwidths,'chunkoverlaps':chunkoverlaps,'dimuppers':uppers}
 
 #get all attributes of the result matrix
 def get_attrs(queryplan):
