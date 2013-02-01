@@ -42,7 +42,7 @@ QVis.MapPlot.prototype.render2 = function(_data, _labels,_types, opts) {
 	var i;
 	for (var i = 0; i < _data.length; i++) {
 		var entry = _data[i];
-		console.log(["lat lons",entry[self.labelsfrombase.x_label],entry[self.labelsfrombase.y_label]]);
+		//console.log(["lat lons",entry[self.labelsfrombase.x_label],entry[self.labelsfrombase.y_label]]);
 		// Construct the circle for each value in citymap. We scale population by 20.
 		var dataOptions = {
 			strokeColor: '#FF0000',
@@ -156,7 +156,7 @@ QVis.MapPlot.prototype.render = function(_data, _labels,_types, opts) {
 			function transform(data) {
 				//LatLng(lat,lon)
 				var d = new google.maps.LatLng(data[self.labelsfrombase.x_label], data[self.labelsfrombase.y_label]);
-				console.log(d.lat()+","+d.lng());
+				//console.log(d.lat()+","+d.lng());
 				d = projection.fromLatLngToDivPixel(d);
 				return d3.select(this)
 				    .style("left", (d.x - padding) + "px")
