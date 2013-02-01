@@ -9,7 +9,7 @@
 	<script type="text/javascript" src="{{url_for('static',filename='js/jquery-ui-1.8.19.custom.min.js')}}" ></script>
 	<script type="text/javascript" src="http://maps.google.com/maps/api/js?v=3.exp&sensor=false"></script>
 	<script type="text/javascript" src="{{url_for('static',filename='js/d3.v2.js')}}" ></script>
-	<script type="text/javascript" src="{{url_for('static',filename='js/main.js')}}" ></script>
+	<script type="text/javascript" src="{{url_for('static',filename='js/main2.js')}}" ></script>
 	<script type="text/javascript" src="{{url_for('static',filename='js/colorbrewer.js')}}" ></script>
 	<script type="text/javascript" src="{{url_for('static',filename='js/QVisBase.js')}}" ></script>
 	<script type="text/javascript" src="{{url_for('static',filename='js/QVisScatterPlot.js')}}" ></script>
@@ -45,39 +45,80 @@
 		<input type="submit" id="sql-query-submit" value="Submit Query"></input>
 	</form>
 	<h2 id="resulting-plot-header" class="heading">Resulting Plot<small></small></h2>
-	<div id="aggplot">
-		<div class="legend"></div>
-		<svg></svg>
-		<div id="map">
+	<div id="aggplot" class=".hide-element">
+		<div id="map" class=".hide-element">
 			<div></div>
 		</div>
-		<form>
-			<div name="xlabel" class="xlabel">
-				<label for="xaxis-select" id="xlabel-select">x Axis: </label>
-				<div id="xlabel-radio">
-					<input type="radio" id="xlabel-radio1" name="xlabel-radio" value="invert"/><label for="xlabel-radio1">invert</label>
-					<input type="radio" id="xlabel-radio2" name="xlabel-radio" checked="checked"  value=""/><label for="xlabel-radio2">none</label>
-				</div>
-			</div>
-			<div name="ylabel" class="ylabel">
-				<label for="yaxis-select" id="ylabel-select">y Axis: </label>
-				<div id="ylabel-radio">
-					<input type="radio" id="ylabel-radio1" name="ylabel-radio" value="invert"/><label for="ylabel-radio1">invert</label>
-					<input type="radio" id="ylabel-radio2" name="ylabel-radio" checked="checked" value=""/><label for="ylabel-radio2">none</label>
-				</div>
-			</div>
-			<div name="zlabel" class="zlabel">
-				<label for="zaxis-select" id="zlabel-select">z Axis (color): </label>
-				<div id="zlabel-radio">
-					<input type="radio" id="zlabel-radio1" name="zlabel-radio" value="invert"/><label for="zlabel-radio1">invert</label>
-					<input type="radio" id="zlabel-radio2" name="zlabel-radio" checked="checked" value=""/><label for="zlabel-radio2">none</label>
-				</div>
-			</div>
-			<div id="update-submit-div">
-				<input type="submit" id="vis-update-submit" class="update-submit" value="Submit"></input>
-			</div>
-		</form>
+		<div class="legend"></div>
+		<canvas id="canvas" class=".hide-element"></canvas>
+		<svg></svg>
 	</div>
+	<form id="aggplot-form">
+		<div name="xlabel" class="xlabel">
+			<label for="xaxis-select" id="xlabel-select">x Axis: </label>
+			<div id="xlabel-radio">
+				<input type="radio" id="xlabel-radio1" name="xlabel-radio" value="invert"/><label for="xlabel-radio1">invert</label>
+				<input type="radio" id="xlabel-radio2" name="xlabel-radio" checked="checked"  value=""/><label for="xlabel-radio2">none</label>
+			</div>
+		</div>
+		<div name="ylabel" class="ylabel">
+			<label for="yaxis-select" id="ylabel-select">y Axis: </label>
+			<div id="ylabel-radio">
+				<input type="radio" id="ylabel-radio1" name="ylabel-radio" value="invert"/><label for="ylabel-radio1">invert</label>
+				<input type="radio" id="ylabel-radio2" name="ylabel-radio" checked="checked" value=""/><label for="ylabel-radio2">none</label>
+			</div>
+		</div>
+		<div name="zlabel" class="zlabel">
+			<label for="zaxis-select" id="zlabel-select">z Axis (color): </label>
+			<div id="zlabel-radio">
+				<input type="radio" id="zlabel-radio1" name="zlabel-radio" value="invert"/><label for="zlabel-radio1">invert</label>
+				<input type="radio" id="zlabel-radio2" name="zlabel-radio" checked="checked" value=""/><label for="zlabel-radio2">none</label>
+			</div>
+		</div>
+		<div class="colorscheme">
+			<label for="color-scheme" id="label-color-scheme">color scheme: </label>
+			<select id="color-scheme">
+				<option value="YlGn">Yellow->Green</option>
+				<option value="YlGnBu">Yellow->Green->Blue</option>
+				<option value="GnBu" selected="selected">Green->Blue</option>
+				<option value="BuGn">Blue->Green</option>
+				<option value="PuBuGn">Purple->Blue->Green</option>
+				<option value="PuBu">Purple->Blue</option>
+				<option value="BuPu">Blue->Purple</option>
+				<option value="RdPu">Red->Purple</option>
+				<option value="PuRd">Purple->Red</option>
+				<option value="OrRd">Orange->Red</option>
+				<option value="YlOrRd">Yellow->Orange->Red</option>
+				<option value="YlOrBr">Yellow->Orange->Brown</option>
+				<option value="Purples">Purples</option>
+				<option value="Blues">Blues</option>
+				<option value="Greens">Greens</option>
+				<option value="Oranges">Oranges</option>
+				<option value="Reds">Reds</option>
+				<option value="Greys">Greys</option>
+				<option value="PuOr">Purple->Orange</option>
+				<option value="BrBG">Brown->BlueGreen</option>
+				<option value="PRGn">Purple->Red->Green</option>
+				<option value="PiYG">Pink->Yellow-Green</option>
+				<option value="RdBu">Red->Blue</option>
+				<option value="RdGy">Red->Green-Yellow</option>
+				<option value="RdYlBu">Red->Yellow->Blue</option>
+				<option value="Spectral">Spectral</option>
+				<option value="RdYlGn">Red->Yellow->Green</option>
+			</select>
+		</div>
+		<div class="width">
+			<label for="update-width" id="label-width">width: </label>
+			<input type="text" id="update-width"/>
+		</div>
+		<div class="height">
+			<label for="update-height" id="label-height">height: </label>
+			<input type="text" id="update-height"/>
+		</div>
+		<div id="update-submit-div">
+			<input type="submit" id="vis-update-submit" class="update-submit" value="Submit"></input>
+		</div>
+	</form>
 	<div id="dialog" title="Basic dialog">
 		<form id="reduce-type-form" >
 			<fieldset>

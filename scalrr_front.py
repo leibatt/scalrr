@@ -80,13 +80,13 @@ def get_move_zoom():
     session['user_id'] = str(uuid.uuid4())
     return render_template('move-zoom.html')
 
-@app.route('/index2/', methods=["POST", "GET"])
+@app.route('/scalar/', methods=["POST", "GET"])
 def get_data2():
     session['user_id'] = str(uuid.uuid4())
     return render_template('index2.html')
 
 @app.route('/canvas/', methods=["POST", "GET"])
-def get_data2():
+def get_data2_canvas():
     session['user_id'] = str(uuid.uuid4())
     return render_template('canvas.html')
 
