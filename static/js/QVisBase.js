@@ -15,11 +15,11 @@ QVis.Graph = function(rootid,opts) {
 	this.ylabeldiv = null;
 	this.svg = null;
 
-	this.h = opts['h'] || 800;
-	this.w = opts['w'] || 1100;
+	this.h = opts['h'] || 600;
+	this.w = opts['w'] || 800;
 	this.colorscheme = opts['color'] || "GnBu";
-	this.px = 0;//80;
-	this.py = 0;//30;
+	this.px = 80;//80;
+	this.py = 30;//30;
 }
 
 //error reporting function
