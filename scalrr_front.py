@@ -109,7 +109,7 @@ def fetch_first_tile():
     server_request = {'query':query,'options':options,'function':'fetch_first_tile'}
     try:
         queryresultarr = send_request(server_request)
-    except WebSocketConnectionClosedException as e: # uh oh, backend did something bad
+    except websocket.WebSocketConnectionClosedException as e: # uh oh, backend did something bad
         app.logger.info("backend unexpectedly closed while trying to retrieve data:")
         queryresultarr = {'error':{'type':str(type(e)),'args':e.args}}
     except Exception as e:

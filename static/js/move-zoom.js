@@ -246,8 +246,12 @@ $(document).ready(function() {
 		$('#aggplot-form').removeClass('show');
 		$('#nav').removeClass('show');
 		$('#answer-select').removeClass('show');
+		//$('#loading_image').addClass('show');
+		$("body").css("cursor", "progress");
 		$.getJSON($SCRIPT_ROOT+'/fetch-first-tile',{query: querytext,data_threshold:resolution_lvl},function(jsondata){
 			console.log(jsondata);
+			//$('#loading_image').removeClass('show');
+			$("body").css("cursor", "auto");
 			if(!("error" in jsondata)) {
 				draw_graph(jsondata);
 				$('#resulting-plot-header').addClass('show');

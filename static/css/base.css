@@ -135,7 +135,7 @@ g.xaxis path,g.yaxis path {
 }
 
 #outer-aggplot, #aggplot, #map, #canvas, #aggplot-form, #resulting-plot-header, #nav, #answer-select, #histogram-container,
-canvas#hist1, canvas#hist2 {
+canvas#hist1, canvas#hist2, #loading_image {
 	display: none;
 }
 /*
@@ -156,7 +156,7 @@ canvas#hist1, canvas#hist2 {
 
 
 #aggplot-form.show,#resulting-plot-header.show, #nav.show, #map.show, #canvas.show, #answer-select.show,
-canvas#hist1.show {
+canvas#hist1.show, #loading_image.show {
 	display: block;
 }
 
@@ -165,11 +165,12 @@ canvas#hist2.show {
 }
 
 /*
-#canvas.show, */#svg_aggplot {
+#canvas.show,*/ #svg_aggplot {
 	position: absolute;
 	top: 0;
 	left: 0;
 }
+
 
 #answer-select-checked-yes.highlight,#answer-select-checked-no.highlight {
 	color: blue;
